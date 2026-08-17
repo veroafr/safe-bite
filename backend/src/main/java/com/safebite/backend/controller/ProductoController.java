@@ -46,11 +46,6 @@ public class ProductoController {
         return ResponseEntity.ok(productoService.analizarIngredientes(request.getTextoDetectado(), usuario));
     }
 
-    /**
-     * El usuario escaneo un codigo que no esta en la base ni en Open Food
-     * Facts, y lo carga a mano. Requiere estar logueado (cualquier rol);
-     * queda pendiente de revision por un admin.
-     */
     @PostMapping("/aportar")
     public ResponseEntity<ProductoResponse> aportar(@Valid @RequestBody AportarProductoRequest request,
                                                       @AuthenticationPrincipal Usuario usuario) {
