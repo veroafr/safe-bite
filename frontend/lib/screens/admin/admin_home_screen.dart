@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import '../../core/models/alerta.dart';
 import '../../core/providers/auth_provider.dart';
+import '../../core/services/alerta_service.dart';
+import '../../core/services/producto_service.dart';
 import '../../core/theme/app_theme.dart';
 
 import '../auth/welcome_screen.dart';
@@ -13,35 +16,106 @@ import 'admin_recetas_screen.dart';
 import 'admin_reportes_screen.dart';
 import 'admin_productos_screen.dart';
 
-class AdminHomeScreen extends StatelessWidget {
+class AdminHomeScreen extends StatefulWidget {
   const AdminHomeScreen({super.key});
+
+  @override
+  State<AdminHomeScreen> createState() => _AdminHomeScreenState();
+}
+
+class _AdminHomeScreenState extends State<AdminHomeScreen> {
+  int _productosPendientes = 0;
+  int _alertasPendientes = 0;
+
+  bool _cargando = true;
+  bool _error = false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _cargarPendientes();
+    });
+  }
+
+  // =========================================================
+  // CARGA LOS PENDIENTES REALES DEL BACKEND
+  // =========================================================
+
+  Future<void> _cargarPendientes() async {
+    if (!mounted) return;
+
+    setState(() {
+      _cargando = true;
+      _error = false;
+    });
+
+    try {
+      final productoService = context.read<ProductoService>();
+      final alertaService = context.read<AlertaService>();
+
+      final resultados = await Future.wait([
+        productoService.listarPendientes(),
+        alertaService.listarPorEstado(
+          estado: EstadoAlerta.PENDIENTE,
+        ),
+      ]);
+
+      final productos = resultados[0] as List;
+      final alertas = resultados[1] as List;
+
+      if (!mounted) return;
+
+      setState(() {
+        _productosPendientes = productos.length;
+        _alertasPendientes = alertas.length;
+        _cargando = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() {
+        _productosPendientes = 0;
+        _alertasPendientes = 0;
+        _cargando = false;
+        _error = true;
+      });
+    }
+  }
+
+  int get _totalPendientes =>
+      _productosPendientes + _alertasPendientes;
+
+  // =========================================================
+  // ABRIR PANTALLA Y ACTUALIZAR AL VOLVER
+  // =========================================================
+
+  Future<void> _abrirPantalla(Widget pantalla) async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => pantalla,
+      ),
+    );
+
+    // Cuando el administrador vuelve de revisar algo,
+    // volvemos a consultar el backend.
+    if (mounted) {
+      await _cargarPendientes();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final usuario = context.watch<AuthProvider>().usuario;
 
-    // =====================================================
-    // DATOS TEMPORALES
-    // Estos números representan PENDIENTES / NUEVOS.
-    // Después deben venir desde tu backend.
-    // =====================================================
-
-    const int productosNuevos = 3;
-    const int restaurantesPendientes = 2;
-    const int alertasPendientes = 5;
-    const int usuariosPendientes = 1;
-
-    const int noticiasPendientes = 1;
-    const int recetasPendientes = 0;
-    const int reportesPendientes = 2;
-
     final modulos = [
       _ModuloAdmin(
         titulo: 'Productos',
-        subtitulo: 'Gestionar productos',
+        subtitulo: 'Gestionar catálogo',
         icono: Icons.inventory_2_rounded,
         pantalla: const AdminProductosScreen(),
-        notificaciones: productosNuevos,
+        notificaciones: _productosPendientes,
         color: const Color(0xFF7C4DFF),
       ),
       _ModuloAdmin(
@@ -49,7 +123,7 @@ class AdminHomeScreen extends StatelessWidget {
         subtitulo: 'Gestionar locales',
         icono: Icons.storefront_rounded,
         pantalla: const AdminRestaurantesScreen(),
-        notificaciones: restaurantesPendientes,
+        notificaciones: 0,
         color: const Color(0xFF00C853),
       ),
       _ModuloAdmin(
@@ -57,7 +131,7 @@ class AdminHomeScreen extends StatelessWidget {
         subtitulo: 'Revisar incidencias',
         icono: Icons.warning_amber_rounded,
         pantalla: const AdminAlertasScreen(),
-        notificaciones: alertasPendientes,
+        notificaciones: _alertasPendientes,
         color: const Color(0xFFFF5252),
       ),
       _ModuloAdmin(
@@ -65,7 +139,7 @@ class AdminHomeScreen extends StatelessWidget {
         subtitulo: 'Gestionar noticias',
         icono: Icons.newspaper_rounded,
         pantalla: const AdminNoticiasScreen(),
-        notificaciones: noticiasPendientes,
+        notificaciones: 0,
         color: const Color(0xFFFF9800),
       ),
       _ModuloAdmin(
@@ -73,7 +147,7 @@ class AdminHomeScreen extends StatelessWidget {
         subtitulo: 'Gestionar recetas',
         icono: Icons.menu_book_rounded,
         pantalla: const AdminRecetasScreen(),
-        notificaciones: recetasPendientes,
+        notificaciones: 0,
         color: const Color(0xFF009688),
       ),
       _ModuloAdmin(
@@ -81,7 +155,7 @@ class AdminHomeScreen extends StatelessWidget {
         subtitulo: 'Gestionar usuarios',
         icono: Icons.groups_rounded,
         pantalla: const AdminUsuariosScreen(),
-        notificaciones: usuariosPendientes,
+        notificaciones: 0,
         color: const Color(0xFF00B8D4),
       ),
       _ModuloAdmin(
@@ -89,7 +163,7 @@ class AdminHomeScreen extends StatelessWidget {
         subtitulo: 'Ver estadísticas',
         icono: Icons.analytics_rounded,
         pantalla: const AdminReportesScreen(),
-        notificaciones: reportesPendientes,
+        notificaciones: 0,
         color: const Color(0xFF3F51B5),
       ),
     ];
@@ -110,6 +184,16 @@ class AdminHomeScreen extends StatelessWidget {
           ),
         ),
         actions: [
+          // Actualizar manualmente
+          IconButton(
+            tooltip: 'Actualizar',
+            icon: const Icon(
+              Icons.refresh_rounded,
+              color: Color(0xFF555555),
+            ),
+            onPressed: _cargando ? null : _cargarPendientes,
+          ),
+
           IconButton(
             tooltip: 'Cerrar sesión',
             icon: const Icon(
@@ -129,282 +213,493 @@ class AdminHomeScreen extends StatelessWidget {
               }
             },
           ),
+
           const SizedBox(width: 4),
         ],
       ),
 
-      body: LayoutBuilder(
-        builder: (context, constraints) {
-          final double maxWidth =
-              constraints.maxWidth > 900 ? 900 : constraints.maxWidth;
+      body: RefreshIndicator(
+        onRefresh: _cargarPendientes,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final double contentWidth =
+                constraints.maxWidth > 900
+                    ? 900
+                    : constraints.maxWidth;
 
-          return Center(
-            child: SizedBox(
-              width: maxWidth,
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(
-                  14,
-                  14,
-                  14,
-                  30,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // =====================================================
-                    // CABECERA
-                    // =====================================================
+            return SingleChildScrollView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: Center(
+                child: SizedBox(
+                  width: contentWidth,
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(
+                      14,
+                      14,
+                      14,
+                      30,
+                    ),
+                    child: Column(
+                      crossAxisAlignment:
+                          CrossAxisAlignment.start,
+                      children: [
+                        // =============================================
+                        // CABECERA
+                        // =============================================
 
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 17,
-                        vertical: 14,
-                      ),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            AppColors.primary,
-                            AppColors.primary.withOpacity(.76),
-                          ],
-                        ),
-                        borderRadius: BorderRadius.circular(22),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.primary.withOpacity(.16),
-                            blurRadius: 15,
-                            offset: const Offset(0, 6),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 17,
+                            vertical: 14,
                           ),
-                        ],
-                      ),
-                      child: Row(
-                        children: [
-                          Container(
-                            width: 46,
-                            height: 46,
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(.18),
-                              borderRadius: BorderRadius.circular(14),
-                            ),
-                            child: const Icon(
-                              Icons.admin_panel_settings_rounded,
-                              color: Colors.white,
-                              size: 27,
-                            ),
-                          ),
-                          const SizedBox(width: 13),
-
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Hola, ${usuario?.nombre ?? 'Administrador'} 👋',
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                                const SizedBox(height: 3),
-                                Text(
-                                  usuario?.email ?? '',
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: TextStyle(
-                                    color: Colors.white.withOpacity(.85),
-                                    fontSize: 12,
-                                  ),
-                                ),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                AppColors.primary,
+                                AppColors.primary.withOpacity(.76),
                               ],
                             ),
+                            borderRadius: BorderRadius.circular(22),
+                            boxShadow: [
+                              BoxShadow(
+                                color:
+                                    AppColors.primary.withOpacity(.16),
+                                blurRadius: 15,
+                                offset: const Offset(0, 6),
+                              ),
+                            ],
                           ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 22),
-
-                    // =====================================================
-                    // PENDIENTES
-                    // =====================================================
-
-                    const Text(
-                      'Pendientes',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-
-                    const SizedBox(height: 5),
-
-                    const Text(
-                      'Elementos que necesitan revisión o aprobación.',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Color(0xFF777777),
-                      ),
-                    ),
-
-                    const SizedBox(height: 12),
-
-                    GridView.count(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      crossAxisCount:
-                          constraints.maxWidth < 360 ? 1 : 2,
-                      mainAxisSpacing: 10,
-                      crossAxisSpacing: 10,
-
-                      // Cards mucho más bajas que antes
-                      childAspectRatio:
-                          constraints.maxWidth < 360 ? 4.2 : 2.7,
-
-                      children: [
-                        _PendingCard(
-                          titulo: 'Productos nuevos',
-                          valor: productosNuevos,
-                          icono: Icons.inventory_2_rounded,
-                          color: const Color(0xFF7C4DFF),
-                          onTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) =>
-                                    const AdminProductosScreen(),
+                          child: Row(
+                            children: [
+                              Container(
+                                width: 44,
+                                height: 44,
+                                decoration: BoxDecoration(
+                                  color:
+                                      Colors.white.withOpacity(.18),
+                                  borderRadius:
+                                      BorderRadius.circular(13),
+                                ),
+                                child: const Icon(
+                                  Icons
+                                      .admin_panel_settings_rounded,
+                                  color: Colors.white,
+                                  size: 26,
+                                ),
                               ),
-                            );
-                          },
+
+                              const SizedBox(width: 12),
+
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      'Hola, ${usuario?.nombre ?? 'Administrador'} 👋',
+                                      maxLines: 1,
+                                      overflow:
+                                          TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 17,
+                                        fontWeight:
+                                            FontWeight.w700,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 3),
+                                    Text(
+                                      usuario?.email ?? '',
+                                      maxLines: 1,
+                                      overflow:
+                                          TextOverflow.ellipsis,
+                                      style: TextStyle(
+                                        color: Colors.white
+                                            .withOpacity(.85),
+                                        fontSize: 11,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
 
-                        _PendingCard(
-                          titulo: 'Restaurantes',
-                          valor: restaurantesPendientes,
-                          icono: Icons.storefront_rounded,
-                          color: const Color(0xFF00C853),
-                          onTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) =>
-                                    const AdminRestaurantesScreen(),
+                        const SizedBox(height: 22),
+
+                        // =============================================
+                        // PENDIENTES
+                        // =============================================
+
+                        Row(
+                          children: [
+                            const Expanded(
+                              child: Text(
+                                'Pendientes',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
-                            );
-                          },
-                        ),
-
-                        _PendingCard(
-                          titulo: 'Alertas',
-                          valor: alertasPendientes,
-                          icono: Icons.warning_amber_rounded,
-                          color: const Color(0xFFFF5252),
-                          onTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) =>
-                                    const AdminAlertasScreen(),
-                              ),
-                            );
-                          },
-                        ),
-
-                        _PendingCard(
-                          titulo: 'Usuarios',
-                          valor: usuariosPendientes,
-                          icono: Icons.person_search_rounded,
-                          color: const Color(0xFF00B8D4),
-                          onTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) =>
-                                    const AdminUsuariosScreen(),
-                              ),
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 22),
-
-                    // =====================================================
-                    // ACTIVIDAD
-                    // =====================================================
-
-                    const _ActividadCard(),
-
-                    const SizedBox(height: 24),
-
-                    // =====================================================
-                    // ADMINISTRACIÓN
-                    // =====================================================
-
-                    Row(
-                      children: [
-                        const Expanded(
-                          child: Text(
-                            'Administración',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w700,
                             ),
-                          ),
-                        ),
-                        Text(
-                          '${modulos.length} módulos',
-                          style: const TextStyle(
-                            fontSize: 11,
-                            color: Colors.grey,
-                          ),
-                        ),
-                      ],
-                    ),
 
-                    const SizedBox(height: 12),
-
-                    GridView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: modulos.length,
-                      gridDelegate:
-                          SliverGridDelegateWithFixedCrossAxisCount(
-                        crossAxisCount:
-                            constraints.maxWidth < 360 ? 1 : 2,
-                        crossAxisSpacing: 10,
-                        mainAxisSpacing: 10,
-                        childAspectRatio:
-                            constraints.maxWidth < 360 ? 3.4 : 1.75,
-                      ),
-                      itemBuilder: (context, index) {
-                        final modulo = modulos[index];
-
-                        return _ModuloCard(
-                          modulo: modulo,
-                          onTap: () {
-                            Navigator.of(context).push(
-                              MaterialPageRoute(
-                                builder: (_) => modulo.pantalla,
+                            if (!_cargando &&
+                                _totalPendientes > 0)
+                              Container(
+                                padding:
+                                    const EdgeInsets.symmetric(
+                                  horizontal: 9,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFFEBEE),
+                                  borderRadius:
+                                      BorderRadius.circular(20),
+                                ),
+                                child: Text(
+                                  '$_totalPendientes pendientes',
+                                  style: const TextStyle(
+                                    color: Color(0xFFD32F2F),
+                                    fontSize: 10,
+                                    fontWeight:
+                                        FontWeight.w700,
+                                  ),
+                                ),
                               ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 5),
+
+                        const Text(
+                          'Elementos que necesitan tu revisión.',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Color(0xFF777777),
+                          ),
+                        ),
+
+                        const SizedBox(height: 12),
+
+                        if (_cargando)
+
+                          // =========================================
+                          // CARGANDO
+                          // =========================================
+
+                          const _CargandoPendientes()
+
+                        else if (_error)
+
+                          // =========================================
+                          // ERROR
+                          // =========================================
+
+                          _ErrorPendientes(
+                            onReintentar: _cargarPendientes,
+                          )
+
+                        else if (_totalPendientes == 0)
+
+                          // =========================================
+                          // TODO AL DÍA
+                          // =========================================
+
+                          const _TodoAlDiaCard()
+
+                        else
+
+                          // =========================================
+                          // PENDIENTES REALES
+                          // =========================================
+
+                          _buildPendientesGrid(
+                            constraints,
+                          ),
+
+                        const SizedBox(height: 24),
+
+                        // =============================================
+                        // ADMINISTRACIÓN
+                        // =============================================
+
+                        Row(
+                          children: [
+                            const Expanded(
+                              child: Text(
+                                'Administración',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                            Text(
+                              '${modulos.length} módulos',
+                              style: const TextStyle(
+                                fontSize: 10,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ],
+                        ),
+
+                        const SizedBox(height: 12),
+
+                        GridView.builder(
+                          shrinkWrap: true,
+                          physics:
+                              const NeverScrollableScrollPhysics(),
+                          itemCount: modulos.length,
+                          gridDelegate:
+                              SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount:
+                                constraints.maxWidth < 360
+                                    ? 1
+                                    : 2,
+                            crossAxisSpacing: 10,
+                            mainAxisSpacing: 10,
+                            childAspectRatio:
+                                constraints.maxWidth < 360
+                                    ? 3.5
+                                    : 2.15,
+                          ),
+                          itemBuilder: (context, index) {
+                            final modulo = modulos[index];
+
+                            return _ModuloCard(
+                              modulo: modulo,
+                              onTap: () {
+                                _abrirPantalla(
+                                  modulo.pantalla,
+                                );
+                              },
                             );
                           },
-                        );
-                      },
+                        ),
+
+                        const SizedBox(height: 24),
+
+                        // =============================================
+                        // ACTIVIDAD
+                        // =============================================
+
+                        const _ActividadCard(),
+                      ],
                     ),
-                  ],
+                  ),
                 ),
               ),
+            );
+          },
+        ),
+      ),
+    );
+  }
+
+  // =============================================================
+  // GRID DE PENDIENTES
+  // Solo aparecen tarjetas que realmente tienen elementos.
+  // =============================================================
+
+  Widget _buildPendientesGrid(
+    BoxConstraints constraints,
+  ) {
+    final tarjetas = <Widget>[];
+
+    if (_productosPendientes > 0) {
+      tarjetas.add(
+        _PendingCard(
+          titulo: 'Productos por revisar',
+          valor: _productosPendientes,
+          icono: Icons.inventory_2_rounded,
+          color: const Color(0xFF7C4DFF),
+          onTap: () {
+            _abrirPantalla(
+              const AdminProductosScreen(),
+            );
+          },
+        ),
+      );
+    }
+
+    if (_alertasPendientes > 0) {
+      tarjetas.add(
+        _PendingCard(
+          titulo: 'Alertas por revisar',
+          valor: _alertasPendientes,
+          icono: Icons.warning_amber_rounded,
+          color: const Color(0xFFFF5252),
+          onTap: () {
+            _abrirPantalla(
+              const AdminAlertasScreen(),
+            );
+          },
+        ),
+      );
+    }
+
+    return GridView.count(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      crossAxisCount:
+          constraints.maxWidth < 360 ? 1 : 2,
+      mainAxisSpacing: 10,
+      crossAxisSpacing: 10,
+      childAspectRatio:
+          constraints.maxWidth < 360 ? 4.5 : 3.0,
+      children: tarjetas,
+    );
+  }
+}
+
+// =============================================================
+// TODO AL DÍA
+// =============================================================
+
+class _TodoAlDiaCard extends StatelessWidget {
+  const _TodoAlDiaCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(
+        horizontal: 15,
+        vertical: 13,
+      ),
+      decoration: BoxDecoration(
+        color: const Color(0xFFEAF7EE),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: const Color(0xFF4CAF50)
+              .withOpacity(.15),
+        ),
+      ),
+      child: const Row(
+        children: [
+          Icon(
+            Icons.check_circle_rounded,
+            color: Color(0xFF2E7D32),
+            size: 28,
+          ),
+
+          SizedBox(width: 11),
+
+          Expanded(
+            child: Column(
+              crossAxisAlignment:
+                  CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Todo al día',
+                  style: TextStyle(
+                    color: Color(0xFF2E7D32),
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                  ),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  'No hay elementos pendientes de revisión.',
+                  style: TextStyle(
+                    fontSize: 10.5,
+                    color: Color(0xFF558B2F),
+                  ),
+                ),
+              ],
             ),
-          );
-        },
+          ),
+        ],
       ),
     );
   }
 }
 
-// =====================================================
-// TARJETA DE PENDIENTES
-// =====================================================
+// =============================================================
+// CARGANDO
+// =============================================================
+
+class _CargandoPendientes extends StatelessWidget {
+  const _CargandoPendientes();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 65,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: const Center(
+        child: SizedBox(
+          width: 22,
+          height: 22,
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+// =============================================================
+// ERROR DE CARGA
+// =============================================================
+
+class _ErrorPendientes extends StatelessWidget {
+  final VoidCallback onReintentar;
+
+  const _ErrorPendientes({
+    required this.onReintentar,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(13),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF3E0),
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.cloud_off_rounded,
+            color: Color(0xFFF57C00),
+          ),
+
+          const SizedBox(width: 10),
+
+          const Expanded(
+            child: Text(
+              'No se pudieron consultar los pendientes.',
+              style: TextStyle(
+                fontSize: 11,
+              ),
+            ),
+          ),
+
+          TextButton(
+            onPressed: onReintentar,
+            child: const Text(
+              'Reintentar',
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// =============================================================
+// TARJETA DE PENDIENTE
+// =============================================================
 
 class _PendingCard extends StatelessWidget {
   final String titulo;
@@ -423,8 +718,6 @@ class _PendingCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final bool tienePendientes = valor > 0;
-
     return Material(
       color: Colors.white,
       borderRadius: BorderRadius.circular(16),
@@ -434,36 +727,28 @@ class _PendingCard extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.symmetric(
             horizontal: 12,
-            vertical: 10,
+            vertical: 9,
           ),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: tienePendientes
-                  ? color.withOpacity(.15)
-                  : const Color(0xFFEEEEEE),
+              color: color.withOpacity(.14),
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(.025),
-                blurRadius: 8,
-                offset: const Offset(0, 3),
-              ),
-            ],
           ),
           child: Row(
             children: [
               Container(
-                width: 40,
-                height: 40,
+                width: 39,
+                height: 39,
                 decoration: BoxDecoration(
-                  color: color.withOpacity(.11),
-                  borderRadius: BorderRadius.circular(12),
+                  color: color.withOpacity(.10),
+                  borderRadius:
+                      BorderRadius.circular(11),
                 ),
                 child: Icon(
                   icono,
                   color: color,
-                  size: 22,
+                  size: 21,
                 ),
               ),
 
@@ -471,45 +756,25 @@ class _PendingCard extends StatelessWidget {
 
               Expanded(
                 child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment:
+                      MainAxisAlignment.center,
+                  crossAxisAlignment:
+                      CrossAxisAlignment.start,
                   children: [
-                    Row(
-                      children: [
-                        Text(
-                          valor.toString(),
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w800,
-                            color: tienePendientes
-                                ? const Color(0xFF222222)
-                                : Colors.grey,
-                          ),
-                        ),
-
-                        if (tienePendientes) ...[
-                          const SizedBox(width: 5),
-
-                          Container(
-                            width: 7,
-                            height: 7,
-                            decoration: BoxDecoration(
-                              color: color,
-                              shape: BoxShape.circle,
-                            ),
-                          ),
-                        ],
-                      ],
+                    Text(
+                      valor.toString(),
+                      style: const TextStyle(
+                        fontSize: 19,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
-
-                    const SizedBox(height: 1),
-
                     Text(
                       titulo,
                       maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
+                      overflow:
+                          TextOverflow.ellipsis,
                       style: const TextStyle(
-                        fontSize: 10.5,
+                        fontSize: 10,
                         color: Color(0xFF777777),
                       ),
                     ),
@@ -519,8 +784,8 @@ class _PendingCard extends StatelessWidget {
 
               Icon(
                 Icons.chevron_right_rounded,
-                size: 20,
                 color: Colors.grey.shade400,
+                size: 19,
               ),
             ],
           ),
@@ -530,170 +795,9 @@ class _PendingCard extends StatelessWidget {
   }
 }
 
-// =====================================================
-// ACTIVIDAD DEL SISTEMA
-// =====================================================
-
-class _ActividadCard extends StatelessWidget {
-  const _ActividadCard();
-
-  @override
-  Widget build(BuildContext context) {
-    // Ejemplo temporal.
-    // Después estos valores pueden venir del backend.
-    final valores = <double>[
-      .32,
-      .55,
-      .41,
-      .68,
-      .51,
-      .82,
-      .64,
-    ];
-
-    final dias = [
-      'L',
-      'M',
-      'M',
-      'J',
-      'V',
-      'S',
-      'D',
-    ];
-
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(
-        16,
-        15,
-        16,
-        14,
-      ),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 38,
-                height: 38,
-                decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(.1),
-                  borderRadius: BorderRadius.circular(11),
-                ),
-                child: const Icon(
-                  Icons.insights_rounded,
-                  color: AppColors.primary,
-                  size: 21,
-                ),
-              ),
-
-              const SizedBox(width: 10),
-
-              const Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Actividad semanal',
-                      style: TextStyle(
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    SizedBox(height: 2),
-                    Text(
-                      'Movimientos recientes en SafeBite',
-                      style: TextStyle(
-                        fontSize: 10.5,
-                        color: Colors.grey,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-
-          const SizedBox(height: 15),
-
-          SizedBox(
-            height: 105,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: List.generate(
-                valores.length,
-                (index) {
-                  return Expanded(
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 4,
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          Expanded(
-                            child: Align(
-                              alignment: Alignment.bottomCenter,
-                              child: FractionallySizedBox(
-                                heightFactor: valores[index],
-                                child: Container(
-                                  decoration: BoxDecoration(
-                                    gradient: LinearGradient(
-                                      begin: Alignment.topCenter,
-                                      end: Alignment.bottomCenter,
-                                      colors: [
-                                        AppColors.primary,
-                                        AppColors.primary.withOpacity(.42),
-                                      ],
-                                    ),
-                                    borderRadius:
-                                        const BorderRadius.vertical(
-                                      top: Radius.circular(7),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-
-                          const SizedBox(height: 6),
-
-                          Text(
-                            dias[index],
-                            style: const TextStyle(
-                              fontSize: 9.5,
-                              color: Colors.grey,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// =====================================================
-// TARJETA DE MÓDULO
-// =====================================================
+// =============================================================
+// TARJETA DEL MÓDULO
+// =============================================================
 
 class _ModuloCard extends StatelessWidget {
   final _ModuloAdmin modulo;
@@ -708,18 +812,18 @@ class _ModuloCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: Colors.white,
-      borderRadius: BorderRadius.circular(17),
+      borderRadius: BorderRadius.circular(16),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(17),
+        borderRadius: BorderRadius.circular(16),
         child: Container(
-          padding: const EdgeInsets.all(13),
+          padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(17),
+            borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(.025),
-                blurRadius: 8,
+                color: Colors.black.withOpacity(.02),
+                blurRadius: 7,
                 offset: const Offset(0, 3),
               ),
             ],
@@ -729,81 +833,87 @@ class _ModuloCard extends StatelessWidget {
               Row(
                 children: [
                   Container(
-                    width: 43,
-                    height: 43,
+                    width: 41,
+                    height: 41,
                     decoration: BoxDecoration(
-                      color: modulo.color.withOpacity(.1),
-                      borderRadius: BorderRadius.circular(13),
+                      color:
+                          modulo.color.withOpacity(.10),
+                      borderRadius:
+                          BorderRadius.circular(12),
                     ),
                     child: Icon(
                       modulo.icono,
                       color: modulo.color,
-                      size: 23,
+                      size: 22,
                     ),
                   ),
 
-                  const SizedBox(width: 11),
+                  const SizedBox(width: 10),
 
                   Expanded(
                     child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment:
+                          MainAxisAlignment.center,
+                      crossAxisAlignment:
+                          CrossAxisAlignment.start,
                       children: [
                         Text(
                           modulo.titulo,
                           maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                          overflow:
+                              TextOverflow.ellipsis,
                           style: const TextStyle(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 13,
+                            fontWeight:
+                                FontWeight.w700,
+                            fontSize: 12.5,
                           ),
                         ),
-
-                        const SizedBox(height: 3),
-
+                        const SizedBox(height: 2),
                         Text(
                           modulo.subtitulo,
                           maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                          overflow:
+                              TextOverflow.ellipsis,
                           style: const TextStyle(
                             color: Colors.grey,
-                            fontSize: 10,
+                            fontSize: 9.5,
                           ),
                         ),
                       ],
                     ),
                   ),
 
-                  const SizedBox(width: 5),
+                  const SizedBox(width: 7),
 
                   const Icon(
                     Icons.chevron_right_rounded,
-                    size: 20,
                     color: Color(0xFFBDBDBD),
+                    size: 19,
                   ),
                 ],
               ),
 
-              // =================================================
-              // BADGE
-              // Solo aparece cuando hay pendientes.
-              // =================================================
+              // Badge SOLO si realmente hay pendientes
               if (modulo.notificaciones > 0)
                 Positioned(
                   top: 0,
-                  right: 1,
+                  right: 0,
                   child: Container(
-                    constraints: const BoxConstraints(
+                    constraints:
+                        const BoxConstraints(
                       minWidth: 20,
                       minHeight: 20,
                     ),
-                    padding: const EdgeInsets.symmetric(
+                    padding:
+                        const EdgeInsets.symmetric(
                       horizontal: 5,
                     ),
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFF4545),
-                      borderRadius: BorderRadius.circular(20),
+                      color:
+                          const Color(0xFFFF4545),
+                      borderRadius:
+                          BorderRadius.circular(20),
                       border: Border.all(
                         color: Colors.white,
                         width: 2,
@@ -812,11 +922,13 @@ class _ModuloCard extends StatelessWidget {
                     child: Text(
                       modulo.notificaciones > 99
                           ? '99+'
-                          : modulo.notificaciones.toString(),
+                          : modulo.notificaciones
+                              .toString(),
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 9,
-                        fontWeight: FontWeight.w800,
+                        fontWeight:
+                            FontWeight.w800,
                       ),
                     ),
                   ),
@@ -829,9 +941,74 @@ class _ModuloCard extends StatelessWidget {
   }
 }
 
-// =====================================================
-// MODELO DE MÓDULO
-// =====================================================
+// =============================================================
+// ACTIVIDAD
+// =============================================================
+
+class _ActividadCard extends StatelessWidget {
+  const _ActividadCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(15),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(17),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 39,
+            height: 39,
+            decoration: BoxDecoration(
+              color:
+                  AppColors.primary.withOpacity(.10),
+              borderRadius:
+                  BorderRadius.circular(11),
+            ),
+            child: const Icon(
+              Icons.analytics_rounded,
+              color: AppColors.primary,
+              size: 21,
+            ),
+          ),
+
+          const SizedBox(width: 11),
+
+          const Expanded(
+            child: Column(
+              crossAxisAlignment:
+                  CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Reportes y estadísticas',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13,
+                  ),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  'Consulta la información general de SafeBite.',
+                  style: TextStyle(
+                    fontSize: 10,
+                    color: Colors.grey,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// =============================================================
+// MODELO
+// =============================================================
 
 class _ModuloAdmin {
   final String titulo;
