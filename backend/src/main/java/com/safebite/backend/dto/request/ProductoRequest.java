@@ -16,11 +16,5 @@ public class ProductoRequest {
     private String imagenUrl;
     private List<String> ingredientes;
     private Set<TipoIntolerancia> alergenos;
-
-    /**
-     * Opcional: cuando el admin edita/aprueba un producto pendiente, manda
-     * este campo en true para marcarlo como verificado. Si viene null, el
-     * estado de verificacion actual no se toca.
-     */
     private Boolean verificado;
 }
