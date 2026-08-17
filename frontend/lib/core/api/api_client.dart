@@ -1,26 +1,13 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
 
+import '../services/session_storage.dart';
 import 'api_config.dart';
 import 'api_exception.dart';
 
 class ApiClient {
-  static const _tokenKey = 'jwt_token';
-
   Future<String?> _getToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_tokenKey);
-  }
-
-  static Future<void> saveToken(String token) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_tokenKey, token);
-  }
-
-  static Future<void> clearToken() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_tokenKey);
+    return SessionStorage.getToken();
   }
 
   Future<Map<String, String>> _headers({bool withAuth = true}) async {
@@ -91,7 +78,6 @@ class ApiClient {
     return _handleResponse(response);
   }
 
-  /// Para descargar archivos binarios (ej: PDF de reportes).
   Future<List<int>> getBytes(String path, {bool withAuth = true}) async {
     final response = await http.get(
       _buildUri(path, null),
