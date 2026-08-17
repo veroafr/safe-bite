@@ -1,5 +1,5 @@
 [build]
-  command = "git clone https://github.com/flutter/flutter.git -b stable --depth 1 _flutter_sdk && export PATH=\"$PWD/_flutter_sdk/bin:$PATH\" && flutter config --enable-web && flutter pub get && flutter build web --release --dart-define=SAFEBITE_API_URL=https://safe-bite-bocd.onrender.com/api"
+  command = "rm -rf _flutter_sdk && git clone https://github.com/flutter/flutter.git -b stable --depth 1 _flutter_sdk && export PATH=\"$PWD/_flutter_sdk/bin:$PATH\" && flutter config --enable-web && flutter pub get && flutter build web --release --dart-define=SAFEBITE_API_URL=https://safebite-backend-knno.onrender.com/api"
   publish = "build/web"
 
 [[redirects]]
