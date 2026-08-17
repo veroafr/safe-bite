@@ -23,11 +23,6 @@ public class AdminProductoController {
         return ResponseEntity.ok(productoService.listarTodos());
     }
 
-    /**
-     * Productos aportados por usuarios (origen = USUARIO) que todavia no
-     * fueron revisados. El admin los aprueba editando con verificado=true
-     * (PUT /{id}), o los descarta eliminandolos (DELETE /{id}).
-     */
     @GetMapping("/pendientes")
     public ResponseEntity<List<ProductoResponse>> listarPendientes() {
         return ResponseEntity.ok(productoService.listarPendientes());
