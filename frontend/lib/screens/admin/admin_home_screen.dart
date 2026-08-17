@@ -20,70 +20,88 @@ class AdminHomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final usuario = context.watch<AuthProvider>().usuario;
 
-    // Luego estos números pueden venir del backend.
-    const int totalProductos = 126;
-    const int totalUsuarios = 84;
-    const int totalRestaurantes = 18;
-    const int totalAlertas = 7;
+    // =====================================================
+    // DATOS TEMPORALES
+    // Estos números representan PENDIENTES / NUEVOS.
+    // Después deben venir desde tu backend.
+    // =====================================================
+
+    const int productosNuevos = 3;
+    const int restaurantesPendientes = 2;
+    const int alertasPendientes = 5;
+    const int usuariosPendientes = 1;
+
+    const int noticiasPendientes = 1;
+    const int recetasPendientes = 0;
+    const int reportesPendientes = 2;
 
     final modulos = [
       _ModuloAdmin(
         titulo: 'Productos',
-        subtitulo: 'Administrar catálogo',
+        subtitulo: 'Gestionar productos',
         icono: Icons.inventory_2_rounded,
         pantalla: const AdminProductosScreen(),
-        notificaciones: 5,
+        notificaciones: productosNuevos,
+        color: const Color(0xFF7C4DFF),
       ),
       _ModuloAdmin(
         titulo: 'Restaurantes',
-        subtitulo: 'Locales registrados',
+        subtitulo: 'Gestionar locales',
         icono: Icons.storefront_rounded,
         pantalla: const AdminRestaurantesScreen(),
-        notificaciones: 2,
+        notificaciones: restaurantesPendientes,
+        color: const Color(0xFF00C853),
       ),
       _ModuloAdmin(
         titulo: 'Alertas',
         subtitulo: 'Revisar incidencias',
         icono: Icons.warning_amber_rounded,
         pantalla: const AdminAlertasScreen(),
-        notificaciones: 7,
+        notificaciones: alertasPendientes,
+        color: const Color(0xFFFF5252),
       ),
       _ModuloAdmin(
         titulo: 'Noticias',
-        subtitulo: 'Publicaciones',
+        subtitulo: 'Gestionar noticias',
         icono: Icons.newspaper_rounded,
         pantalla: const AdminNoticiasScreen(),
-        notificaciones: 1,
+        notificaciones: noticiasPendientes,
+        color: const Color(0xFFFF9800),
       ),
       _ModuloAdmin(
         titulo: 'Recetas',
-        subtitulo: 'Contenido gastronómico',
+        subtitulo: 'Gestionar recetas',
         icono: Icons.menu_book_rounded,
         pantalla: const AdminRecetasScreen(),
-        notificaciones: 0,
+        notificaciones: recetasPendientes,
+        color: const Color(0xFF009688),
       ),
       _ModuloAdmin(
         titulo: 'Usuarios',
-        subtitulo: 'Gestionar cuentas',
+        subtitulo: 'Gestionar usuarios',
         icono: Icons.groups_rounded,
         pantalla: const AdminUsuariosScreen(),
-        notificaciones: 3,
+        notificaciones: usuariosPendientes,
+        color: const Color(0xFF00B8D4),
       ),
       _ModuloAdmin(
         titulo: 'Reportes',
-        subtitulo: 'Estadísticas del sistema',
+        subtitulo: 'Ver estadísticas',
         icono: Icons.analytics_rounded,
         pantalla: const AdminReportesScreen(),
-        notificaciones: 2,
+        notificaciones: reportesPendientes,
+        color: const Color(0xFF3F51B5),
       ),
     ];
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FB),
+      backgroundColor: const Color(0xFFF4F6F8),
+
       appBar: AppBar(
-        elevation: 0,
         backgroundColor: Colors.white,
+        elevation: 0,
         surfaceTintColor: Colors.white,
+        centerTitle: true,
         title: const Text(
           'SafeBite Admin',
           style: TextStyle(
@@ -96,7 +114,7 @@ class AdminHomeScreen extends StatelessWidget {
             tooltip: 'Cerrar sesión',
             icon: const Icon(
               Icons.logout_rounded,
-              color: Color(0xFF616161),
+              color: Color(0xFF555555),
             ),
             onPressed: () async {
               await context.read<AuthProvider>().logout();
@@ -111,295 +129,426 @@ class AdminHomeScreen extends StatelessWidget {
               }
             },
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 4),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(18),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // =========================
-            // CABECERA
-            // =========================
 
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(22),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    AppColors.primary,
-                    AppColors.primary.withOpacity(.75),
-                  ],
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          final double maxWidth =
+              constraints.maxWidth > 900 ? 900 : constraints.maxWidth;
+
+          return Center(
+            child: SizedBox(
+              width: maxWidth,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.fromLTRB(
+                  14,
+                  14,
+                  14,
+                  30,
                 ),
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primary.withOpacity(.18),
-                    blurRadius: 20,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: 58,
-                    height: 58,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(.18),
-                      borderRadius: BorderRadius.circular(18),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // =====================================================
+                    // CABECERA
+                    // =====================================================
+
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 17,
+                        vertical: 14,
+                      ),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            AppColors.primary,
+                            AppColors.primary.withOpacity(.76),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(22),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.primary.withOpacity(.16),
+                            blurRadius: 15,
+                            offset: const Offset(0, 6),
+                          ),
+                        ],
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 46,
+                            height: 46,
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(.18),
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: const Icon(
+                              Icons.admin_panel_settings_rounded,
+                              color: Colors.white,
+                              size: 27,
+                            ),
+                          ),
+                          const SizedBox(width: 13),
+
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Hola, ${usuario?.nombre ?? 'Administrador'} 👋',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  usuario?.email ?? '',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(.85),
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    child: const Icon(
-                      Icons.admin_panel_settings_rounded,
-                      color: Colors.white,
-                      size: 32,
+
+                    const SizedBox(height: 22),
+
+                    // =====================================================
+                    // PENDIENTES
+                    // =====================================================
+
+                    const Text(
+                      'Pendientes',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+
+                    const SizedBox(height: 5),
+
+                    const Text(
+                      'Elementos que necesitan revisión o aprobación.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFF777777),
+                      ),
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    GridView.count(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      crossAxisCount:
+                          constraints.maxWidth < 360 ? 1 : 2,
+                      mainAxisSpacing: 10,
+                      crossAxisSpacing: 10,
+
+                      // Cards mucho más bajas que antes
+                      childAspectRatio:
+                          constraints.maxWidth < 360 ? 4.2 : 2.7,
+
                       children: [
-                        Text(
-                          'Hola, ${usuario?.nombre ?? 'Administrador'} 👋',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 21,
-                            fontWeight: FontWeight.bold,
+                        _PendingCard(
+                          titulo: 'Productos nuevos',
+                          valor: productosNuevos,
+                          icono: Icons.inventory_2_rounded,
+                          color: const Color(0xFF7C4DFF),
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    const AdminProductosScreen(),
+                              ),
+                            );
+                          },
+                        ),
+
+                        _PendingCard(
+                          titulo: 'Restaurantes',
+                          valor: restaurantesPendientes,
+                          icono: Icons.storefront_rounded,
+                          color: const Color(0xFF00C853),
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    const AdminRestaurantesScreen(),
+                              ),
+                            );
+                          },
+                        ),
+
+                        _PendingCard(
+                          titulo: 'Alertas',
+                          valor: alertasPendientes,
+                          icono: Icons.warning_amber_rounded,
+                          color: const Color(0xFFFF5252),
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    const AdminAlertasScreen(),
+                              ),
+                            );
+                          },
+                        ),
+
+                        _PendingCard(
+                          titulo: 'Usuarios',
+                          valor: usuariosPendientes,
+                          icono: Icons.person_search_rounded,
+                          color: const Color(0xFF00B8D4),
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    const AdminUsuariosScreen(),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 22),
+
+                    // =====================================================
+                    // ACTIVIDAD
+                    // =====================================================
+
+                    const _ActividadCard(),
+
+                    const SizedBox(height: 24),
+
+                    // =====================================================
+                    // ADMINISTRACIÓN
+                    // =====================================================
+
+                    Row(
+                      children: [
+                        const Expanded(
+                          child: Text(
+                            'Administración',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
                         ),
-                        const SizedBox(height: 5),
                         Text(
-                          usuario?.email ?? '',
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(.82),
-                            fontSize: 13,
+                          '${modulos.length} módulos',
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey,
                           ),
                         ),
                       ],
                     ),
-                  ),
-                ],
-              ),
-            ),
 
-            const SizedBox(height: 26),
+                    const SizedBox(height: 12),
 
-            const Text(
-              'Resumen general',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-
-            const SizedBox(height: 14),
-
-            // =========================
-            // TARJETAS KPI
-            // =========================
-
-            GridView.count(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              crossAxisCount: 2,
-              mainAxisSpacing: 14,
-              crossAxisSpacing: 14,
-              childAspectRatio: 1.45,
-              children: const [
-                _StatCard(
-                  titulo: 'Productos',
-                  valor: '$totalProductos',
-                  icono: Icons.inventory_2_rounded,
-                  color: Color(0xFF7C4DFF),
-                ),
-                _StatCard(
-                  titulo: 'Usuarios',
-                  valor: '$totalUsuarios',
-                  icono: Icons.people_alt_rounded,
-                  color: Color(0xFF00B8D4),
-                ),
-                _StatCard(
-                  titulo: 'Restaurantes',
-                  valor: '$totalRestaurantes',
-                  icono: Icons.storefront_rounded,
-                  color: Color(0xFF00C853),
-                ),
-                _StatCard(
-                  titulo: 'Alertas',
-                  valor: '$totalAlertas',
-                  icono: Icons.warning_amber_rounded,
-                  color: Color(0xFFFF5252),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 26),
-
-            // =========================
-            // GRÁFICO
-            // =========================
-
-            const _ActividadCard(),
-
-            const SizedBox(height: 28),
-
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Administración',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                Text(
-                  '${modulos.length} módulos',
-                  style: const TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey,
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 14),
-
-            // =========================
-            // MÓDULOS
-            // =========================
-
-            GridView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: modulos.length,
-              gridDelegate:
-                  const SliverGridDelegateWithFixedCrossAxisCount(
-                crossAxisCount: 2,
-                crossAxisSpacing: 14,
-                mainAxisSpacing: 14,
-                childAspectRatio: .95,
-              ),
-              itemBuilder: (context, index) {
-                final modulo = modulos[index];
-
-                return _ModuloCard(
-                  modulo: modulo,
-                  onTap: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => modulo.pantalla,
+                    GridView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      itemCount: modulos.length,
+                      gridDelegate:
+                          SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount:
+                            constraints.maxWidth < 360 ? 1 : 2,
+                        crossAxisSpacing: 10,
+                        mainAxisSpacing: 10,
+                        childAspectRatio:
+                            constraints.maxWidth < 360 ? 3.4 : 1.75,
                       ),
-                    );
-                  },
-                );
-              },
-            ),
+                      itemBuilder: (context, index) {
+                        final modulo = modulos[index];
 
-            const SizedBox(height: 30),
-          ],
+                        return _ModuloCard(
+                          modulo: modulo,
+                          onTap: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => modulo.pantalla,
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+// =====================================================
+// TARJETA DE PENDIENTES
+// =====================================================
+
+class _PendingCard extends StatelessWidget {
+  final String titulo;
+  final int valor;
+  final IconData icono;
+  final Color color;
+  final VoidCallback onTap;
+
+  const _PendingCard({
+    required this.titulo,
+    required this.valor,
+    required this.icono,
+    required this.color,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final bool tienePendientes = valor > 0;
+
+    return Material(
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(16),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          padding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 10,
+          ),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: tienePendientes
+                  ? color.withOpacity(.15)
+                  : const Color(0xFFEEEEEE),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(.025),
+                blurRadius: 8,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: color.withOpacity(.11),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(
+                  icono,
+                  color: color,
+                  size: 22,
+                ),
+              ),
+
+              const SizedBox(width: 10),
+
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Text(
+                          valor.toString(),
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w800,
+                            color: tienePendientes
+                                ? const Color(0xFF222222)
+                                : Colors.grey,
+                          ),
+                        ),
+
+                        if (tienePendientes) ...[
+                          const SizedBox(width: 5),
+
+                          Container(
+                            width: 7,
+                            height: 7,
+                            decoration: BoxDecoration(
+                              color: color,
+                              shape: BoxShape.circle,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
+
+                    const SizedBox(height: 1),
+
+                    Text(
+                      titulo,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 10.5,
+                        color: Color(0xFF777777),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              Icon(
+                Icons.chevron_right_rounded,
+                size: 20,
+                color: Colors.grey.shade400,
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 }
 
-// ======================================================
-// CARD ESTADÍSTICA
-// ======================================================
-
-class _StatCard extends StatelessWidget {
-  final String titulo;
-  final String valor;
-  final IconData icono;
-  final Color color;
-
-  const _StatCard({
-    required this.titulo,
-    required this.valor,
-    required this.icono,
-    required this.color,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(.04),
-            blurRadius: 12,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 46,
-            height: 46,
-            decoration: BoxDecoration(
-              color: color.withOpacity(.12),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Icon(
-              icono,
-              color: color,
-              size: 25,
-            ),
-          ),
-          const SizedBox(width: 13),
-          Expanded(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  valor,
-                  style: const TextStyle(
-                    fontSize: 21,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Text(
-                  titulo,
-                  style: const TextStyle(
-                    color: Color(0xFF757575),
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ======================================================
-// GRÁFICO SIMPLE
-// ======================================================
+// =====================================================
+// ACTIVIDAD DEL SISTEMA
+// =====================================================
 
 class _ActividadCard extends StatelessWidget {
   const _ActividadCard();
 
   @override
   Widget build(BuildContext context) {
-    final valores = [
-      0.35,
-      0.58,
-      0.42,
-      0.72,
-      0.55,
-      0.83,
-      0.67,
+    // Ejemplo temporal.
+    // Después estos valores pueden venir del backend.
+    final valores = <double>[
+      .32,
+      .55,
+      .41,
+      .68,
+      .51,
+      .82,
+      .64,
     ];
 
     final dias = [
@@ -414,15 +563,20 @@ class _ActividadCard extends StatelessWidget {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(
+        16,
+        15,
+        16,
+        14,
+      ),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
+        borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(.04),
-            blurRadius: 12,
-            offset: const Offset(0, 5),
+            color: Colors.black.withOpacity(.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -432,17 +586,21 @@ class _ActividadCard extends StatelessWidget {
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(9),
+                width: 38,
+                height: 38,
                 decoration: BoxDecoration(
-                  color: AppColors.primary.withOpacity(.10),
-                  borderRadius: BorderRadius.circular(12),
+                  color: AppColors.primary.withOpacity(.1),
+                  borderRadius: BorderRadius.circular(11),
                 ),
                 child: const Icon(
                   Icons.insights_rounded,
                   color: AppColors.primary,
+                  size: 21,
                 ),
               ),
-              const SizedBox(width: 12),
+
+              const SizedBox(width: 10),
+
               const Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -450,14 +608,15 @@ class _ActividadCard extends StatelessWidget {
                     Text(
                       'Actividad semanal',
                       style: TextStyle(
-                        fontSize: 16,
+                        fontSize: 15,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
+                    SizedBox(height: 2),
                     Text(
-                      'Registros realizados en SafeBite',
+                      'Movimientos recientes en SafeBite',
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: 10.5,
                         color: Colors.grey,
                       ),
                     ),
@@ -467,10 +626,10 @@ class _ActividadCard extends StatelessWidget {
             ],
           ),
 
-          const SizedBox(height: 24),
+          const SizedBox(height: 15),
 
           SizedBox(
-            height: 150,
+            height: 105,
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.end,
               children: List.generate(
@@ -479,52 +638,42 @@ class _ActividadCard extends StatelessWidget {
                   return Expanded(
                     child: Padding(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 5,
+                        horizontal: 4,
                       ),
                       child: Column(
-                        mainAxisAlignment:
-                            MainAxisAlignment.end,
+                        mainAxisAlignment: MainAxisAlignment.end,
                         children: [
                           Expanded(
                             child: Align(
-                              alignment:
-                                  Alignment.bottomCenter,
-                              child:
-                                  FractionallySizedBox(
-                                heightFactor:
-                                    valores[index],
+                              alignment: Alignment.bottomCenter,
+                              child: FractionallySizedBox(
+                                heightFactor: valores[index],
                                 child: Container(
-                                  decoration:
-                                      BoxDecoration(
-                                    gradient:
-                                        LinearGradient(
-                                      begin:
-                                          Alignment.topCenter,
-                                      end: Alignment
-                                          .bottomCenter,
+                                  decoration: BoxDecoration(
+                                    gradient: LinearGradient(
+                                      begin: Alignment.topCenter,
+                                      end: Alignment.bottomCenter,
                                       colors: [
                                         AppColors.primary,
-                                        AppColors.primary
-                                            .withOpacity(.45),
+                                        AppColors.primary.withOpacity(.42),
                                       ],
                                     ),
                                     borderRadius:
-                                        const BorderRadius
-                                            .vertical(
-                                      top:
-                                          Radius.circular(
-                                              8),
+                                        const BorderRadius.vertical(
+                                      top: Radius.circular(7),
                                     ),
                                   ),
                                 ),
                               ),
                             ),
                           ),
-                          const SizedBox(height: 8),
+
+                          const SizedBox(height: 6),
+
                           Text(
                             dias[index],
                             style: const TextStyle(
-                              fontSize: 11,
+                              fontSize: 9.5,
                               color: Colors.grey,
                             ),
                           ),
@@ -542,9 +691,9 @@ class _ActividadCard extends StatelessWidget {
   }
 }
 
-// ======================================================
-// CARD MÓDULO
-// ======================================================
+// =====================================================
+// TARJETA DE MÓDULO
+// =====================================================
 
 class _ModuloCard extends StatelessWidget {
   final _ModuloAdmin modulo;
@@ -559,107 +708,102 @@ class _ModuloCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Material(
       color: Colors.white,
-      borderRadius: BorderRadius.circular(22),
+      borderRadius: BorderRadius.circular(17),
       child: InkWell(
-        borderRadius: BorderRadius.circular(22),
         onTap: onTap,
+        borderRadius: BorderRadius.circular(17),
         child: Container(
-          padding: const EdgeInsets.all(18),
+          padding: const EdgeInsets.all(13),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(22),
+            borderRadius: BorderRadius.circular(17),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(.035),
-                blurRadius: 12,
-                offset: const Offset(0, 5),
+                color: Colors.black.withOpacity(.025),
+                blurRadius: 8,
+                offset: const Offset(0, 3),
               ),
             ],
           ),
           child: Stack(
             children: [
-              Column(
-                crossAxisAlignment:
-                    CrossAxisAlignment.start,
+              Row(
                 children: [
                   Container(
-                    width: 48,
-                    height: 48,
+                    width: 43,
+                    height: 43,
                     decoration: BoxDecoration(
-                      color: AppColors.primary
-                          .withOpacity(.1),
-                      borderRadius:
-                          BorderRadius.circular(15),
+                      color: modulo.color.withOpacity(.1),
+                      borderRadius: BorderRadius.circular(13),
                     ),
                     child: Icon(
                       modulo.icono,
-                      color: AppColors.primary,
-                      size: 27,
+                      color: modulo.color,
+                      size: 23,
                     ),
                   ),
 
-                  const Spacer(),
+                  const SizedBox(width: 11),
 
-                  Text(
-                    modulo.titulo,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 14,
-                    ),
-                  ),
-
-                  const SizedBox(height: 5),
-
-                  Text(
-                    modulo.subtitulo,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: Colors.grey,
-                      fontSize: 11,
-                    ),
-                  ),
-
-                  const SizedBox(height: 10),
-
-                  const Row(
-                    children: [
-                      Text(
-                        'Abrir',
-                        style: TextStyle(
-                          color: AppColors.primary,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
+                  Expanded(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          modulo.titulo,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13,
+                          ),
                         ),
-                      ),
-                      SizedBox(width: 4),
-                      Icon(
-                        Icons.arrow_forward_rounded,
-                        size: 15,
-                        color: AppColors.primary,
-                      ),
-                    ],
+
+                        const SizedBox(height: 3),
+
+                        Text(
+                          modulo.subtitulo,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.grey,
+                            fontSize: 10,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(width: 5),
+
+                  const Icon(
+                    Icons.chevron_right_rounded,
+                    size: 20,
+                    color: Color(0xFFBDBDBD),
                   ),
                 ],
               ),
 
-              // BADGE DE NOTIFICACIONES
+              // =================================================
+              // BADGE
+              // Solo aparece cuando hay pendientes.
+              // =================================================
               if (modulo.notificaciones > 0)
                 Positioned(
-                  right: 0,
                   top: 0,
+                  right: 1,
                   child: Container(
                     constraints: const BoxConstraints(
-                      minWidth: 25,
-                      minHeight: 25,
+                      minWidth: 20,
+                      minHeight: 20,
                     ),
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 7,
+                      horizontal: 5,
                     ),
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFF4D4F),
-                      borderRadius:
-                          BorderRadius.circular(20),
+                      color: const Color(0xFFFF4545),
+                      borderRadius: BorderRadius.circular(20),
                       border: Border.all(
                         color: Colors.white,
                         width: 2,
@@ -668,12 +812,11 @@ class _ModuloCard extends StatelessWidget {
                     child: Text(
                       modulo.notificaciones > 99
                           ? '99+'
-                          : modulo.notificaciones
-                              .toString(),
+                          : modulo.notificaciones.toString(),
                       style: const TextStyle(
                         color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w800,
                       ),
                     ),
                   ),
@@ -686,9 +829,9 @@ class _ModuloCard extends StatelessWidget {
   }
 }
 
-// ======================================================
-// MODELO
-// ======================================================
+// =====================================================
+// MODELO DE MÓDULO
+// =====================================================
 
 class _ModuloAdmin {
   final String titulo;
@@ -696,12 +839,14 @@ class _ModuloAdmin {
   final IconData icono;
   final Widget pantalla;
   final int notificaciones;
+  final Color color;
 
   const _ModuloAdmin({
     required this.titulo,
     required this.subtitulo,
     required this.icono,
     required this.pantalla,
+    required this.color,
     this.notificaciones = 0,
   });
 }
