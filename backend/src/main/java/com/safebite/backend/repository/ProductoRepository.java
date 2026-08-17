@@ -9,4 +9,5 @@ import java.util.Optional;
 public interface ProductoRepository extends JpaRepository<Producto, Long> {
     Optional<Producto> findByCodigoEan(String codigoEan);
     List<Producto> findByNombreContainingIgnoreCase(String nombre);
+    List<Producto> findByVerificadoFalseOrderByFechaCreacionDesc();
 }

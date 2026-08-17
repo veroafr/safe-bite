@@ -1,10 +1,13 @@
 package com.safebite.backend.service;
 
+import com.safebite.backend.dto.request.AportarProductoRequest;
 import com.safebite.backend.dto.request.ProductoRequest;
 import com.safebite.backend.dto.response.AnalisisIngredientesResponse;
 import com.safebite.backend.dto.response.EscaneoResponse;
 import com.safebite.backend.dto.response.ProductoResponse;
+import com.safebite.backend.exception.BadRequestException;
 import com.safebite.backend.exception.ResourceNotFoundException;
+import com.safebite.backend.model.OrigenProducto;
 import com.safebite.backend.model.Producto;
 import com.safebite.backend.model.TipoIntolerancia;
 import com.safebite.backend.model.Usuario;
@@ -30,6 +33,14 @@ public class ProductoService {
                 .stream().map(ProductoResponse::desde).toList();
     }
 
+    /**
+     * Cadena de busqueda para un codigo de barras:
+     * 1) Base propia (lo cargado por admin, por Open Food Facts antes, o por
+     *    un usuario y ya verificado/no).
+     * 2) Open Food Facts, como respaldo, si no esta en la base propia.
+     * 3) Si no aparece en ningun lado, se informa como no encontrado -> el
+     *    frontend le ofrece al usuario cargarlo a mano (ver aportar()).
+     */
     @Transactional
     public EscaneoResponse escanearPorEan(String codigoEan, Usuario usuario) {
         Producto producto = productoRepository.findByCodigoEan(codigoEan)
@@ -48,6 +59,8 @@ public class ProductoService {
                     .imagenUrl(externo.imagenUrl())
                     .ingredientes(externo.ingredientes())
                     .alergenos(externo.alergenos())
+                    .origen(OrigenProducto.OPEN_FOOD_FACTS)
+                    .verificado(true)
                     .build();
             return productoRepository.save(nuevo);
         });
@@ -79,6 +92,37 @@ public class ProductoService {
                 .build();
     }
 
+    /**
+     * Un usuario carga a mano un producto que no aparecio ni en la base
+     * propia ni en Open Food Facts. Queda sin verificar hasta que un admin
+     * lo revise (ver AdminProductoController -> /pendientes).
+     */
+    @Transactional
+    public ProductoResponse aportar(AportarProductoRequest request, Usuario usuario) {
+        if (productoRepository.findByCodigoEan(request.getCodigoEan()).isPresent()) {
+            throw new BadRequestException("Ya existe un producto cargado con ese codigo de barras");
+        }
+
+        Producto producto = Producto.builder()
+                .nombre(request.getNombre())
+                .marca(request.getMarca())
+                .codigoEan(request.getCodigoEan())
+                .imagenUrl(request.getImagenUrl())
+                .ingredientes(request.getIngredientes() != null ? request.getIngredientes() : List.of())
+                .alergenos(request.getAlergenos() != null ? request.getAlergenos() : Set.of())
+                .origen(OrigenProducto.USUARIO)
+                .verificado(false)
+                .aportadoPorEmail(usuario != null ? usuario.getEmail() : null)
+                .build();
+
+        return ProductoResponse.desde(productoRepository.save(producto));
+    }
+
+    public List<ProductoResponse> listarPendientes() {
+        return productoRepository.findByVerificadoFalseOrderByFechaCreacionDesc()
+                .stream().map(ProductoResponse::desde).toList();
+    }
+
     private EscaneoResponse evaluarParaUsuario(Producto producto, Usuario usuario) {
         Set<TipoIntolerancia> intoleranciasUsuario = usuario != null ? usuario.getIntolerancias() : Set.of();
         Set<TipoIntolerancia> enConflicto = new HashSet<>(producto.getAlergenos());
@@ -88,7 +132,9 @@ public class ProductoService {
         boolean seguro = datosSuficientes && enConflicto.isEmpty();
 
         String mensaje;
-        if (!datosSuficientes) {
+        if (!producto.isVerificado()) {
+            mensaje = "Este producto fue cargado por otro usuario y todavia no fue revisado por un administrador. Usalo con precaucion.";
+        } else if (!datosSuficientes) {
             mensaje = "No tenemos información suficiente sobre los ingredientes de este producto. Revisá el empaque antes de consumirlo.";
         } else if (seguro) {
             mensaje = "Este producto es seguro segun tus intolerancias registradas.";
@@ -98,7 +144,7 @@ public class ProductoService {
 
         return EscaneoResponse.builder()
                 .producto(ProductoResponse.desde(producto))
-                .seguro(seguro)
+                .seguro(seguro && producto.isVerificado())
                 .datosSuficientes(datosSuficientes)
                 .alergenosEnConflicto(enConflicto)
                 .mensaje(mensaje)
@@ -119,6 +165,8 @@ public class ProductoService {
                 .imagenUrl(request.getImagenUrl())
                 .ingredientes(request.getIngredientes())
                 .alergenos(request.getAlergenos())
+                .origen(OrigenProducto.ADMIN)
+                .verificado(true)
                 .build();
         return ProductoResponse.desde(productoRepository.save(producto));
     }
@@ -132,6 +180,7 @@ public class ProductoService {
         producto.setImagenUrl(request.getImagenUrl());
         if (request.getIngredientes() != null) producto.setIngredientes(request.getIngredientes());
         if (request.getAlergenos() != null) producto.setAlergenos(request.getAlergenos());
+        if (request.getVerificado() != null) producto.setVerificado(request.getVerificado());
         return ProductoResponse.desde(productoRepository.save(producto));
     }
 

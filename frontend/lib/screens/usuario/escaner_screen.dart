@@ -11,6 +11,7 @@ import '../../core/services/producto_service.dart';
 import '../../core/services/alerta_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/common_widgets.dart';
+import 'cargar_producto_screen.dart';
 
 class EscanerScreen extends StatelessWidget {
   const EscanerScreen({super.key});
@@ -129,6 +130,29 @@ class ResultadoEscaneoCard extends StatelessWidget {
             if (p.marca != null) Text(p.marca!, style: const TextStyle(color: AppColors.textSecondary)),
             if (p.codigoEan != null) Text('Código: ${p.codigoEan}', style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
             const SizedBox(height: 10),
+            if (!p.verificado)
+              Container(
+                width: double.infinity,
+                margin: const EdgeInsets.only(bottom: 10),
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.accent.withOpacity(0.10),
+                  border: Border.all(color: AppColors.accent, width: 1.5),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Row(
+                  children: [
+                    Icon(Icons.hourglass_top, color: AppColors.accent, size: 18),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Cargado por otro usuario, pendiente de revisión por un admin.',
+                        style: TextStyle(color: Color(0xFF8A5A00), fontWeight: FontWeight.w600, fontSize: 12),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             if (!resultado.datosSuficientes)
               Container(
                 width: double.infinity,
@@ -297,6 +321,7 @@ class _LectorEanTabState extends State<_LectorEanTab> {
   String? _error;
   bool _procesando = false;
   String? _ultimoCodigoDetectado;
+  String? _ultimoCodigoBuscado;
   int _deteccionesCrudas = 0;
   bool _analizandoIngredientes = false;
 
@@ -371,6 +396,7 @@ class _LectorEanTabState extends State<_LectorEanTab> {
     setState(() {
       _procesando = true;
       _error = null;
+      _ultimoCodigoBuscado = codigo;
     });
     try {
       final resultado = await context.read<ProductoService>().escanearPorEan(codigo);
@@ -387,9 +413,21 @@ class _LectorEanTabState extends State<_LectorEanTab> {
     setState(() {
       _resultado = null;
       _error = null;
+      _ultimoCodigoBuscado = null;
     });
     _codigoManualCtrl.clear();
     _controller.start();
+  }
+
+  Future<void> _irACargarProducto() async {
+    final codigo = _ultimoCodigoBuscado;
+    if (codigo == null) return;
+    final cargado = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(builder: (_) => CargarProductoScreen(codigoEan: codigo)),
+    );
+    if (cargado == true) {
+      _reiniciar();
+    }
   }
 
   @override
@@ -480,7 +518,22 @@ class _LectorEanTabState extends State<_LectorEanTab> {
                   ResultadoEscaneoCard(resultado: _resultado!),
                 ]))
               : _error != null
-                  ? SingleChildScrollView(child: ErrorView(mensaje: _error!, onReintentar: _reiniciar))
+                  ? SingleChildScrollView(
+                      child: Column(
+                        children: [
+                          ErrorView(mensaje: _error!, onReintentar: _reiniciar),
+                          if (_ultimoCodigoBuscado != null)
+                            Padding(
+                              padding: const EdgeInsets.only(bottom: 16),
+                              child: ElevatedButton.icon(
+                                onPressed: _irACargarProducto,
+                                icon: const Icon(Icons.add_box_outlined),
+                                label: const Text('Cargar este producto'),
+                              ),
+                            ),
+                        ],
+                      ),
+                    )
                   : const SingleChildScrollView(
                       child: Padding(
                         padding: EdgeInsets.all(24),

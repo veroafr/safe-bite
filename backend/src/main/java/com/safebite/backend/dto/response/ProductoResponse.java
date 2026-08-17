@@ -1,5 +1,6 @@
 package com.safebite.backend.dto.response;
 
+import com.safebite.backend.model.OrigenProducto;
 import com.safebite.backend.model.Producto;
 import com.safebite.backend.model.TipoIntolerancia;
 import lombok.AllArgsConstructor;
@@ -22,6 +23,9 @@ public class ProductoResponse {
     private String imagenUrl;
     private List<String> ingredientes;
     private Set<TipoIntolerancia> alergenos;
+    private OrigenProducto origen;
+    private boolean verificado;
+    private String aportadoPorEmail;
 
     public static ProductoResponse desde(Producto p) {
         return ProductoResponse.builder()
@@ -32,6 +36,9 @@ public class ProductoResponse {
                 .imagenUrl(p.getImagenUrl())
                 .ingredientes(p.getIngredientes())
                 .alergenos(p.getAlergenos())
+                .origen(p.getOrigen())
+                .verificado(p.isVerificado())
+                .aportadoPorEmail(p.getAportadoPorEmail())
                 .build();
     }
 }

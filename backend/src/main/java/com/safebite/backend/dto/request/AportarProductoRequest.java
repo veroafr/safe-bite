@@ -7,20 +7,20 @@ import lombok.Data;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * Lo que completa un usuario cuando escanea un codigo que no esta en la
+ * base ni en Open Food Facts. Queda pendiente de revision por un admin.
+ */
 @Data
-public class ProductoRequest {
+public class AportarProductoRequest {
+    @NotBlank
+    private String codigoEan;
+
     @NotBlank
     private String nombre;
+
     private String marca;
-    private String codigoEan;
     private String imagenUrl;
     private List<String> ingredientes;
     private Set<TipoIntolerancia> alergenos;
-
-    /**
-     * Opcional: cuando el admin edita/aprueba un producto pendiente, manda
-     * este campo en true para marcarlo como verificado. Si viene null, el
-     * estado de verificacion actual no se toca.
-     */
-    private Boolean verificado;
 }

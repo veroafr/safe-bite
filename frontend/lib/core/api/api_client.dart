@@ -117,9 +117,11 @@ class ApiClient {
     }
 
     if (!isSuccess) {
-      final message = (decoded is Map && decoded['message'] != null)
-          ? decoded['message'].toString()
-          : 'Error ${response.statusCode}: ${response.reasonPhrase ?? 'algo salio mal'}';
+      final message = (decoded is Map && decoded['mensaje'] != null)
+          ? decoded['mensaje'].toString()
+          : (decoded is Map && decoded['message'] != null)
+              ? decoded['message'].toString()
+              : 'Error ${response.statusCode}: ${response.reasonPhrase ?? 'algo salio mal'}';
       throw ApiException(response.statusCode, message);
     }
 

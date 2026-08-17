@@ -1,5 +1,6 @@
 package com.safebite.backend.controller;
 
+import com.safebite.backend.dto.request.AportarProductoRequest;
 import com.safebite.backend.dto.request.OcrRequest;
 import com.safebite.backend.dto.response.AnalisisIngredientesResponse;
 import com.safebite.backend.dto.response.EscaneoResponse;
@@ -8,6 +9,7 @@ import com.safebite.backend.model.Usuario;
 import com.safebite.backend.service.ProductoService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
@@ -42,5 +44,16 @@ public class ProductoController {
     public ResponseEntity<AnalisisIngredientesResponse> analizarIngredientes(@Valid @RequestBody OcrRequest request,
                                                                                @AuthenticationPrincipal Usuario usuario) {
         return ResponseEntity.ok(productoService.analizarIngredientes(request.getTextoDetectado(), usuario));
+    }
+
+    /**
+     * El usuario escaneo un codigo que no esta en la base ni en Open Food
+     * Facts, y lo carga a mano. Requiere estar logueado (cualquier rol);
+     * queda pendiente de revision por un admin.
+     */
+    @PostMapping("/aportar")
+    public ResponseEntity<ProductoResponse> aportar(@Valid @RequestBody AportarProductoRequest request,
+                                                      @AuthenticationPrincipal Usuario usuario) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(productoService.aportar(request, usuario));
     }
 }

@@ -9,6 +9,7 @@ import 'admin_noticias_screen.dart';
 import 'admin_usuarios_screen.dart';
 import 'admin_recetas_screen.dart';
 import 'admin_reportes_screen.dart';
+import 'admin_productos_screen.dart';
 
 class AdminHomeScreen extends StatelessWidget {
   const AdminHomeScreen({super.key});
@@ -18,6 +19,7 @@ class AdminHomeScreen extends StatelessWidget {
     final usuario = context.watch<AuthProvider>().usuario;
 
     final modulos = [
+      _ModuloAdmin('Gestión de Productos', Icons.qr_code_2, const AdminProductosScreen()),
       _ModuloAdmin('Gestión de Restaurantes', Icons.restaurant, const AdminRestaurantesScreen()),
       _ModuloAdmin('Gestión de Alertas', Icons.report_gmailerrorred, const AdminAlertasScreen()),
       _ModuloAdmin('Gestión de Noticias', Icons.newspaper, const AdminNoticiasScreen()),

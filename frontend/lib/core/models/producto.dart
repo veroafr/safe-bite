@@ -8,6 +8,9 @@ class Producto {
   final String? imagenUrl;
   final List<String> ingredientes;
   final Set<TipoIntolerancia> alergenos;
+  final String origen;
+  final bool verificado;
+  final String? aportadoPorEmail;
 
   Producto({
     required this.id,
@@ -17,6 +20,9 @@ class Producto {
     this.imagenUrl,
     required this.ingredientes,
     required this.alergenos,
+    this.origen = 'ADMIN',
+    this.verificado = true,
+    this.aportadoPorEmail,
   });
 
   factory Producto.fromJson(Map<String, dynamic> json) => Producto(
@@ -27,6 +33,9 @@ class Producto {
         imagenUrl: json['imagenUrl'],
         ingredientes: ((json['ingredientes'] as List?) ?? []).map((e) => e.toString()).toList(),
         alergenos: ((json['alergenos'] as List?) ?? []).map((e) => tipoIntoleranciaDesde(e)).toSet(),
+        origen: json['origen'] ?? 'ADMIN',
+        verificado: json['verificado'] ?? true,
+        aportadoPorEmail: json['aportadoPorEmail'],
       );
 }
 
