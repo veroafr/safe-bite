@@ -1,0 +1,6 @@
+Comando Docker: 
+docker stop safebite-backend
+docker rm safebite-backend
+docker run -d --name safebite-backend --network safebite_default -p 8080:8080 -e SPRING_PROFILES_ACTIVE=postgres -e SPRING_DATASOURCE_URL=jdbc:postgresql://safebite-db:5432/safebite -e SPRING_DATASOURCE_USERNAME=safebite -e SPRING_DATASOURCE_PASSWORD=safebite safebite-backend
+docker logs -f safebite-backend
+Comando Flutter:flutter run

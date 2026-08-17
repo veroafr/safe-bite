@@ -1,0 +1,35 @@
+version: "3.8"
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: safebite-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: safebite
+      POSTGRES_USER: safebite
+      POSTGRES_PASSWORD: safebite
+    ports:
+      - "5432:5432"
+    volumes:
+      - safebite_db_data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ./backend
+    container_name: safebite-backend
+    restart: unless-stopped
+    depends_on:
+      - db
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_NAME: safebite
+      DB_USER: safebite
+      DB_PASSWORD: safebite
+      CORS_ORIGINS: "*"
+    ports:
+      - "8080:8080"
+
+volumes:
+  safebite_db_data:

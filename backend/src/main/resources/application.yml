@@ -1,0 +1,23 @@
+server:
+  port: ${PORT:8080}
+
+spring:
+  application:
+    name: safebite-backend
+
+  profiles:
+    active: postgres
+
+  jackson:
+    default-property-inclusion: non_null
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
+safebite:
+  jwt:
+    secret: ${JWT_SECRET:c2FmZWJpdGUtc2VjcmV0LWtleS1jaGFuZ2UtbWUtaW4tcHJvZHVjdGlvbi0yMDI2LXN1cGVyLWxvbmc=}
+    expiration-ms: ${JWT_EXPIRATION_MS:86400000}
+  cors:
+    allowed-origins: ${CORS_ORIGINS:http://localhost:3000,http://localhost:8081,http://10.0.2.2:8080}

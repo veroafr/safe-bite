@@ -1,0 +1,38 @@
+databases:
+  - name: safebite-db
+    plan: free
+    databaseName: safebite
+    user: safebite
+
+services:
+  - type: web
+    name: safebite-backend
+    runtime: docker
+    plan: free
+    rootDir: backend
+    dockerfilePath: ./Dockerfile
+    envVars:
+      - key: DB_HOST
+        fromDatabase:
+          name: safebite-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: safebite-db
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: safebite-db
+          property: database
+      - key: DB_USER
+        fromDatabase:
+          name: safebite-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: safebite-db
+          property: password
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JWT_EXPIRATION_MS
+        value: "86400000"
