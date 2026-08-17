@@ -47,20 +47,10 @@ public class Producto {
     @Builder.Default
     private Set<TipoIntolerancia> alergenos = new HashSet<>();
 
-    /**
-     * De donde salio este registro. Sirve para saber si conviene confiar en el
-     * dato sin revision (OPEN_FOOD_FACTS/ADMIN) o si todavia esta pendiente
-     * de que un admin lo confirme (USUARIO).
-     */
     @Enumerated(EnumType.STRING)
     @Builder.Default
     private OrigenProducto origen = OrigenProducto.ADMIN;
 
-    /**
-     * Productos cargados por un usuario (escaneo sin resultado) arrancan sin
-     * verificar. Los de Open Food Facts o los que carga un admin entran
-     * verificados directamente.
-     */
     @Builder.Default
     private boolean verificado = true;
 
