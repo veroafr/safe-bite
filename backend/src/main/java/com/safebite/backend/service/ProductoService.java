@@ -33,14 +33,6 @@ public class ProductoService {
                 .stream().map(ProductoResponse::desde).toList();
     }
 
-    /**
-     * Cadena de busqueda para un codigo de barras:
-     * 1) Base propia (lo cargado por admin, por Open Food Facts antes, o por
-     *    un usuario y ya verificado/no).
-     * 2) Open Food Facts, como respaldo, si no esta en la base propia.
-     * 3) Si no aparece en ningun lado, se informa como no encontrado -> el
-     *    frontend le ofrece al usuario cargarlo a mano (ver aportar()).
-     */
     @Transactional
     public EscaneoResponse escanearPorEan(String codigoEan, Usuario usuario) {
         Producto producto = productoRepository.findByCodigoEan(codigoEan)
@@ -92,11 +84,6 @@ public class ProductoService {
                 .build();
     }
 
-    /**
-     * Un usuario carga a mano un producto que no aparecio ni en la base
-     * propia ni en Open Food Facts. Queda sin verificar hasta que un admin
-     * lo revise (ver AdminProductoController -> /pendientes).
-     */
     @Transactional
     public ProductoResponse aportar(AportarProductoRequest request, Usuario usuario) {
         if (productoRepository.findByCodigoEan(request.getCodigoEan()).isPresent()) {
