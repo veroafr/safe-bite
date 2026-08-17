@@ -11,6 +11,9 @@ class Producto {
   final String origen;
   final bool verificado;
   final String? aportadoPorEmail;
+  final String? fotoFrontalBase64;
+  final String? fotoComposicionBase64;
+  final String? fotoNutricionalBase64;
 
   Producto({
     required this.id,
@@ -23,6 +26,9 @@ class Producto {
     this.origen = 'ADMIN',
     this.verificado = true,
     this.aportadoPorEmail,
+    this.fotoFrontalBase64,
+    this.fotoComposicionBase64,
+    this.fotoNutricionalBase64,
   });
 
   factory Producto.fromJson(Map<String, dynamic> json) => Producto(
@@ -36,7 +42,13 @@ class Producto {
         origen: json['origen'] ?? 'ADMIN',
         verificado: json['verificado'] ?? true,
         aportadoPorEmail: json['aportadoPorEmail'],
+        fotoFrontalBase64: json['fotoFrontalBase64'],
+        fotoComposicionBase64: json['fotoComposicionBase64'],
+        fotoNutricionalBase64: json['fotoNutricionalBase64'],
       );
+
+  /// True si hay alguna imagen para mostrar (propia o de Open Food Facts).
+  bool get tieneFotoPrincipal => fotoFrontalBase64 != null || imagenUrl != null;
 }
 
 class ResultadoEscaneo {

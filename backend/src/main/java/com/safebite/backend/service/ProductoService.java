@@ -33,6 +33,15 @@ public class ProductoService {
                 .stream().map(ProductoResponse::desde).toList();
     }
 
+    /**
+     * Cadena de busqueda para un codigo de barras:
+     * 1) Base propia.
+     * 2) Open Food Facts, como respaldo.
+     * 3) Si no aparece en ningun lado, se informa como no encontrado -> el
+     *    frontend ofrece cargarlo a mano (aportar()).
+     * Si aparece pero con datos insuficientes (sin ingredientes/alergenos),
+     * el frontend ofrece completarlo (completarDatos()).
+     */
     @Transactional
     public EscaneoResponse escanearPorEan(String codigoEan, Usuario usuario) {
         Producto producto = productoRepository.findByCodigoEan(codigoEan)
@@ -84,8 +93,15 @@ public class ProductoService {
                 .build();
     }
 
+    /**
+     * Un usuario carga a mano un producto que no aparecio en el escaneo.
+     * Queda sin verificar hasta que un admin lo revise.
+     */
     @Transactional
     public ProductoResponse aportar(AportarProductoRequest request, Usuario usuario) {
+        if (request.getNombre() == null || request.getNombre().isBlank()) {
+            throw new BadRequestException("El nombre del producto es obligatorio");
+        }
         if (productoRepository.findByCodigoEan(request.getCodigoEan()).isPresent()) {
             throw new BadRequestException("Ya existe un producto cargado con ese codigo de barras");
         }
@@ -100,6 +116,9 @@ public class ProductoService {
                 .origen(OrigenProducto.USUARIO)
                 .verificado(false)
                 .aportadoPorEmail(usuario != null ? usuario.getEmail() : null)
+                .fotoFrontalBase64(request.getFotoFrontalBase64())
+                .fotoComposicionBase64(request.getFotoComposicionBase64())
+                .fotoNutricionalBase64(request.getFotoNutricionalBase64())
                 .build();
 
         return ProductoResponse.desde(productoRepository.save(producto));
@@ -108,6 +127,54 @@ public class ProductoService {
     public List<ProductoResponse> listarPendientes() {
         return productoRepository.findByVerificadoFalseOrderByFechaCreacionDesc()
                 .stream().map(ProductoResponse::desde).toList();
+    }
+
+    /**
+     * Un usuario completa los datos de un producto que ya existe (por ej.
+     * vino de Open Food Facts con ingredientes vacios, o con fotos
+     * faltantes). No pisa un producto ya verificado con datos completos:
+     * si ya tenia ingredientes cargados y esta verificado, rechaza el
+     * pedido para evitar que alguien sobreescriba informacion correcta.
+     */
+    @Transactional
+    public ProductoResponse completarDatos(Long id, AportarProductoRequest request, Usuario usuario) {
+        Producto producto = buscarEntidad(id);
+
+        boolean yaTeniaDatos = !producto.getIngredientes().isEmpty() || !producto.getAlergenos().isEmpty();
+        if (yaTeniaDatos && producto.isVerificado()) {
+            throw new BadRequestException("Este producto ya tiene datos verificados, no se puede sobreescribir");
+        }
+
+        if (request.getNombre() != null && !request.getNombre().isBlank()) {
+            producto.setNombre(request.getNombre());
+        }
+        if (request.getMarca() != null && !request.getMarca().isBlank()) {
+            producto.setMarca(request.getMarca());
+        }
+        if (request.getImagenUrl() != null && !request.getImagenUrl().isBlank()) {
+            producto.setImagenUrl(request.getImagenUrl());
+        }
+        if (request.getIngredientes() != null && !request.getIngredientes().isEmpty()) {
+            producto.setIngredientes(request.getIngredientes());
+        }
+        if (request.getAlergenos() != null && !request.getAlergenos().isEmpty()) {
+            producto.setAlergenos(request.getAlergenos());
+        }
+        if (request.getFotoFrontalBase64() != null) {
+            producto.setFotoFrontalBase64(request.getFotoFrontalBase64());
+        }
+        if (request.getFotoComposicionBase64() != null) {
+            producto.setFotoComposicionBase64(request.getFotoComposicionBase64());
+        }
+        if (request.getFotoNutricionalBase64() != null) {
+            producto.setFotoNutricionalBase64(request.getFotoNutricionalBase64());
+        }
+
+        producto.setOrigen(OrigenProducto.USUARIO);
+        producto.setVerificado(false);
+        producto.setAportadoPorEmail(usuario != null ? usuario.getEmail() : producto.getAportadoPorEmail());
+
+        return ProductoResponse.desde(productoRepository.save(producto));
     }
 
     private EscaneoResponse evaluarParaUsuario(Producto producto, Usuario usuario) {
@@ -154,6 +221,9 @@ public class ProductoService {
                 .alergenos(request.getAlergenos())
                 .origen(OrigenProducto.ADMIN)
                 .verificado(true)
+                .fotoFrontalBase64(request.getFotoFrontalBase64())
+                .fotoComposicionBase64(request.getFotoComposicionBase64())
+                .fotoNutricionalBase64(request.getFotoNutricionalBase64())
                 .build();
         return ProductoResponse.desde(productoRepository.save(producto));
     }
@@ -168,6 +238,9 @@ public class ProductoService {
         if (request.getIngredientes() != null) producto.setIngredientes(request.getIngredientes());
         if (request.getAlergenos() != null) producto.setAlergenos(request.getAlergenos());
         if (request.getVerificado() != null) producto.setVerificado(request.getVerificado());
+        if (request.getFotoFrontalBase64() != null) producto.setFotoFrontalBase64(request.getFotoFrontalBase64());
+        if (request.getFotoComposicionBase64() != null) producto.setFotoComposicionBase64(request.getFotoComposicionBase64());
+        if (request.getFotoNutricionalBase64() != null) producto.setFotoNutricionalBase64(request.getFotoNutricionalBase64());
         return ProductoResponse.desde(productoRepository.save(producto));
     }
 

@@ -33,6 +33,13 @@ class ProductoService {
     return Producto.fromJson(data);
   }
 
+  /// Completa los datos de un producto que ya existe pero llego con
+  /// informacion insuficiente (tipicamente desde Open Food Facts).
+  Future<Producto> completarDatos(int id, Map<String, dynamic> body) async {
+    final data = await _client.put('/productos/$id/completar', body: body);
+    return Producto.fromJson(data);
+  }
+
   // ---- Administracion ----
 
   Future<List<Producto>> listarTodos() async {
@@ -67,6 +74,9 @@ class ProductoService {
       'ingredientes': p.ingredientes,
       'alergenos': p.alergenos.map((a) => a.name).toList(),
       'verificado': true,
+      'fotoFrontalBase64': p.fotoFrontalBase64,
+      'fotoComposicionBase64': p.fotoComposicionBase64,
+      'fotoNutricionalBase64': p.fotoNutricionalBase64,
     });
     return Producto.fromJson(data);
   }

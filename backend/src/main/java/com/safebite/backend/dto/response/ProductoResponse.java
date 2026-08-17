@@ -26,6 +26,9 @@ public class ProductoResponse {
     private OrigenProducto origen;
     private boolean verificado;
     private String aportadoPorEmail;
+    private String fotoFrontalBase64;
+    private String fotoComposicionBase64;
+    private String fotoNutricionalBase64;
 
     public static ProductoResponse desde(Producto p) {
         return ProductoResponse.builder()
@@ -39,6 +42,9 @@ public class ProductoResponse {
                 .origen(p.getOrigen())
                 .verificado(p.isVerificado())
                 .aportadoPorEmail(p.getAportadoPorEmail())
+                .fotoFrontalBase64(p.getFotoFrontalBase64())
+                .fotoComposicionBase64(p.getFotoComposicionBase64())
+                .fotoNutricionalBase64(p.getFotoNutricionalBase64())
                 .build();
     }
 }

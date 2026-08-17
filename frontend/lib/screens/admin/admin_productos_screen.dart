@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../core/models/producto.dart';
@@ -69,9 +71,12 @@ class _AdminProductosScreenState extends State<AdminProductosScreen> {
     final nombreCtrl = TextEditingController(text: existente?.nombre ?? '');
     final marcaCtrl = TextEditingController(text: existente?.marca ?? '');
     final codigoCtrl = TextEditingController(text: existente?.codigoEan ?? '');
-    final imagenCtrl = TextEditingController(text: existente?.imagenUrl ?? '');
     final ingredientesCtrl = TextEditingController(text: existente?.ingredientes.join(', ') ?? '');
     final alergenosSeleccionados = <TipoIntolerancia>{...?existente?.alergenos};
+
+    String? fotoFrontal = existente?.fotoFrontalBase64;
+    String? fotoComposicion = existente?.fotoComposicionBase64;
+    String? fotoNutricional = existente?.fotoNutricionalBase64;
 
     final guardar = await showModalBottomSheet<bool>(
       context: context,
@@ -93,8 +98,30 @@ class _AdminProductosScreenState extends State<AdminProductosScreen> {
                 TextField(controller: marcaCtrl, decoration: const InputDecoration(labelText: 'Marca')),
                 const SizedBox(height: 10),
                 TextField(controller: codigoCtrl, decoration: const InputDecoration(labelText: 'Código de barras (EAN)')),
+                const SizedBox(height: 16),
+                const Text('Fotos del envase', style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 4),
+                const Text('Con la cámara o desde la galería, no hace falta buscar una URL.',
+                    style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
                 const SizedBox(height: 10),
-                TextField(controller: imagenCtrl, decoration: const InputDecoration(labelText: 'URL de imagen')),
+                SelectorFoto(
+                  titulo: '1. Frente del producto',
+                  ayuda: 'Que se vea el nombre y la marca',
+                  base64Inicial: fotoFrontal,
+                  onCambio: (b64) => fotoFrontal = b64,
+                ),
+                SelectorFoto(
+                  titulo: '2. Tabla de composición / ingredientes',
+                  ayuda: 'La lista de ingredientes del envase',
+                  base64Inicial: fotoComposicion,
+                  onCambio: (b64) => fotoComposicion = b64,
+                ),
+                SelectorFoto(
+                  titulo: '3. Tabla nutricional',
+                  ayuda: 'Los valores nutricionales por porción',
+                  base64Inicial: fotoNutricional,
+                  onCambio: (b64) => fotoNutricional = b64,
+                ),
                 const SizedBox(height: 10),
                 TextField(
                   controller: ingredientesCtrl,
@@ -140,10 +167,12 @@ class _AdminProductosScreenState extends State<AdminProductosScreen> {
         'nombre': nombreCtrl.text.trim(),
         'marca': marcaCtrl.text.trim().isEmpty ? null : marcaCtrl.text.trim(),
         'codigoEan': codigoCtrl.text.trim().isEmpty ? null : codigoCtrl.text.trim(),
-        'imagenUrl': imagenCtrl.text.trim().isEmpty ? null : imagenCtrl.text.trim(),
         'ingredientes': ingredientesCtrl.text.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList(),
         'alergenos': alergenosSeleccionados.map((a) => a.name).toList(),
         'verificado': true,
+        'fotoFrontalBase64': fotoFrontal,
+        'fotoComposicionBase64': fotoComposicion,
+        'fotoNutricionalBase64': fotoNutricional,
       };
       try {
         final service = context.read<ProductoService>();
@@ -160,6 +189,30 @@ class _AdminProductosScreenState extends State<AdminProductosScreen> {
         if (mounted) mostrarError(context, e);
       }
     }
+  }
+
+  Widget _miniatura(Producto p) {
+    if (p.fotoFrontalBase64 != null) {
+      try {
+        return ClipRRect(
+          borderRadius: BorderRadius.circular(6),
+          child: Image.memory(
+            Uint8List.fromList(base64Decode(p.fotoFrontalBase64!)),
+            width: 44,
+            height: 44,
+            fit: BoxFit.cover,
+          ),
+        );
+      } catch (_) {
+        // sigue al placeholder
+      }
+    }
+    return Container(
+      width: 44,
+      height: 44,
+      decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.08), borderRadius: BorderRadius.circular(6)),
+      child: const Icon(Icons.image_outlined, color: AppColors.primary, size: 20),
+    );
   }
 
   @override
@@ -197,12 +250,26 @@ class _AdminProductosScreenState extends State<AdminProductosScreen> {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(p.nombre, style: const TextStyle(fontWeight: FontWeight.bold)),
-                            if (p.marca != null) Text(p.marca!, style: const TextStyle(color: AppColors.textSecondary)),
-                            if (p.codigoEan != null)
-                              Text('Código: ${p.codigoEan}', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
-                            if (p.aportadoPorEmail != null)
-                              Text('Aportado por: ${p.aportadoPorEmail}', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                            Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _miniatura(p),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(p.nombre, style: const TextStyle(fontWeight: FontWeight.bold)),
+                                      if (p.marca != null) Text(p.marca!, style: const TextStyle(color: AppColors.textSecondary)),
+                                      if (p.codigoEan != null)
+                                        Text('Código: ${p.codigoEan}', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                                      if (p.aportadoPorEmail != null)
+                                        Text('Aportado por: ${p.aportadoPorEmail}', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
                             if (p.ingredientes.isNotEmpty) ...[
                               const SizedBox(height: 6),
                               Text('Ingredientes: ${p.ingredientes.join(', ')}', style: const TextStyle(fontSize: 12)),
@@ -264,6 +331,7 @@ class _AdminProductosScreenState extends State<AdminProductosScreen> {
                     final p = productos[i];
                     return Card(
                       child: ListTile(
+                        leading: _miniatura(p),
                         title: Text(p.nombre),
                         subtitle: Text([
                           if (p.marca != null) p.marca!,

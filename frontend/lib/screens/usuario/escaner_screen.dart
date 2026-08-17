@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
@@ -71,6 +73,88 @@ class _DesgloseIntolerancias extends StatelessWidget {
   }
 }
 
+/// Muestra la foto principal del producto: preferimos la que saco un
+/// usuario (fotoFrontalBase64); si no hay, usamos la de Open Food Facts
+/// (imagenUrl). Si no hay ninguna, no se muestra nada.
+class _FotoProducto extends StatelessWidget {
+  final Producto producto;
+  const _FotoProducto({required this.producto});
+
+  @override
+  Widget build(BuildContext context) {
+    if (!producto.tieneFotoPrincipal) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Center(
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: producto.fotoFrontalBase64 != null
+              ? Image.memory(
+                  Uint8List.fromList(base64Decode(producto.fotoFrontalBase64!)),
+                  height: 160,
+                  fit: BoxFit.contain,
+                )
+              : Image.network(
+                  producto.imagenUrl!,
+                  height: 160,
+                  fit: BoxFit.contain,
+                  errorBuilder: (_, __, ___) => const SizedBox(
+                    height: 80,
+                    child: Center(child: Icon(Icons.image_not_supported_outlined, color: AppColors.textSecondary)),
+                  ),
+                ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Miniaturas de las fotos de composicion/tabla nutricional, si las hay.
+class _FotosSecundarias extends StatelessWidget {
+  final Producto producto;
+  const _FotosSecundarias({required this.producto});
+
+  @override
+  Widget build(BuildContext context) {
+    final tieneComposicion = producto.fotoComposicionBase64 != null;
+    final tieneNutricional = producto.fotoNutricionalBase64 != null;
+    if (!tieneComposicion && !tieneNutricional) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: SizedBox(
+        height: 80,
+        child: Row(
+          children: [
+            if (tieneComposicion)
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.memory(
+                    Uint8List.fromList(base64Decode(producto.fotoComposicionBase64!)),
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ),
+            if (tieneComposicion && tieneNutricional) const SizedBox(width: 6),
+            if (tieneNutricional)
+              Expanded(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: Image.memory(
+                    Uint8List.fromList(base64Decode(producto.fotoNutricionalBase64!)),
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 class ResultadoEscaneoCard extends StatelessWidget {
   final ResultadoEscaneo resultado;
   const ResultadoEscaneoCard({super.key, required this.resultado});
@@ -102,6 +186,23 @@ class ResultadoEscaneoCard extends StatelessWidget {
     }
   }
 
+  Future<void> _completarDatos(BuildContext context) async {
+    final p = resultado.producto;
+    final completado = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => CargarProductoScreen(
+          codigoEan: p.codigoEan ?? '',
+          productoId: p.id,
+          nombreInicial: p.nombre,
+          marcaInicial: p.marca,
+        ),
+      ),
+    );
+    if (completado == true && context.mounted) {
+      mostrarMensaje(context, 'Escaneá de nuevo el producto para ver los datos actualizados');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final p = resultado.producto;
@@ -112,6 +213,8 @@ class ResultadoEscaneoCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            _FotoProducto(producto: p),
+            _FotosSecundarias(producto: p),
             Row(
               children: [
                 Expanded(
@@ -153,7 +256,7 @@ class ResultadoEscaneoCard extends StatelessWidget {
                   ],
                 ),
               ),
-            if (!resultado.datosSuficientes)
+            if (!resultado.datosSuficientes) ...[
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(10),
@@ -178,8 +281,17 @@ class ResultadoEscaneoCard extends StatelessWidget {
                     ),
                   ],
                 ),
-              )
-            else if (!resultado.seguro)
+              ),
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () => _completarDatos(context),
+                  icon: const Icon(Icons.edit_note),
+                  label: const Text('Completar datos de este producto'),
+                ),
+              ),
+            ] else if (!resultado.seguro)
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(10),
@@ -320,9 +432,7 @@ class _LectorEanTabState extends State<_LectorEanTab> {
   ResultadoEscaneo? _resultado;
   String? _error;
   bool _procesando = false;
-  String? _ultimoCodigoDetectado;
   String? _ultimoCodigoBuscado;
-  int _deteccionesCrudas = 0;
   bool _analizandoIngredientes = false;
 
   Future<void> _escanearIngredientesPorFoto() async {
@@ -370,13 +480,6 @@ class _LectorEanTabState extends State<_LectorEanTab> {
   }
 
   Future<void> _onDetect(BarcodeCapture capture) async {
-    if (capture.barcodes.isNotEmpty) {
-      setState(() {
-        _deteccionesCrudas++;
-        _ultimoCodigoDetectado = capture.barcodes.first.rawValue ?? '(codigo vacio/no legible)';
-      });
-    }
-
     if (_procesando) return;
     final codigo = capture.barcodes.firstOrNull?.rawValue;
     if (codigo == null || codigo.isEmpty) return;
@@ -460,16 +563,7 @@ class _LectorEanTabState extends State<_LectorEanTab> {
             ),
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-          child: Text(
-            _ultimoCodigoDetectado != null
-                ? 'Detecciones: $_deteccionesCrudas · Último: $_ultimoCodigoDetectado'
-                : 'Todavía no se detectó ningún código con la cámara',
-            style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
-            textAlign: TextAlign.center,
-          ),
-        ),
+        const SizedBox(height: 10),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Row(

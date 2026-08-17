@@ -58,4 +58,15 @@ public class Producto {
 
     @Builder.Default
     private LocalDateTime fechaCreacion = LocalDateTime.now();
+
+    // Fotos cargadas por el usuario o el admin, en base64. Se guardan como
+    // texto (no hay un servicio de storage de archivos configurado todavia).
+    @Column(columnDefinition = "TEXT")
+    private String fotoFrontalBase64;
+
+    @Column(columnDefinition = "TEXT")
+    private String fotoComposicionBase64;
+
+    @Column(columnDefinition = "TEXT")
+    private String fotoNutricionalBase64;
 }

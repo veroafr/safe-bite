@@ -16,5 +16,10 @@ public class ProductoRequest {
     private String imagenUrl;
     private List<String> ingredientes;
     private Set<TipoIntolerancia> alergenos;
+
     private Boolean verificado;
+
+    private String fotoFrontalBase64;
+    private String fotoComposicionBase64;
+    private String fotoNutricionalBase64;
 }

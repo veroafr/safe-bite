@@ -51,4 +51,10 @@ public class ProductoController {
                                                       @AuthenticationPrincipal Usuario usuario) {
         return ResponseEntity.status(HttpStatus.CREATED).body(productoService.aportar(request, usuario));
     }
+    @PutMapping("/{id}/completar")
+    public ResponseEntity<ProductoResponse> completarDatos(@PathVariable Long id,
+                                                             @Valid @RequestBody AportarProductoRequest request,
+                                                             @AuthenticationPrincipal Usuario usuario) {
+        return ResponseEntity.ok(productoService.completarDatos(id, request, usuario));
+    }
 }
