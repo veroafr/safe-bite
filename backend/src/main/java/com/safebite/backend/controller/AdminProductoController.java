@@ -1,5 +1,6 @@
 package com.safebite.backend.controller;
 
+import com.safebite.backend.dto.request.FotoProductoRequest;
 import com.safebite.backend.dto.request.ProductoRequest;
 import com.safebite.backend.dto.response.ProductoResponse;
 import com.safebite.backend.service.ProductoService;
@@ -36,6 +37,16 @@ public class AdminProductoController {
     @PutMapping("/{id}")
     public ResponseEntity<ProductoResponse> editar(@PathVariable Long id, @Valid @RequestBody ProductoRequest request) {
         return ResponseEntity.ok(productoService.editar(id, request));
+    }
+
+    /**
+     * Reemplazar o eliminar UNA foto puntual de un producto pendiente,
+     * sin tener que abrir el formulario completo de edicion.
+     */
+    @PutMapping("/{id}/foto")
+    public ResponseEntity<ProductoResponse> actualizarFoto(@PathVariable Long id,
+                                                             @Valid @RequestBody FotoProductoRequest request) {
+        return ResponseEntity.ok(productoService.actualizarFoto(id, request.getTipo(), request.getBase64()));
     }
 
     @DeleteMapping("/{id}")

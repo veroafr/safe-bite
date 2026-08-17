@@ -244,6 +244,26 @@ public class ProductoService {
         return ProductoResponse.desde(productoRepository.save(producto));
     }
 
+    /**
+     * Accion puntual del admin sobre UNA foto de un producto, desde la
+     * bandeja de revision: reemplazarla (base64 no vacio) o eliminarla
+     * (base64 null/vacio) sin tocar el resto de los datos del producto.
+     */
+    @Transactional
+    public ProductoResponse actualizarFoto(Long id, String tipo, String base64) {
+        Producto producto = buscarEntidad(id);
+        String valor = (base64 != null && base64.isBlank()) ? null : base64;
+
+        switch (tipo) {
+            case "frontal" -> producto.setFotoFrontalBase64(valor);
+            case "composicion" -> producto.setFotoComposicionBase64(valor);
+            case "nutricional" -> producto.setFotoNutricionalBase64(valor);
+            default -> throw new BadRequestException("Tipo de foto invalido: " + tipo);
+        }
+
+        return ProductoResponse.desde(productoRepository.save(producto));
+    }
+
     @Transactional
     public void eliminar(Long id) {
         if (!productoRepository.existsById(id)) {

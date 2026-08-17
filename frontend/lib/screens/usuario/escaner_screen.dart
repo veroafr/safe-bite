@@ -73,16 +73,33 @@ class _DesgloseIntolerancias extends StatelessWidget {
   }
 }
 
-/// Muestra la foto principal del producto: preferimos la que saco un
-/// usuario (fotoFrontalBase64); si no hay, usamos la de Open Food Facts
-/// (imagenUrl). Si no hay ninguna, no se muestra nada.
+/// Muestra la foto principal del producto, con reglas distintas segun el
+/// origen del dato:
+/// - Open Food Facts: solo se muestra si el producto tiene datos completos
+///   (ingredientes/alergenos cargados) - evita mostrar fotos de fichas
+///   incompletas o mal cargadas de OFF.
+/// - Cargada por un usuario: solo se muestra una vez que un admin aprobo
+///   el producto (verificado = true) - el admin decide si esa foto se usa.
+/// - Cargada por un admin: siempre se muestra, ya la curó directamente.
 class _FotoProducto extends StatelessWidget {
   final Producto producto;
-  const _FotoProducto({required this.producto});
+  final bool datosSuficientes;
+  const _FotoProducto({required this.producto, required this.datosSuficientes});
+
+  bool get _debeMostrarse {
+    switch (producto.origen) {
+      case 'OPEN_FOOD_FACTS':
+        return datosSuficientes && producto.imagenUrl != null;
+      case 'USUARIO':
+        return producto.verificado && producto.fotoFrontalBase64 != null;
+      default: // ADMIN
+        return producto.fotoFrontalBase64 != null || producto.imagenUrl != null;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    if (!producto.tieneFotoPrincipal) return const SizedBox.shrink();
+    if (!_debeMostrarse) return const SizedBox.shrink();
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -110,13 +127,18 @@ class _FotoProducto extends StatelessWidget {
   }
 }
 
-/// Miniaturas de las fotos de composicion/tabla nutricional, si las hay.
+/// Miniaturas de las fotos de composicion/tabla nutricional. Estas dos
+/// solo existen si alguien las subio a mano (Open Food Facts no las
+/// provee), asi que se rigen por el mismo criterio que la foto de un
+/// usuario: solo se muestran una vez verificadas por un admin.
 class _FotosSecundarias extends StatelessWidget {
   final Producto producto;
   const _FotosSecundarias({required this.producto});
 
   @override
   Widget build(BuildContext context) {
+    if (!producto.verificado) return const SizedBox.shrink();
+
     final tieneComposicion = producto.fotoComposicionBase64 != null;
     final tieneNutricional = producto.fotoNutricionalBase64 != null;
     if (!tieneComposicion && !tieneNutricional) return const SizedBox.shrink();
@@ -213,7 +235,7 @@ class ResultadoEscaneoCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _FotoProducto(producto: p),
+            _FotoProducto(producto: p, datosSuficientes: resultado.datosSuficientes),
             _FotosSecundarias(producto: p),
             Row(
               children: [

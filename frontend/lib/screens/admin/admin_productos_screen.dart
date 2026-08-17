@@ -282,13 +282,15 @@ class _AdminProductosScreenState extends State<AdminProductosScreen> {
                               ),
                             ],
                             const SizedBox(height: 10),
+                            _RevisionFotos(producto: p, onCambio: _recargar),
+                            const SizedBox(height: 10),
                             Row(
                               children: [
                                 Expanded(
                                   child: OutlinedButton.icon(
                                     onPressed: () => _abrirFormulario(existente: p),
                                     icon: const Icon(Icons.edit_outlined, size: 18),
-                                    label: const Text('Editar'),
+                                    label: const Text('Editar datos'),
                                   ),
                                 ),
                                 const SizedBox(width: 8),
@@ -354,6 +356,124 @@ class _AdminProductosScreenState extends State<AdminProductosScreen> {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// Sección de revisión de fotos dentro de la tarjeta de un producto
+/// pendiente: muestra cada una de las 3 fotos en tamaño grande (o un
+/// placeholder si falta) y deja que el admin, foto por foto, la
+/// **elimine** (si está fea/mal sacada) o la **reemplace** por una propia,
+/// sin tener que abrir el formulario completo ni tocar el resto de los
+/// datos del producto.
+class _RevisionFotos extends StatefulWidget {
+  final Producto producto;
+  final VoidCallback onCambio;
+  const _RevisionFotos({required this.producto, required this.onCambio});
+
+  @override
+  State<_RevisionFotos> createState() => _RevisionFotosState();
+}
+
+class _RevisionFotosState extends State<_RevisionFotos> {
+  bool _procesando = false;
+
+  Future<void> _reemplazar(String tipo) async {
+    final bytes = await elegirFotoCamaraOGaleria(context);
+    if (bytes == null) return;
+    await _guardar(tipo, base64Encode(bytes));
+  }
+
+  Future<void> _eliminar(String tipo) async {
+    await _guardar(tipo, null);
+  }
+
+  Future<void> _guardar(String tipo, String? base64) async {
+    setState(() => _procesando = true);
+    try {
+      await context.read<ProductoService>().actualizarFoto(widget.producto.id, tipo, base64);
+      if (mounted) {
+        mostrarMensaje(context, base64 == null ? 'Foto eliminada' : 'Foto actualizada');
+        widget.onCambio();
+      }
+    } catch (e) {
+      if (mounted) mostrarError(context, e);
+    } finally {
+      if (mounted) setState(() => _procesando = false);
+    }
+  }
+
+  Widget _slot(String titulo, String tipo, String? base64) {
+    Widget imagen;
+    if (base64 != null) {
+      try {
+        imagen = Image.memory(Uint8List.fromList(base64Decode(base64)), height: 90, width: double.infinity, fit: BoxFit.cover);
+      } catch (_) {
+        imagen = Container(
+          height: 90,
+          color: AppColors.danger.withOpacity(0.08),
+          child: const Center(child: Icon(Icons.broken_image_outlined, color: AppColors.danger)),
+        );
+      }
+    } else {
+      imagen = Container(
+        height: 90,
+        color: AppColors.textSecondary.withOpacity(0.08),
+        child: const Center(child: Text('Sin foto', style: TextStyle(fontSize: 11, color: AppColors.textSecondary))),
+      );
+    }
+
+    return Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(titulo, style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600), textAlign: TextAlign.center),
+          const SizedBox(height: 4),
+          ClipRRect(borderRadius: BorderRadius.circular(8), child: imagen),
+          const SizedBox(height: 4),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              IconButton(
+                iconSize: 18,
+                tooltip: 'Reemplazar',
+                onPressed: _procesando ? null : () => _reemplazar(tipo),
+                icon: const Icon(Icons.camera_alt_outlined, color: AppColors.primary),
+              ),
+              if (base64 != null)
+                IconButton(
+                  iconSize: 18,
+                  tooltip: 'Eliminar',
+                  onPressed: _procesando ? null : () => _eliminar(tipo),
+                  icon: const Icon(Icons.delete_outline, color: AppColors.danger),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final p = widget.producto;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text('Fotos enviadas — aceptalas, reemplazalas o eliminalas',
+            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textSecondary)),
+        const SizedBox(height: 6),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _slot('Frente', 'frontal', p.fotoFrontalBase64),
+            const SizedBox(width: 8),
+            _slot('Composición', 'composicion', p.fotoComposicionBase64),
+            const SizedBox(width: 8),
+            _slot('Nutricional', 'nutricional', p.fotoNutricionalBase64),
+          ],
+        ),
+      ],
     );
   }
 }

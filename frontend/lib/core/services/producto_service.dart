@@ -81,5 +81,15 @@ class ProductoService {
     return Producto.fromJson(data);
   }
 
+  /// Reemplaza o elimina UNA foto puntual (tipo: frontal/composicion/nutricional)
+  /// sin tocar el resto de los datos del producto. base64 == null elimina.
+  Future<Producto> actualizarFoto(int id, String tipo, String? base64) async {
+    final data = await _client.put('/admin/productos/$id/foto', body: {
+      'tipo': tipo,
+      'base64': base64,
+    });
+    return Producto.fromJson(data);
+  }
+
   Future<void> eliminar(int id) => _client.delete('/admin/productos/$id');
 }
