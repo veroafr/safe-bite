@@ -4,6 +4,7 @@ class Producto {
   final int id;
   final String nombre;
   final String? marca;
+  final String? categoria;
   final String? codigoEan;
   final String? imagenUrl;
   final List<String> ingredientes;
@@ -19,6 +20,7 @@ class Producto {
     required this.id,
     required this.nombre,
     this.marca,
+    this.categoria,
     this.codigoEan,
     this.imagenUrl,
     required this.ingredientes,
@@ -35,6 +37,7 @@ class Producto {
         id: json['id'],
         nombre: json['nombre'] ?? '',
         marca: json['marca'],
+        categoria: json['categoria'],
         codigoEan: json['codigoEan'],
         imagenUrl: json['imagenUrl'],
         ingredientes: ((json['ingredientes'] as List?) ?? []).map((e) => e.toString()).toList(),
@@ -57,6 +60,7 @@ class ResultadoEscaneo {
   final bool datosSuficientes;
   final Set<TipoIntolerancia> alergenosEnConflicto;
   final String mensaje;
+  final List<Producto> alternativas;
 
   ResultadoEscaneo({
     required this.producto,
@@ -64,6 +68,7 @@ class ResultadoEscaneo {
     required this.datosSuficientes,
     required this.alergenosEnConflicto,
     required this.mensaje,
+    this.alternativas = const [],
   });
 
   factory ResultadoEscaneo.fromJson(Map<String, dynamic> json) => ResultadoEscaneo(
@@ -74,6 +79,7 @@ class ResultadoEscaneo {
             .map((e) => tipoIntoleranciaDesde(e))
             .toSet(),
         mensaje: json['mensaje'] ?? '',
+        alternativas: ((json['alternativas'] as List?) ?? []).map((e) => Producto.fromJson(e)).toList(),
       );
 }
 

@@ -109,6 +109,7 @@ public class ProductoService {
         Producto producto = Producto.builder()
                 .nombre(request.getNombre())
                 .marca(request.getMarca())
+                .categoria(request.getCategoria())
                 .codigoEan(request.getCodigoEan())
                 .imagenUrl(request.getImagenUrl())
                 .ingredientes(request.getIngredientes() != null ? request.getIngredientes() : List.of())
@@ -150,6 +151,9 @@ public class ProductoService {
         }
         if (request.getMarca() != null && !request.getMarca().isBlank()) {
             producto.setMarca(request.getMarca());
+        }
+        if (request.getCategoria() != null && !request.getCategoria().isBlank()) {
+            producto.setCategoria(request.getCategoria());
         }
         if (request.getImagenUrl() != null && !request.getImagenUrl().isBlank()) {
             producto.setImagenUrl(request.getImagenUrl());
@@ -196,13 +200,65 @@ public class ProductoService {
             mensaje = "Atencion: este producto contiene alergenos que coinciden con tus intolerancias.";
         }
 
+        List<ProductoResponse> alternativas = List.of();
+        if (producto.isVerificado() && datosSuficientes && !seguro) {
+            alternativas = buscarAlternativas(producto, intoleranciasUsuario);
+        }
+
         return EscaneoResponse.builder()
                 .producto(ProductoResponse.desde(producto))
                 .seguro(seguro && producto.isVerificado())
                 .datosSuficientes(datosSuficientes)
                 .alergenosEnConflicto(enConflicto)
                 .mensaje(mensaje)
+                .alternativas(alternativas)
                 .build();
+    }
+
+    /**
+     * Cuando un producto NO es apto para el usuario, busca otros productos
+     * verificados de la misma categoria que SI lo sean ("esto no, pero esto
+     * si"). Si el producto no tiene categoria cargada, hace un fallback
+     * simple por palabras compartidas del nombre.
+     */
+    private List<ProductoResponse> buscarAlternativas(Producto original, Set<TipoIntolerancia> intoleranciasUsuario) {
+        List<Producto> candidatos;
+        if (original.getCategoria() != null && !original.getCategoria().isBlank()) {
+            candidatos = productoRepository.findByVerificadoTrueAndCategoriaIgnoreCaseAndIdNot(
+                    original.getCategoria(), original.getId());
+        } else {
+            candidatos = productoRepository.findByVerificadoTrueAndIdNot(original.getId()).stream()
+                    .filter(p -> comparteAlgunaPalabra(original.getNombre(), p.getNombre()))
+                    .toList();
+        }
+
+        return candidatos.stream()
+                .filter(p -> !p.getIngredientes().isEmpty() || !p.getAlergenos().isEmpty())
+                .filter(p -> {
+                    Set<TipoIntolerancia> conflicto = new HashSet<>(p.getAlergenos());
+                    conflicto.retainAll(intoleranciasUsuario);
+                    return conflicto.isEmpty();
+                })
+                .limit(5)
+                .map(ProductoResponse::desde)
+                .toList();
+    }
+
+    private boolean comparteAlgunaPalabra(String nombreA, String nombreB) {
+        Set<String> palabrasA = palabrasSignificativas(nombreA);
+        Set<String> palabrasB = palabrasSignificativas(nombreB);
+        return palabrasA.stream().anyMatch(palabrasB::contains);
+    }
+
+    private Set<String> palabrasSignificativas(String texto) {
+        Set<String> stopwords = Set.of("de", "la", "el", "los", "las", "con", "sin", "y", "para");
+        Set<String> resultado = new HashSet<>();
+        for (String palabra : texto.toLowerCase().split("\\s+")) {
+            if (palabra.length() >= 4 && !stopwords.contains(palabra)) {
+                resultado.add(palabra);
+            }
+        }
+        return resultado;
     }
 
     public Producto buscarEntidad(Long id) {
@@ -215,6 +271,7 @@ public class ProductoService {
         Producto producto = Producto.builder()
                 .nombre(request.getNombre())
                 .marca(request.getMarca())
+                .categoria(request.getCategoria())
                 .codigoEan(request.getCodigoEan())
                 .imagenUrl(request.getImagenUrl())
                 .ingredientes(request.getIngredientes())
@@ -233,6 +290,7 @@ public class ProductoService {
         Producto producto = buscarEntidad(id);
         producto.setNombre(request.getNombre());
         producto.setMarca(request.getMarca());
+        producto.setCategoria(request.getCategoria());
         producto.setCodigoEan(request.getCodigoEan());
         producto.setImagenUrl(request.getImagenUrl());
         if (request.getIngredientes() != null) producto.setIngredientes(request.getIngredientes());

@@ -70,6 +70,7 @@ class _AdminProductosScreenState extends State<AdminProductosScreen> {
   Future<void> _abrirFormulario({Producto? existente}) async {
     final nombreCtrl = TextEditingController(text: existente?.nombre ?? '');
     final marcaCtrl = TextEditingController(text: existente?.marca ?? '');
+    final categoriaCtrl = TextEditingController(text: existente?.categoria ?? '');
     final codigoCtrl = TextEditingController(text: existente?.codigoEan ?? '');
     final ingredientesCtrl = TextEditingController(text: existente?.ingredientes.join(', ') ?? '');
     final alergenosSeleccionados = <TipoIntolerancia>{...?existente?.alergenos};
@@ -122,6 +123,56 @@ class _AdminProductosScreenState extends State<AdminProductosScreen> {
                   base64Inicial: fotoNutricional,
                   onCambio: (b64) => fotoNutricional = b64,
                 ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () async {
+                      if (fotoFrontal == null && fotoComposicion == null && fotoNutricional == null) {
+                        mostrarMensaje(context, 'Agregá al menos una foto para poder analizarla');
+                        return;
+                      }
+                      try {
+                        final analisis = await context.read<ProductoService>().analizarFotos(
+                              fotoFrontalBase64: fotoFrontal,
+                              fotoComposicionBase64: fotoComposicion,
+                              fotoNutricionalBase64: fotoNutricional,
+                            );
+                        if (!analisis.pudoLeer) {
+                          if (ctx.mounted) mostrarMensaje(ctx, analisis.observacion ?? 'No se pudo leer la foto');
+                          return;
+                        }
+                        setModalState(() {
+                          if (analisis.nombreSugerido != null && nombreCtrl.text.trim().isEmpty) {
+                            nombreCtrl.text = analisis.nombreSugerido!;
+                          }
+                          if (analisis.marcaSugerida != null && marcaCtrl.text.trim().isEmpty) {
+                            marcaCtrl.text = analisis.marcaSugerida!;
+                          }
+                          if (analisis.categoriaSugerida != null && categoriaCtrl.text.trim().isEmpty) {
+                            categoriaCtrl.text = analisis.categoriaSugerida!;
+                          }
+                          if (analisis.ingredientes.isNotEmpty && ingredientesCtrl.text.trim().isEmpty) {
+                            ingredientesCtrl.text = analisis.ingredientes.join(', ');
+                          }
+                          alergenosSeleccionados.addAll(analisis.alergenos);
+                        });
+                      } catch (e) {
+                        if (ctx.mounted) mostrarError(ctx, e);
+                      }
+                    },
+                    icon: const Icon(Icons.auto_awesome),
+                    label: const Text('Analizar con IA y completar automáticamente'),
+                  ),
+                ),
+                const SizedBox(height: 10),
+                TextField(
+                  controller: categoriaCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Categoría',
+                    hintText: 'Ej: Panificados, Lácteos, Snacks, Bebidas',
+                  ),
+                ),
                 const SizedBox(height: 10),
                 TextField(
                   controller: ingredientesCtrl,
@@ -166,6 +217,7 @@ class _AdminProductosScreenState extends State<AdminProductosScreen> {
       final body = {
         'nombre': nombreCtrl.text.trim(),
         'marca': marcaCtrl.text.trim().isEmpty ? null : marcaCtrl.text.trim(),
+        'categoria': categoriaCtrl.text.trim().isEmpty ? null : categoriaCtrl.text.trim(),
         'codigoEan': codigoCtrl.text.trim().isEmpty ? null : codigoCtrl.text.trim(),
         'ingredientes': ingredientesCtrl.text.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList(),
         'alergenos': alergenosSeleccionados.map((a) => a.name).toList(),

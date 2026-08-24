@@ -29,6 +29,13 @@ public class Producto {
 
     private String marca;
 
+    /**
+     * Categoria simple para poder sugerir alternativas comparables
+     * ("Panificados", "Lacteos", "Snacks", etc). Opcional: si no viene
+     * cargada, las alternativas se buscan por coincidencia de nombre.
+     */
+    private String categoria;
+
     @Column(unique = true)
     private String codigoEan;
 

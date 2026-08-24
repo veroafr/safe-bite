@@ -22,6 +22,7 @@ public class AportarProductoRequest {
 
     private String nombre;
     private String marca;
+    private String categoria;
     private String imagenUrl;
     private List<String> ingredientes;
     private Set<TipoIntolerancia> alergenos;

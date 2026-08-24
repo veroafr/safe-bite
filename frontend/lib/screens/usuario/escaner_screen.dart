@@ -354,6 +354,7 @@ class ResultadoEscaneoCard extends StatelessWidget {
               const SizedBox(height: 10),
               Wrap(spacing: 6, children: p.alergenos.map((a) => Chip1(etiquetaIntolerancia(a), color: AppColors.danger)).toList()),
             ],
+            if (resultado.alternativas.isNotEmpty) _AlternativasSeguras(alternativas: resultado.alternativas),
             const SizedBox(height: 12),
             OutlinedButton.icon(
               onPressed: () => _reportarAlerta(context),
@@ -362,6 +363,172 @@ class ResultadoEscaneoCard extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// Resultado de "Escanear paquete": una sola foto del envase, leída por IA,
+/// con el veredicto ya cruzado contra las intolerancias del usuario. Es un
+/// chequeo rápido — no requiere código de barras ni que el producto ya
+/// esté cargado en la base.
+class _AnalisisPaqueteCard extends StatelessWidget {
+  final AnalisisFotos analisis;
+  final String fotoBase64;
+  const _AnalisisPaqueteCard({required this.analisis, required this.fotoBase64});
+
+  @override
+  Widget build(BuildContext context) {
+    final usuario = context.watch<AuthProvider>().usuario;
+    final intolerancias = usuario?.intolerancias ?? <TipoIntolerancia>{};
+    final enConflicto = analisis.alergenos.intersection(intolerancias);
+    final hayDatos = analisis.ingredientes.isNotEmpty || analisis.alergenos.isNotEmpty;
+    final seguro = hayDatos && enConflicto.isEmpty;
+
+    return Padding(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.memory(Uint8List.fromList(base64Decode(fotoBase64)), height: 140, fit: BoxFit.contain),
+            ),
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  analisis.nombreSugerido ?? 'Producto sin identificar',
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+              ),
+              Chip1(
+                !hayDatos ? 'Sin datos' : (seguro ? 'Seguro' : 'Alerta'),
+                color: !hayDatos ? AppColors.accent : (seguro ? AppColors.primary : AppColors.danger),
+              ),
+            ],
+          ),
+          if (analisis.marcaSugerida != null) Text(analisis.marcaSugerida!, style: const TextStyle(color: AppColors.textSecondary)),
+          if (analisis.categoriaSugerida != null)
+            Text(analisis.categoriaSugerida!, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+          const SizedBox(height: 10),
+          if (!hayDatos)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppColors.accent.withOpacity(0.10),
+                border: Border.all(color: AppColors.accent, width: 1.5),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Text(
+                'No se pudieron identificar ingredientes en esta foto. Probá sacarle una foto más de cerca a la tabla de ingredientes.',
+                style: TextStyle(color: Color(0xFF8A5A00), fontWeight: FontWeight.bold),
+              ),
+            )
+          else if (!seguro)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: AppColors.danger.withOpacity(0.08),
+                border: Border.all(color: AppColors.danger, width: 1.5),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Text(
+                'Atención: este producto contiene alérgenos que coinciden con tus intolerancias.',
+                style: TextStyle(color: AppColors.danger, fontWeight: FontWeight.bold),
+              ),
+            )
+          else
+            const Text('No detectamos alérgenos que coincidan con tus intolerancias en esta foto.'),
+          _DesgloseIntolerancias(alergenosProducto: analisis.alergenos),
+          if (analisis.ingredientes.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            const Text('Ingredientes detectados:', style: TextStyle(fontWeight: FontWeight.bold)),
+            Text(analisis.ingredientes.join(', ')),
+          ],
+          if (analisis.observacion != null) ...[
+            const SizedBox(height: 10),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.smart_toy_outlined, size: 16, color: AppColors.textSecondary),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(analisis.observacion!, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                ),
+              ],
+            ),
+          ],
+          const SizedBox(height: 12),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.06), borderRadius: BorderRadius.circular(8)),
+            child: const Text(
+              'Este chequeo es rápido y no queda guardado en la base. Si querés que otros usuarios también lo vean, escaneá su código de barras y cargalo desde ahí.',
+              style: TextStyle(fontSize: 12),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// "Esto no lo podes comer, pero esto si": lista de productos similares
+/// (misma categoria) que son aptos segun las intolerancias del usuario,
+/// mostrada cuando el producto escaneado no es seguro.
+class _AlternativasSeguras extends StatelessWidget {
+  final List<Producto> alternativas;
+  const _AlternativasSeguras({required this.alternativas});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 14),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: const [
+              Icon(Icons.thumb_up_alt_outlined, color: AppColors.primary, size: 18),
+              SizedBox(width: 6),
+              Text('Estas opciones sí podés comer', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ...alternativas.map((a) => Container(
+                width: double.infinity,
+                margin: const EdgeInsets.only(bottom: 6),
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.06),
+                  border: Border.all(color: AppColors.primary.withOpacity(0.3)),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.check_circle, color: AppColors.primary, size: 18),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(a.nombre, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                          if (a.marca != null) Text(a.marca!, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              )),
+        ],
       ),
     );
   }
@@ -456,6 +623,7 @@ class _LectorEanTabState extends State<_LectorEanTab> {
   bool _procesando = false;
   String? _ultimoCodigoBuscado;
   bool _analizandoIngredientes = false;
+  bool _escaneandoPaquete = false;
 
   Future<void> _escanearIngredientesPorFoto() async {
     setState(() => _analizandoIngredientes = true);
@@ -498,6 +666,46 @@ class _LectorEanTabState extends State<_LectorEanTab> {
       if (mounted) mostrarError(context, e);
     } finally {
       if (mounted) setState(() => _analizandoIngredientes = false);
+    }
+  }
+
+  Future<void> _escanearPaquete() async {
+    setState(() => _escaneandoPaquete = true);
+    try {
+      final bytes = await elegirFotoCamaraOGaleria(context);
+      if (bytes == null) return;
+
+      final foto64 = base64Encode(bytes);
+      final analisis = await context.read<ProductoService>().analizarFotos(fotoFrontalBase64: foto64);
+
+      if (!analisis.pudoLeer) {
+        if (mounted) {
+          mostrarError(context, analisis.observacion ?? 'No se pudo leer el envase. Probá con mejor luz y más cerca.');
+        }
+        return;
+      }
+
+      if (mounted) {
+        showModalBottomSheet(
+          context: context,
+          isScrollControlled: true,
+          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+          builder: (_) => DraggableScrollableSheet(
+            initialChildSize: 0.65,
+            minChildSize: 0.35,
+            maxChildSize: 0.9,
+            expand: false,
+            builder: (_, scrollController) => SingleChildScrollView(
+              controller: scrollController,
+              child: _AnalisisPaqueteCard(analisis: analisis, fotoBase64: foto64),
+            ),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) mostrarError(context, e);
+    } finally {
+      if (mounted) setState(() => _escaneandoPaquete = false);
     }
   }
 
@@ -611,12 +819,28 @@ class _LectorEanTabState extends State<_LectorEanTab> {
         ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-          child: OutlinedButton.icon(
-            onPressed: _analizandoIngredientes ? null : _escanearIngredientesPorFoto,
-            icon: _analizandoIngredientes
-                ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                : const Icon(Icons.document_scanner_outlined),
-            label: Text(_analizandoIngredientes ? 'Analizando...' : 'Escanear ingredientes por foto'),
+          child: Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _escaneandoPaquete ? null : _escanearPaquete,
+                  icon: _escaneandoPaquete
+                      ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                      : const Icon(Icons.inventory_2_outlined),
+                  label: Text(_escaneandoPaquete ? 'Analizando...' : 'Escanear paquete'),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: _analizandoIngredientes ? null : _escanearIngredientesPorFoto,
+                  icon: _analizandoIngredientes
+                      ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                      : const Icon(Icons.document_scanner_outlined),
+                  label: Text(_analizandoIngredientes ? 'Analizando...' : 'Escanear ingredientes'),
+                ),
+              ),
+            ],
           ),
         ),
         const SizedBox(height: 4),

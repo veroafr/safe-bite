@@ -31,9 +31,12 @@ class CargarProductoScreen extends StatefulWidget {
 class _CargarProductoScreenState extends State<CargarProductoScreen> {
   late final _nombreCtrl = TextEditingController(text: widget.nombreInicial ?? '');
   late final _marcaCtrl = TextEditingController(text: widget.marcaInicial ?? '');
+  final _categoriaCtrl = TextEditingController();
   final _ingredientesCtrl = TextEditingController();
   final Set<TipoIntolerancia> _alergenosSeleccionados = {};
   bool _enviando = false;
+  bool _analizandoIA = false;
+  String? _observacionIA;
 
   String? _fotoFrontalBase64;
   String? _fotoComposicionBase64;
@@ -45,8 +48,56 @@ class _CargarProductoScreenState extends State<CargarProductoScreen> {
   void dispose() {
     _nombreCtrl.dispose();
     _marcaCtrl.dispose();
+    _categoriaCtrl.dispose();
     _ingredientesCtrl.dispose();
     super.dispose();
+  }
+
+  Future<void> _analizarConIA() async {
+    if (_fotoFrontalBase64 == null && _fotoComposicionBase64 == null && _fotoNutricionalBase64 == null) {
+      mostrarMensaje(context, 'Agregá al menos una foto para poder analizarla');
+      return;
+    }
+
+    setState(() {
+      _analizandoIA = true;
+      _observacionIA = null;
+    });
+    try {
+      final analisis = await context.read<ProductoService>().analizarFotos(
+            fotoFrontalBase64: _fotoFrontalBase64,
+            fotoComposicionBase64: _fotoComposicionBase64,
+            fotoNutricionalBase64: _fotoNutricionalBase64,
+          );
+
+      if (!analisis.pudoLeer) {
+        setState(() => _observacionIA = analisis.observacion ?? 'No se pudo leer la foto, completá los datos a mano.');
+        return;
+      }
+
+      setState(() {
+        if (analisis.nombreSugerido != null && _nombreCtrl.text.trim().isEmpty) {
+          _nombreCtrl.text = analisis.nombreSugerido!;
+        }
+        if (analisis.marcaSugerida != null && _marcaCtrl.text.trim().isEmpty) {
+          _marcaCtrl.text = analisis.marcaSugerida!;
+        }
+        if (analisis.categoriaSugerida != null && _categoriaCtrl.text.trim().isEmpty) {
+          _categoriaCtrl.text = analisis.categoriaSugerida!;
+        }
+        if (analisis.ingredientes.isNotEmpty && _ingredientesCtrl.text.trim().isEmpty) {
+          _ingredientesCtrl.text = analisis.ingredientes.join(', ');
+        }
+        _alergenosSeleccionados.addAll(analisis.alergenos);
+        _observacionIA = analisis.observacion;
+      });
+
+      if (mounted) mostrarMensaje(context, 'Listo — revisá los datos antes de enviar, la IA puede equivocarse');
+    } catch (e) {
+      if (mounted) mostrarError(context, e);
+    } finally {
+      if (mounted) setState(() => _analizandoIA = false);
+    }
   }
 
   Future<void> _enviar() async {
@@ -61,6 +112,7 @@ class _CargarProductoScreenState extends State<CargarProductoScreen> {
         'codigoEan': widget.codigoEan,
         'nombre': _nombreCtrl.text.trim().isEmpty ? null : _nombreCtrl.text.trim(),
         'marca': _marcaCtrl.text.trim().isEmpty ? null : _marcaCtrl.text.trim(),
+        'categoria': _categoriaCtrl.text.trim().isEmpty ? null : _categoriaCtrl.text.trim(),
         'ingredientes': _ingredientesCtrl.text
             .split(',')
             .map((e) => e.trim())
@@ -148,6 +200,36 @@ class _CargarProductoScreenState extends State<CargarProductoScreen> {
               ayuda: 'Los valores nutricionales por porción',
               onCambio: (b64) => _fotoNutricionalBase64 = b64,
             ),
+            const SizedBox(height: 8),
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                onPressed: _analizandoIA ? null : _analizarConIA,
+                icon: _analizandoIA
+                    ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                    : const Icon(Icons.auto_awesome),
+                label: Text(_analizandoIA ? 'Analizando con IA...' : 'Analizar con IA y completar automáticamente'),
+              ),
+            ),
+            if (_observacionIA != null) ...[
+              const SizedBox(height: 8),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.08),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.smart_toy_outlined, size: 18, color: AppColors.primary),
+                    const SizedBox(width: 8),
+                    Expanded(child: Text(_observacionIA!, style: const TextStyle(fontSize: 12))),
+                  ],
+                ),
+              ),
+            ],
 
             const SizedBox(height: 12),
             const Divider(),
@@ -160,6 +242,14 @@ class _CargarProductoScreenState extends State<CargarProductoScreen> {
             ),
             const SizedBox(height: 10),
             TextField(controller: _marcaCtrl, decoration: const InputDecoration(labelText: 'Marca')),
+            const SizedBox(height: 10),
+            TextField(
+              controller: _categoriaCtrl,
+              decoration: const InputDecoration(
+                labelText: 'Categoría',
+                hintText: 'Ej: Panificados, Lácteos, Snacks, Bebidas',
+              ),
+            ),
             const SizedBox(height: 10),
             TextField(
               controller: _ingredientesCtrl,

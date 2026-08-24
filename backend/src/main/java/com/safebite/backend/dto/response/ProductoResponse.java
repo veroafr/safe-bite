@@ -19,6 +19,7 @@ public class ProductoResponse {
     private Long id;
     private String nombre;
     private String marca;
+    private String categoria;
     private String codigoEan;
     private String imagenUrl;
     private List<String> ingredientes;
@@ -35,6 +36,7 @@ public class ProductoResponse {
                 .id(p.getId())
                 .nombre(p.getNombre())
                 .marca(p.getMarca())
+                .categoria(p.getCategoria())
                 .codigoEan(p.getCodigoEan())
                 .imagenUrl(p.getImagenUrl())
                 .ingredientes(p.getIngredientes())

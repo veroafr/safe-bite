@@ -12,6 +12,7 @@ public class ProductoRequest {
     @NotBlank
     private String nombre;
     private String marca;
+    private String categoria;
     private String codigoEan;
     private String imagenUrl;
     private List<String> ingredientes;

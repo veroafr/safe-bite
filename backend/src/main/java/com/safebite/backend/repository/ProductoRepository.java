@@ -10,4 +10,10 @@ public interface ProductoRepository extends JpaRepository<Producto, Long> {
     Optional<Producto> findByCodigoEan(String codigoEan);
     List<Producto> findByNombreContainingIgnoreCase(String nombre);
     List<Producto> findByVerificadoFalseOrderByFechaCreacionDesc();
+
+    /** Candidatos a alternativa: misma categoria, verificados, no el mismo producto. */
+    List<Producto> findByVerificadoTrueAndCategoriaIgnoreCaseAndIdNot(String categoria, Long id);
+
+    /** Fallback cuando el producto no tiene categoria cargada: todos los verificados. */
+    List<Producto> findByVerificadoTrueAndIdNot(Long id);
 }

@@ -1,5 +1,39 @@
 import '../api/api_client.dart';
 import '../models/producto.dart';
+import '../models/usuario.dart';
+
+/// Sugerencia de la IA de vision al leer las fotos del producto. El
+/// formulario pre-completa estos valores, pero el usuario siempre puede
+/// editarlos antes de enviar.
+class AnalisisFotos {
+  final String? nombreSugerido;
+  final String? marcaSugerida;
+  final String? categoriaSugerida;
+  final List<String> ingredientes;
+  final Set<TipoIntolerancia> alergenos;
+  final bool pudoLeer;
+  final String? observacion;
+
+  AnalisisFotos({
+    this.nombreSugerido,
+    this.marcaSugerida,
+    this.categoriaSugerida,
+    required this.ingredientes,
+    required this.alergenos,
+    required this.pudoLeer,
+    this.observacion,
+  });
+
+  factory AnalisisFotos.fromJson(Map<String, dynamic> json) => AnalisisFotos(
+        nombreSugerido: json['nombreSugerido'],
+        marcaSugerida: json['marcaSugerida'],
+        categoriaSugerida: json['categoriaSugerida'],
+        ingredientes: ((json['ingredientes'] as List?) ?? []).map((e) => e.toString()).toList(),
+        alergenos: ((json['alergenos'] as List?) ?? []).map((e) => tipoIntoleranciaDesde(e)).toSet(),
+        pudoLeer: json['pudoLeer'] ?? false,
+        observacion: json['observacion'],
+      );
+}
 
 class ProductoService {
   final ApiClient _client;
@@ -38,6 +72,22 @@ class ProductoService {
   Future<Producto> completarDatos(int id, Map<String, dynamic> body) async {
     final data = await _client.put('/productos/$id/completar', body: body);
     return Producto.fromJson(data);
+  }
+
+  /// Le pide a la IA que lea las fotos (frontal/composicion/nutricional)
+  /// y sugiera nombre, marca, categoria, ingredientes y alergenos. Se usa
+  /// desde el formulario de carga y desde "Escanear paquete".
+  Future<AnalisisFotos> analizarFotos({
+    String? fotoFrontalBase64,
+    String? fotoComposicionBase64,
+    String? fotoNutricionalBase64,
+  }) async {
+    final data = await _client.post('/productos/analizar-fotos', body: {
+      'fotoFrontalBase64': fotoFrontalBase64,
+      'fotoComposicionBase64': fotoComposicionBase64,
+      'fotoNutricionalBase64': fotoNutricionalBase64,
+    });
+    return AnalisisFotos.fromJson(data);
   }
 
   // ---- Administracion ----
