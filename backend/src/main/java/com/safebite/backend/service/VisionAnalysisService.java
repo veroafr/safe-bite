@@ -34,8 +34,8 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class VisionAnalysisService {
 
-    private static final String GEMINI_URL =
-            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
+   private static final String GEMINI_URL =
+        "https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent";
 
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
