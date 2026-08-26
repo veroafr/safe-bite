@@ -12,6 +12,7 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -21,9 +22,9 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Usa la API de vision de Claude (Anthropic) para leer las fotos de un
- * producto (frente, tabla de composicion, tabla nutricional) y devolver
- * datos estructurados: nombre, marca, ingredientes y alergenos.
+ * Usa la API de vision de Google Gemini para leer las fotos de un producto
+ * (frente, tabla de composicion, tabla nutricional) y devolver datos
+ * estructurados: nombre, marca, ingredientes y alergenos.
  *
  * Es un asistente para completar el formulario mas rapido - el usuario o
  * el admin siempre revisa y confirma antes de guardar, no se guarda solo.
@@ -33,13 +34,13 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class VisionAnalysisService {
 
-    private static final String ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
-    private static final String MODEL = "claude-sonnet-4-6";
+    private static final String GEMINI_URL =
+            "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
 
-    @Value("${safebite.anthropic.api-key:}")
+    @Value("${safebite.gemini.api-key:}")
     private String apiKey;
 
     public record AnalisisFotos(
@@ -54,14 +55,13 @@ public class VisionAnalysisService {
 
     public AnalisisFotos analizar(String fotoFrontalBase64, String fotoComposicionBase64, String fotoNutricionalBase64) {
         if (apiKey == null || apiKey.isBlank()) {
-            log.warn("ANTHROPIC_API_KEY no configurada, no se puede analizar la foto");
+            log.warn("GEMINI_API_KEY no configurada, no se puede analizar la foto");
             return new AnalisisFotos(null, null, null, List.of(), Set.of(), false,
                     "El analisis con IA no esta configurado en el servidor todavia.");
         }
 
-        List<Map<String, Object>> contenido = new ArrayList<>();
-        contenido.add(Map.of(
-                "type", "text",
+        List<Map<String, Object>> partes = new ArrayList<>();
+        partes.add(Map.of(
                 "text", """
                         Sos un asistente que ayuda a cargar productos alimenticios en una app \
                         para personas con alergias/intolerancias alimentarias en Uruguay.
@@ -83,32 +83,34 @@ public class VisionAnalysisService {
                         """
         ));
 
-        agregarImagenSiExiste(contenido, fotoFrontalBase64);
-        agregarImagenSiExiste(contenido, fotoComposicionBase64);
-        agregarImagenSiExiste(contenido, fotoNutricionalBase64);
+        agregarImagenSiExiste(partes, fotoFrontalBase64);
+        agregarImagenSiExiste(partes, fotoComposicionBase64);
+        agregarImagenSiExiste(partes, fotoNutricionalBase64);
 
-        if (contenido.size() == 1) {
+        if (partes.size() == 1) {
             // Solo el texto, ninguna imagen real
             return new AnalisisFotos(null, null, null, List.of(), Set.of(), false, "No se recibio ninguna foto para analizar.");
         }
 
         Map<String, Object> body = new LinkedHashMap<>();
-        body.put("model", MODEL);
-        body.put("max_tokens", 1024);
-        body.put("messages", List.of(Map.of("role", "user", "content", contenido)));
+        body.put("contents", List.of(Map.of("parts", partes)));
+        body.put("generationConfig", Map.of("responseMimeType", "application/json"));
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
-        headers.set("x-api-key", apiKey);
-        headers.set("anthropic-version", "2023-06-01");
+
+        String url = UriComponentsBuilder.fromHttpUrl(GEMINI_URL)
+                .queryParam("key", apiKey)
+                .toUriString();
 
         try {
             ResponseEntity<String> response = restTemplate.exchange(
-                    ANTHROPIC_URL, org.springframework.http.HttpMethod.POST,
+                    url, org.springframework.http.HttpMethod.POST,
                     new HttpEntity<>(body, headers), String.class);
 
             JsonNode raiz = objectMapper.readTree(response.getBody());
-            String textoRespuesta = raiz.path("content").path(0).path("text").asText("");
+            String textoRespuesta = raiz.path("candidates").path(0)
+                    .path("content").path("parts").path(0).path("text").asText("");
 
             String json = extraerJson(textoRespuesta);
             JsonNode datos = objectMapper.readTree(json);
@@ -142,13 +144,11 @@ public class VisionAnalysisService {
         }
     }
 
-    private void agregarImagenSiExiste(List<Map<String, Object>> contenido, String base64) {
+    private void agregarImagenSiExiste(List<Map<String, Object>> partes, String base64) {
         if (base64 == null || base64.isBlank()) return;
-        contenido.add(Map.of(
-                "type", "image",
-                "source", Map.of(
-                        "type", "base64",
-                        "media_type", "image/jpeg",
+        partes.add(Map.of(
+                "inline_data", Map.of(
+                        "mime_type", "image/jpeg",
                         "data", base64
                 )
         ));

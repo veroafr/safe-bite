@@ -21,5 +21,5 @@ safebite:
     expiration-ms: ${JWT_EXPIRATION_MS:86400000}
   cors:
     allowed-origins: ${CORS_ORIGINS:http://localhost:3000,http://localhost:8081,http://10.0.2.2:8080}
-  anthropic:
-    api-key: ${ANTHROPIC_API_KEY:}
+  gemini:
+    api-key: ${GEMINI_API_KEY:}
