@@ -103,6 +103,10 @@ class ApiClient {
     }
 
     if (!isSuccess) {
+      if ((response.statusCode == 401 || response.statusCode == 403) && decoded == null) {
+        throw ApiException(response.statusCode,
+            'Tu sesión venció o no es válida. Cerrá sesión y volvé a iniciar sesión.');
+      }
       final message = (decoded is Map && decoded['mensaje'] != null)
           ? decoded['mensaje'].toString()
           : (decoded is Map && decoded['message'] != null)

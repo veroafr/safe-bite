@@ -36,3 +36,5 @@ services:
         generateValue: true
       - key: JWT_EXPIRATION_MS
         value: "86400000"
+      - key: GEMINI_API_KEY
+        sync: false

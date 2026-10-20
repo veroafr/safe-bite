@@ -104,9 +104,20 @@ public class VisionAnalysisService {
                 .toUriString();
 
         try {
-            ResponseEntity<String> response = restTemplate.exchange(
-                    url, org.springframework.http.HttpMethod.POST,
-                    new HttpEntity<>(body, headers), String.class);
+            ResponseEntity<String> response = null;
+            for (int intento = 1; intento <= 3; intento++) {
+                try {
+                    response = restTemplate.exchange(
+                            url, org.springframework.http.HttpMethod.POST,
+                            new HttpEntity<>(body, headers), String.class);
+                    break;
+                } catch (org.springframework.web.client.HttpServerErrorException e) {
+                    // 503 "alta demanda" de Gemini: es temporal, se reintenta
+                    if (intento == 3) throw e;
+                    log.warn("Gemini fallo (intento {}/3): {}", intento, e.getStatusCode());
+                    try { Thread.sleep(2000L * intento); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); throw e; }
+                }
+            }
 
             JsonNode raiz = objectMapper.readTree(response.getBody());
             String textoRespuesta = raiz.path("candidates").path(0)

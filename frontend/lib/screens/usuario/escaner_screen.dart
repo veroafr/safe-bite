@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
-import 'package:google_mlkit_text_recognition/google_mlkit_text_recognition.dart';
 import '../../core/models/producto.dart';
 import '../../core/models/usuario.dart';
 import '../../core/models/alerta.dart';
@@ -622,52 +621,7 @@ class _LectorEanTabState extends State<_LectorEanTab> {
   String? _error;
   bool _procesando = false;
   String? _ultimoCodigoBuscado;
-  bool _analizandoIngredientes = false;
   bool _escaneandoPaquete = false;
-
-  Future<void> _escanearIngredientesPorFoto() async {
-    setState(() => _analizandoIngredientes = true);
-    try {
-      final picker = ImagePicker();
-      final foto = await picker.pickImage(source: ImageSource.camera, imageQuality: 85);
-      if (foto == null) return;
-
-      final recognizer = TextRecognizer(script: TextRecognitionScript.latin);
-      final resultadoOcr = await recognizer.processImage(InputImage.fromFilePath(foto.path));
-      await recognizer.close();
-
-      final texto = resultadoOcr.text.trim();
-      if (texto.isEmpty) {
-        if (mounted) {
-          mostrarError(context, 'No se pudo leer texto en la foto. Probá con mejor luz y más cerca de la etiqueta.');
-        }
-        return;
-      }
-
-      final analisis = await context.read<ProductoService>().analizarIngredientes(texto);
-      if (mounted) {
-        showModalBottomSheet(
-          context: context,
-          isScrollControlled: true,
-          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-          builder: (_) => DraggableScrollableSheet(
-            initialChildSize: 0.6,
-            minChildSize: 0.3,
-            maxChildSize: 0.9,
-            expand: false,
-            builder: (_, scrollController) => SingleChildScrollView(
-              controller: scrollController,
-              child: AnalisisIngredientesCard(analisis: analisis),
-            ),
-          ),
-        );
-      }
-    } catch (e) {
-      if (mounted) mostrarError(context, e);
-    } finally {
-      if (mounted) setState(() => _analizandoIngredientes = false);
-    }
-  }
 
   Future<void> _escanearPaquete() async {
     setState(() => _escaneandoPaquete = true);
@@ -828,16 +782,6 @@ class _LectorEanTabState extends State<_LectorEanTab> {
                       ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
                       : const Icon(Icons.inventory_2_outlined),
                   label: Text(_escaneandoPaquete ? 'Analizando...' : 'Escanear paquete'),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: _analizandoIngredientes ? null : _escanearIngredientesPorFoto,
-                  icon: _analizandoIngredientes
-                      ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                      : const Icon(Icons.document_scanner_outlined),
-                  label: Text(_analizandoIngredientes ? 'Analizando...' : 'Escanear ingredientes'),
                 ),
               ),
             ],
