@@ -3,6 +3,9 @@ package com.safebite.backend.controller;
 import com.safebite.backend.dto.request.AnalizarFotosRequest;
 import com.safebite.backend.dto.request.AportarProductoRequest;
 import com.safebite.backend.dto.request.OcrRequest;
+import com.safebite.backend.dto.request.RecomendarRequest;
+import com.safebite.backend.dto.response.RecomendacionesResponse;
+import com.safebite.backend.service.RecomendacionService;
 import com.safebite.backend.dto.response.AnalisisFotosResponse;
 import com.safebite.backend.dto.response.AnalisisIngredientesResponse;
 import com.safebite.backend.dto.response.EscaneoResponse;
@@ -26,6 +29,7 @@ public class ProductoController {
 
     private final ProductoService productoService;
     private final VisionAnalysisService visionAnalysisService;
+    private final RecomendacionService recomendacionService;
 
     @GetMapping("/buscar")
     public ResponseEntity<List<ProductoResponse>> buscar(@RequestParam String nombre) {
@@ -79,10 +83,25 @@ public class ProductoController {
                 .nombreSugerido(resultado.nombreSugerido())
                 .marcaSugerida(resultado.marcaSugerida())
                 .categoriaSugerida(resultado.categoriaSugerida())
+                .terminoBusquedaEs(resultado.terminoBusquedaEs())
+                .terminoBusquedaPt(resultado.terminoBusquedaPt())
                 .ingredientes(resultado.ingredientes())
                 .alergenos(resultado.alergenos())
                 .pudoLeer(resultado.pudoLeer())
                 .observacion(resultado.observacion())
+                .proveedor(resultado.proveedor())
                 .build());
+    }
+
+    /**
+     * "Esto no, pero esto si": alternativas aptas para el usuario logueado,
+     * a partir de un producto leido con "Escanear paquete". Busca en la base
+     * propia y en Open Food Facts (Uruguay, Argentina, Brasil) y la IA elige
+     * y explica. El veredicto apto/no apto lo deciden reglas, no la IA.
+     */
+    @PostMapping("/recomendar")
+    public ResponseEntity<RecomendacionesResponse> recomendar(@RequestBody RecomendarRequest request,
+                                                                @AuthenticationPrincipal Usuario usuario) {
+        return ResponseEntity.ok(recomendacionService.recomendar(request, usuario));
     }
 }

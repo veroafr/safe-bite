@@ -446,6 +446,7 @@ class _AnalisisPaqueteCard extends StatelessWidget {
           else
             const Text('No detectamos alérgenos que coincidan con tus intolerancias en esta foto.'),
           _DesgloseIntolerancias(alergenosProducto: analisis.alergenos),
+          if (hayDatos && !seguro) _RecomendacionesIa(analisis: analisis),
           if (analisis.ingredientes.isNotEmpty) ...[
             const SizedBox(height: 10),
             const Text('Ingredientes detectados:', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -464,6 +465,10 @@ class _AnalisisPaqueteCard extends StatelessWidget {
               ],
             ),
           ],
+          if (analisis.proveedor != null) ...[
+            const SizedBox(height: 6),
+            Text('Leído con IA (${analisis.proveedor})', style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+          ],
           const SizedBox(height: 12),
           Container(
             width: double.infinity,
@@ -472,6 +477,145 @@ class _AnalisisPaqueteCard extends StatelessWidget {
             child: const Text(
               'Este chequeo es rápido y no queda guardado en la base. Si querés que otros usuarios también lo vean, escaneá su código de barras y cargalo desde ahí.',
               style: TextStyle(fontSize: 12),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// "Esto no, pero esto sí": cuando el paquete escaneado no es apto, pide al
+/// backend alternativas (base propia + Open Food Facts de Uruguay, Argentina
+/// y Brasil) y la IA elige y explica las mejores.
+class _RecomendacionesIa extends StatefulWidget {
+  final AnalisisFotos analisis;
+  const _RecomendacionesIa({required this.analisis});
+
+  @override
+  State<_RecomendacionesIa> createState() => _RecomendacionesIaState();
+}
+
+class _RecomendacionesIaState extends State<_RecomendacionesIa> {
+  late Future<RecomendacionesIa> _futuro;
+
+  @override
+  void initState() {
+    super.initState();
+    _futuro = context.read<ProductoService>().recomendar(widget.analisis);
+  }
+
+  void _reintentar() {
+    setState(() {
+      _futuro = context.read<ProductoService>().recomendar(widget.analisis);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 14),
+      child: FutureBuilder<RecomendacionesIa>(
+        future: _futuro,
+        builder: (context, snap) {
+          if (snap.connectionState != ConnectionState.done) {
+            return const Row(
+              children: [
+                SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2)),
+                SizedBox(width: 10),
+                Expanded(child: Text('Buscando alternativas para vos...', style: TextStyle(fontSize: 13))),
+              ],
+            );
+          }
+          if (snap.hasError || snap.data == null) {
+            return Row(
+              children: [
+                const Expanded(
+                  child: Text('No pudimos buscar alternativas ahora.', style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+                ),
+                TextButton(onPressed: _reintentar, child: const Text('Reintentar')),
+              ],
+            );
+          }
+          final r = snap.data!;
+          if (r.items.isEmpty) {
+            return Text(r.mensaje, style: const TextStyle(fontSize: 13, color: AppColors.textSecondary));
+          }
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(Icons.swap_horiz, color: AppColors.primary, size: 20),
+                  const SizedBox(width: 6),
+                  const Text('Esto sí podrías consumir', style: TextStyle(fontWeight: FontWeight.bold)),
+                  const SizedBox(width: 6),
+                  if (r.conIa) const Icon(Icons.smart_toy_outlined, size: 14, color: AppColors.textSecondary),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Text(r.mensaje, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+              const SizedBox(height: 8),
+              ...r.items.map(_itemTile),
+              const SizedBox(height: 4),
+              const Text(
+                'Datos de la comunidad SafeBite y de Open Food Facts. Revisá siempre el envase antes de consumir.',
+                style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _itemTile(RecomendacionIa it) {
+    final detalle = [
+      if (it.marca != null && it.marca!.isNotEmpty) it.marca!,
+      if (it.pais != null) it.pais!,
+    ].join(' · ');
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withOpacity(0.06),
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: it.imagenUrl != null
+                ? Image.network(
+                    it.imagenUrl!,
+                    width: 48,
+                    height: 48,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => const SizedBox(width: 48, height: 48, child: Icon(Icons.fastfood_outlined)),
+                  )
+                : const SizedBox(width: 48, height: 48, child: Icon(Icons.fastfood_outlined)),
+          ),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Expanded(child: Text(it.nombre, style: const TextStyle(fontWeight: FontWeight.w600))),
+                    if (it.origen == 'SAFEBITE')
+                      const Icon(Icons.verified_outlined, size: 16, color: AppColors.primary),
+                  ],
+                ),
+                if (detalle.isNotEmpty)
+                  Text(detalle, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                if (it.motivo != null && it.motivo!.isNotEmpty)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 2),
+                    child: Text(it.motivo!, style: const TextStyle(fontSize: 12)),
+                  ),
+              ],
             ),
           ),
         ],

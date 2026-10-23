@@ -23,3 +23,13 @@ safebite:
     allowed-origins: ${CORS_ORIGINS:http://localhost:3000,http://localhost:8081,http://10.0.2.2:8080}
   gemini:
     api-key: ${GEMINI_API_KEY:}
+    model: ${GEMINI_MODEL:gemini-3.6-flash}
+  claude:
+    api-key: ${ANTHROPIC_API_KEY:}
+    model: ${CLAUDE_MODEL:claude-haiku-5-5}
+    # USD por millon de tokens. Defaults = Haiku 5.5. Si cambias CLAUDE_MODEL, actualiza estos valores.
+    price-in-per-mtok: ${CLAUDE_PRICE_IN:0.10}
+    price-out-per-mtok: ${CLAUDE_PRICE_OUT:0.50}
+  ia:
+    # Al llegar a este gasto estimado se deja de usar Claude y se usa solo el respaldo (Gemini).
+    presupuesto-usd: ${IA_PRESUPUESTO_USD:4.5}

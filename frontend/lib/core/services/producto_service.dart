@@ -9,6 +9,9 @@ class AnalisisFotos {
   final String? nombreSugerido;
   final String? marcaSugerida;
   final String? categoriaSugerida;
+  final String? terminoBusquedaEs;
+  final String? terminoBusquedaPt;
+  final String? proveedor;
   final List<String> ingredientes;
   final Set<TipoIntolerancia> alergenos;
   final bool pudoLeer;
@@ -18,6 +21,9 @@ class AnalisisFotos {
     this.nombreSugerido,
     this.marcaSugerida,
     this.categoriaSugerida,
+    this.terminoBusquedaEs,
+    this.terminoBusquedaPt,
+    this.proveedor,
     required this.ingredientes,
     required this.alergenos,
     required this.pudoLeer,
@@ -28,10 +34,57 @@ class AnalisisFotos {
         nombreSugerido: json['nombreSugerido'],
         marcaSugerida: json['marcaSugerida'],
         categoriaSugerida: json['categoriaSugerida'],
+        terminoBusquedaEs: json['terminoBusquedaEs'],
+        terminoBusquedaPt: json['terminoBusquedaPt'],
+        proveedor: json['proveedor'],
         ingredientes: ((json['ingredientes'] as List?) ?? []).map((e) => e.toString()).toList(),
         alergenos: ((json['alergenos'] as List?) ?? []).map((e) => tipoIntoleranciaDesde(e)).toSet(),
         pudoLeer: json['pudoLeer'] ?? false,
         observacion: json['observacion'],
+      );
+}
+
+/// Una alternativa apta sugerida por la IA ("esto no, pero esto si").
+class RecomendacionIa {
+  final String nombre;
+  final String? marca;
+  final String? pais;
+  final String? imagenUrl;
+  final String origen; // SAFEBITE | OPEN_FOOD_FACTS
+  final String? motivo;
+
+  RecomendacionIa({
+    required this.nombre,
+    this.marca,
+    this.pais,
+    this.imagenUrl,
+    required this.origen,
+    this.motivo,
+  });
+
+  factory RecomendacionIa.fromJson(Map<String, dynamic> json) => RecomendacionIa(
+        nombre: json['nombre'] ?? '',
+        marca: json['marca'],
+        pais: json['pais'],
+        imagenUrl: json['imagenUrl'],
+        origen: json['origen'] ?? '',
+        motivo: json['motivo'],
+      );
+}
+
+class RecomendacionesIa {
+  final String mensaje;
+  final bool conIa;
+  final List<RecomendacionIa> items;
+
+  RecomendacionesIa({required this.mensaje, required this.conIa, required this.items});
+
+  factory RecomendacionesIa.fromJson(Map<String, dynamic> json) => RecomendacionesIa(
+        mensaje: json['mensaje'] ?? '',
+        conIa: json['conIa'] ?? false,
+        items: ((json['recomendaciones'] as List?) ?? [])
+            .map((e) => RecomendacionIa.fromJson(e as Map<String, dynamic>))
+            .toList(),
       );
 }
 
@@ -88,6 +141,22 @@ class ProductoService {
       'fotoNutricionalBase64': fotoNutricionalBase64,
     });
     return AnalisisFotos.fromJson(data);
+  }
+
+  /// Pide alternativas aptas para el usuario logueado a partir de un
+  /// producto leido con "Escanear paquete" (base propia + Open Food Facts
+  /// de Uruguay, Argentina y Brasil; la IA elige y explica).
+  Future<RecomendacionesIa> recomendar(AnalisisFotos a) async {
+    final data = await _client.post('/productos/recomendar', body: {
+      'nombre': a.nombreSugerido,
+      'marca': a.marcaSugerida,
+      'categoria': a.categoriaSugerida,
+      'terminoBusquedaEs': a.terminoBusquedaEs,
+      'terminoBusquedaPt': a.terminoBusquedaPt,
+      'ingredientes': a.ingredientes,
+      'alergenos': a.alergenos.map((e) => e.name.toUpperCase()).toList(),
+    });
+    return RecomendacionesIa.fromJson(data);
   }
 
   // ---- Administracion ----

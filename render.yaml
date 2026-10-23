@@ -38,3 +38,5 @@ services:
         value: "86400000"
       - key: GEMINI_API_KEY
         sync: false
+      - key: ANTHROPIC_API_KEY
+        sync: false
