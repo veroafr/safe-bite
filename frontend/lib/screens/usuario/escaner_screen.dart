@@ -595,7 +595,9 @@ class _RecomendacionesIaState extends State<_RecomendacionesIa> {
   Widget _itemTile(RecomendacionIa it) {
     final detalle = it.origen == 'GENERICA'
         ? 'Sugerencia general'
-        : [
+        : it.origen == 'MARCA_IA'
+            ? [if (it.marca != null && it.marca!.isNotEmpty) it.marca!, 'Sugerencia de la IA'].join(' · ')
+            : [
             if (it.marca != null && it.marca!.isNotEmpty) it.marca!,
             if (it.pais != null) it.pais!,
           ].join(' · ');
@@ -622,7 +624,9 @@ class _RecomendacionesIaState extends State<_RecomendacionesIa> {
                 : SizedBox(
                     width: 48,
                     height: 48,
-                    child: Icon(it.origen == 'GENERICA' ? Icons.lightbulb_outline : Icons.fastfood_outlined),
+                    child: Icon(it.origen == 'GENERICA'
+                        ? Icons.lightbulb_outline
+                        : (it.origen == 'MARCA_IA' ? Icons.storefront_outlined : Icons.fastfood_outlined)),
                   ),
           ),
           const SizedBox(width: 10),

@@ -113,6 +113,12 @@ public class OpenFoodFactsService {
     private record EntradaCache(long vence, List<ProductoSimilar> productos) {}
 
     private final Map<String, EntradaCache> cacheSimilares = new ConcurrentHashMap<>();
+    /** Busquedas fallidas recientes: no se reintentan por un rato para no insistirle a un servicio caido. */
+    private final Map<String, Long> fallosRecientes = new ConcurrentHashMap<>();
+    private static final long PAUSA_FALLO_MS = 3L * 60 * 1000;
+    private static final long SEPARACION_MS = 1200;
+    private final Object cerrojoBusqueda = new Object();
+    private long ultimaBusquedaMs = 0;
 
     /**
      * Busca en Open Food Facts productos de un pais (tag: uruguay, argentina,
@@ -130,6 +136,11 @@ public class OpenFoodFactsService {
             return cacheado.productos();
         }
 
+        Long falloHasta = fallosRecientes.get(clave);
+        if (falloHasta != null && falloHasta > System.currentTimeMillis()) {
+            return List.of();
+        }
+
         try {
             String url = UriComponentsBuilder.fromHttpUrl(SEARCH_URL)
                     .queryParam("search_terms", termino.trim())
@@ -145,7 +156,7 @@ public class OpenFoodFactsService {
 
             HttpHeaders headers = new HttpHeaders();
             headers.set("User-Agent", "SafeBiteApp/1.0 (contacto@safebite.com)");
-            ResponseEntity<Map> response = restTemplate.exchange(url, HttpMethod.GET, new HttpEntity<>(headers), Map.class);
+            ResponseEntity<Map> response = pedirBusqueda(url, headers);
             Map<String, Object> body = response.getBody();
             List<Map<String, Object>> productos = body == null ? List.of()
                     : (List<Map<String, Object>>) body.getOrDefault("products", List.of());
@@ -172,9 +183,37 @@ public class OpenFoodFactsService {
             return resultado;
 
         } catch (Exception e) {
-            log.warn("No se pudo buscar similares en Open Food Facts ({} / {}): {}", termino, paisTag, e.getMessage());
+            String msg = String.valueOf(e.getMessage());
+            log.warn("No se pudo buscar similares en Open Food Facts ({} / {}): {}", termino, paisTag,
+                    msg.length() > 160 ? msg.substring(0, 160) : msg);
+            fallosRecientes.put(clave, System.currentTimeMillis() + PAUSA_FALLO_MS);
             return List.of();
         }
+    }
+
+    /** Una consulta a la vez y con pausa entre consultas; ante un 503/429 espera y reintenta una vez. */
+    @SuppressWarnings("rawtypes")
+    private ResponseEntity<Map> pedirBusqueda(String url, HttpHeaders headers) {
+        synchronized (cerrojoBusqueda) {
+            for (int intento = 1; ; intento++) {
+                esperarTurno();
+                try {
+                    return restTemplate.exchange(url, HttpMethod.GET, new HttpEntity<>(headers), Map.class);
+                } catch (org.springframework.web.client.HttpStatusCodeException e) {
+                    int code = e.getStatusCode().value();
+                    if (intento >= 2 || (code != 503 && code != 429)) throw e;
+                    try { Thread.sleep(3000); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); throw e; }
+                }
+            }
+        }
+    }
+
+    private void esperarTurno() {
+        long espera = ultimaBusquedaMs + SEPARACION_MS - System.currentTimeMillis();
+        if (espera > 0) {
+            try { Thread.sleep(espera); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
+        }
+        ultimaBusquedaMs = System.currentTimeMillis();
     }
 
     private String nombrePais(String tag) {
