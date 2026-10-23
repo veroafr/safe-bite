@@ -557,9 +557,32 @@ class _RecomendacionesIaState extends State<_RecomendacionesIa> {
               Text(r.mensaje, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
               const SizedBox(height: 8),
               ...r.items.map(_itemTile),
-              const SizedBox(height: 4),
+              if (r.advertencia != null && r.advertencia!.isNotEmpty)
+                Container(
+                  width: double.infinity,
+                  margin: const EdgeInsets.only(top: 2, bottom: 6),
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.accent.withOpacity(0.10),
+                    border: Border.all(color: AppColors.accent, width: 1.5),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Icon(Icons.fact_check_outlined, size: 18, color: Color(0xFF8A5A00)),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          r.advertencia!,
+                          style: const TextStyle(fontSize: 12, color: Color(0xFF8A5A00), fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               const Text(
-                'Datos de la comunidad SafeBite y de Open Food Facts. Revisá siempre el envase antes de consumir.',
+                'Datos de la comunidad SafeBite, de Open Food Facts y sugerencias de la IA.',
                 style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
               ),
             ],
@@ -570,10 +593,12 @@ class _RecomendacionesIaState extends State<_RecomendacionesIa> {
   }
 
   Widget _itemTile(RecomendacionIa it) {
-    final detalle = [
-      if (it.marca != null && it.marca!.isNotEmpty) it.marca!,
-      if (it.pais != null) it.pais!,
-    ].join(' · ');
+    final detalle = it.origen == 'GENERICA'
+        ? 'Sugerencia general'
+        : [
+            if (it.marca != null && it.marca!.isNotEmpty) it.marca!,
+            if (it.pais != null) it.pais!,
+          ].join(' · ');
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.all(8),
@@ -594,7 +619,11 @@ class _RecomendacionesIaState extends State<_RecomendacionesIa> {
                     fit: BoxFit.cover,
                     errorBuilder: (_, __, ___) => const SizedBox(width: 48, height: 48, child: Icon(Icons.fastfood_outlined)),
                   )
-                : const SizedBox(width: 48, height: 48, child: Icon(Icons.fastfood_outlined)),
+                : SizedBox(
+                    width: 48,
+                    height: 48,
+                    child: Icon(it.origen == 'GENERICA' ? Icons.lightbulb_outline : Icons.fastfood_outlined),
+                  ),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -614,6 +643,22 @@ class _RecomendacionesIaState extends State<_RecomendacionesIa> {
                   Padding(
                     padding: const EdgeInsets.only(top: 2),
                     child: Text(it.motivo!, style: const TextStyle(fontSize: 12)),
+                  ),
+                if (it.verificarMarca)
+                  const Padding(
+                    padding: EdgeInsets.only(top: 4),
+                    child: Row(
+                      children: [
+                        Icon(Icons.warning_amber_rounded, size: 14, color: Color(0xFF8A5A00)),
+                        SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            'Depende de la marca o del lote: revisá el envase',
+                            style: TextStyle(fontSize: 11, color: Color(0xFF8A5A00), fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
               ],
             ),

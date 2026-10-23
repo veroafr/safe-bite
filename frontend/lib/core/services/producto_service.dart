@@ -52,6 +52,7 @@ class RecomendacionIa {
   final String? imagenUrl;
   final String origen; // SAFEBITE | OPEN_FOOD_FACTS
   final String? motivo;
+  final bool verificarMarca;
 
   RecomendacionIa({
     required this.nombre,
@@ -60,6 +61,7 @@ class RecomendacionIa {
     this.imagenUrl,
     required this.origen,
     this.motivo,
+    this.verificarMarca = false,
   });
 
   factory RecomendacionIa.fromJson(Map<String, dynamic> json) => RecomendacionIa(
@@ -69,19 +71,22 @@ class RecomendacionIa {
         imagenUrl: json['imagenUrl'],
         origen: json['origen'] ?? '',
         motivo: json['motivo'],
+        verificarMarca: json['verificarMarca'] ?? false,
       );
 }
 
 class RecomendacionesIa {
   final String mensaje;
   final bool conIa;
+  final String? advertencia;
   final List<RecomendacionIa> items;
 
-  RecomendacionesIa({required this.mensaje, required this.conIa, required this.items});
+  RecomendacionesIa({required this.mensaje, required this.conIa, this.advertencia, required this.items});
 
   factory RecomendacionesIa.fromJson(Map<String, dynamic> json) => RecomendacionesIa(
         mensaje: json['mensaje'] ?? '',
         conIa: json['conIa'] ?? false,
+        advertencia: json['advertencia'],
         items: ((json['recomendaciones'] as List?) ?? [])
             .map((e) => RecomendacionIa.fromJson(e as Map<String, dynamic>))
             .toList(),

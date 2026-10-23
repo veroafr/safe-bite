@@ -20,6 +20,8 @@ public class RecomendacionesResponse {
     private String mensaje;
     /** true si las explicaciones las redacto la IA; false si es una lista simple por reglas. */
     private boolean conIa;
+    /** Aviso de revisar el envase (marcas/lotes cambian, contaminacion cruzada). */
+    private String advertencia;
     private List<Item> recomendaciones;
 
     @Data
@@ -35,5 +37,7 @@ public class RecomendacionesResponse {
         private String origen;
         private String ean;
         private String motivo;
+        /** true si el alergeno depende de la marca o del lote: hay que revisar el envase. */
+        private boolean verificarMarca;
     }
 }
