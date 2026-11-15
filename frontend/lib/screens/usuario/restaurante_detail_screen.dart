@@ -155,6 +155,7 @@ class _RestauranteDetailScreenState extends State<RestauranteDetailScreen> {
                         const SizedBox(height: 10),
                         Wrap(
                           spacing: 6,
+                          runSpacing: 4,
                           children: _restaurante!.opcionesAptasPara
                               .map((t) => Chip1('Sin ${etiquetaIntolerancia(t)}'))
                               .toList(),

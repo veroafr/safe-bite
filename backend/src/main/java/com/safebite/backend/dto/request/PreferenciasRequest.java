@@ -8,7 +8,8 @@ import java.util.Set;
 
 @Data
 public class PreferenciasRequest {
-    private Set<TipoIntolerancia> intolerancias;
+    private Set<String> intolerancias;
     private NivelAlerta nivelAlerta;
     private Set<String> tiposCocinaPreferidos;
+    private Boolean buscaAlimentacionSaludable;
 }

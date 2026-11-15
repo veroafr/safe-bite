@@ -11,6 +11,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -19,37 +21,33 @@ import java.util.Set;
 public class RecetaService {
 
     private final RecetaRepository recetaRepository;
+    private final IntoleranciaService intoleranciaService;
 
-    public List<RecetaResponse> listar(Boolean esTip, TipoIntolerancia excluirIntolerancia, Set<TipoIntolerancia> intoleranciasUsuario) {
+    /**
+     * @param filtro intolerancias elegidas: solo se devuelven recetas libres de TODAS ellas
+     *               (campo libreDe; tambien se aceptan las viejas etiquetas "Sin Gluten", etc.).
+     */
+    public List<RecetaResponse> listar(Boolean esTip, Collection<String> filtro) {
         List<Receta> recetas = esTip != null ? recetaRepository.findByEsTip(esTip) : recetaRepository.findAll();
-
-        Set<TipoIntolerancia> filtro = excluirIntolerancia != null ? Set.of(excluirIntolerancia) : intoleranciasUsuario;
+        Set<String> codigos = intoleranciaService.normalizar(filtro);
 
         return recetas.stream()
-                .filter(r -> filtro == null || filtro.isEmpty() || cumpleFiltro(r, filtro))
+                .filter(r -> codigos.isEmpty() || libreDe(r).containsAll(codigos))
                 .map(RecetaResponse::desde)
                 .toList();
     }
 
-    private boolean cumpleFiltro(Receta receta, Set<TipoIntolerancia> intolerancias) {
-        // Una receta cumple el filtro si sus etiquetas indican que es apta
-        // (por convencion se etiquetan como "Sin Gluten", "Sin Lactosa", etc.)
-        for (TipoIntolerancia intolerancia : intolerancias) {
-            String etiquetaEsperada = etiquetaPara(intolerancia);
-            boolean apta = receta.getEtiquetas().stream()
-                    .anyMatch(e -> e.equalsIgnoreCase(etiquetaEsperada));
-            if (!apta) return false;
+    /** libreDe + lo que se deduce de etiquetas viejas tipo "Sin Gluten" / "Sin Lactosa". */
+    private Set<String> libreDe(Receta receta) {
+        Set<String> r = new HashSet<>(receta.getLibreDe());
+        for (String etiqueta : receta.getEtiquetas()) {
+            String e = etiqueta == null ? "" : etiqueta.trim().toLowerCase();
+            if (e.equals("sin gluten") || e.equals("sin tacc")) r.addAll(TipoIntolerancia.LEGADO.get("GLUTEN"));
+            if (e.equals("sin lactosa")) r.addAll(TipoIntolerancia.LEGADO.get("LACTOSA"));
+            if (e.equals("sin frutos secos")) r.addAll(TipoIntolerancia.LEGADO.get("FRUTOS_SECOS"));
+            if (e.equals("sin mariscos")) r.addAll(TipoIntolerancia.LEGADO.get("MARISCOS"));
         }
-        return true;
-    }
-
-    private String etiquetaPara(TipoIntolerancia intolerancia) {
-        return switch (intolerancia) {
-            case GLUTEN -> "Sin Gluten";
-            case LACTOSA -> "Sin Lactosa";
-            case FRUTOS_SECOS -> "Sin Frutos Secos";
-            case MARISCOS -> "Sin Mariscos";
-        };
+        return r;
     }
 
     public RecetaResponse obtener(Long id) {
@@ -70,7 +68,8 @@ public class RecetaService {
                 .dificultad(request.getDificultad())
                 .imagenUrl(request.getImagenUrl())
                 .esTip(request.isEsTip())
-                .etiquetas(request.getEtiquetas())
+                .etiquetas(request.getEtiquetas() != null ? request.getEtiquetas() : new HashSet<>())
+                .libreDe(intoleranciaService.normalizar(request.getLibreDe()))
                 .ingredientes(request.getIngredientes())
                 .pasos(request.getPasos())
                 .publicadoPor(admin)
@@ -88,6 +87,7 @@ public class RecetaService {
         receta.setImagenUrl(request.getImagenUrl());
         receta.setEsTip(request.isEsTip());
         if (request.getEtiquetas() != null) receta.setEtiquetas(request.getEtiquetas());
+        if (request.getLibreDe() != null) receta.setLibreDe(intoleranciaService.normalizar(request.getLibreDe()));
         if (request.getIngredientes() != null) receta.setIngredientes(request.getIngredientes());
         if (request.getPasos() != null) receta.setPasos(request.getPasos());
         return RecetaResponse.desde(recetaRepository.save(receta));

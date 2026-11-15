@@ -44,6 +44,13 @@ public class Receta {
     @Builder.Default
     private Set<String> etiquetas = new HashSet<>();
 
+    /** Codigos de intolerancias para las que la receta es apta ("libre de trigo", "libre de leche"...). */
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "receta_libre_de", joinColumns = @JoinColumn(name = "receta_id"))
+    @Column(name = "intolerancia")
+    @Builder.Default
+    private Set<String> libreDe = new HashSet<>();
+
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "receta_ingredientes", joinColumns = @JoinColumn(name = "receta_id"))
     @Column(name = "ingrediente", length = 500)

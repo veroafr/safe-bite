@@ -25,7 +25,7 @@ public class AportarProductoRequest {
     private String categoria;
     private String imagenUrl;
     private List<String> ingredientes;
-    private Set<TipoIntolerancia> alergenos;
+    private Set<String> alergenos;
 
     private String fotoFrontalBase64;
     private String fotoComposicionBase64;

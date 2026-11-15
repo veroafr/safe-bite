@@ -51,12 +51,19 @@ public class Usuario implements UserDetails {
     @Builder.Default
     private Rol rol = Rol.USUARIO;
 
-    @ElementCollection(targetClass = TipoIntolerancia.class, fetch = FetchType.EAGER)
+    @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "usuario_intolerancias", joinColumns = @JoinColumn(name = "usuario_id"))
-    @Enumerated(EnumType.STRING)
     @Column(name = "intolerancia")
     @Builder.Default
-    private Set<TipoIntolerancia> intolerancias = new HashSet<>();
+    private Set<String> intolerancias = new HashSet<>();
+
+    /**
+     * Opcion "Busco alimentarme mejor" del registro: el usuario no declara
+     * (o no solo declara) una restriccion, sino que quiere comer mas sano.
+     * Boolean (no boolean) para que la columna nueva admita filas viejas en null.
+     */
+    @Builder.Default
+    private Boolean buscaAlimentacionSaludable = false;
 
     @Enumerated(EnumType.STRING)
     @Builder.Default
@@ -73,6 +80,22 @@ public class Usuario implements UserDetails {
 
     @Builder.Default
     private LocalDateTime fechaRegistro = LocalDateTime.now();
+
+    // ---- Recuperacion de contraseña ----
+
+    /** Hash (BCrypt) del codigo de 6 digitos enviado por email. Nunca se guarda en claro. */
+    @JsonIgnore
+    private String codigoRecuperacionHash;
+
+    @JsonIgnore
+    private LocalDateTime codigoRecuperacionExpira;
+
+    @JsonIgnore
+    private Integer intentosRecuperacion;
+
+    public boolean isBuscaAlimentacionSaludable() {
+        return Boolean.TRUE.equals(buscaAlimentacionSaludable);
+    }
 
     // ---- UserDetails ----
 

@@ -22,6 +22,7 @@ public class UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
+    private final IntoleranciaService intoleranciaService;
 
     public Usuario obtenerPorEmail(String email) {
         return usuarioRepository.findByEmail(email)
@@ -55,7 +56,8 @@ public class UsuarioService {
 
     @Transactional
     public UsuarioResponse actualizarPreferencias(Usuario usuario, PreferenciasRequest request) {
-        if (request.getIntolerancias() != null) usuario.setIntolerancias(request.getIntolerancias());
+        if (request.getIntolerancias() != null) usuario.setIntolerancias(intoleranciaService.normalizar(request.getIntolerancias()));
+        if (request.getBuscaAlimentacionSaludable() != null) usuario.setBuscaAlimentacionSaludable(request.getBuscaAlimentacionSaludable());
         if (request.getNivelAlerta() != null) usuario.setNivelAlerta(request.getNivelAlerta());
         if (request.getTiposCocinaPreferidos() != null) usuario.setTiposCocinaPreferidos(request.getTiposCocinaPreferidos());
         return UsuarioResponse.desde(usuarioRepository.save(usuario));

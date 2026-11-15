@@ -1,7 +1,8 @@
 package com.safebite.backend.dto.request;
 
+import com.safebite.backend.config.Validaciones;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.Pattern;
 import lombok.Data;
 
 @Data
@@ -10,6 +11,6 @@ public class CambiarPasswordRequest {
     private String passwordActual;
 
     @NotBlank
-    @Size(min = 6, message = "La contraseña debe tener al menos 6 caracteres")
+    @Pattern(regexp = Validaciones.PASSWORD, message = Validaciones.PASSWORD_MENSAJE)
     private String passwordNueva;
 }

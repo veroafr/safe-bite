@@ -16,5 +16,5 @@ public class RestauranteRequest {
     private Double longitud;
     private String imagenUrl;
     private Set<String> tiposCocina;
-    private Set<TipoIntolerancia> opcionesAptasPara;
+    private Set<String> opcionesAptasPara;
 }

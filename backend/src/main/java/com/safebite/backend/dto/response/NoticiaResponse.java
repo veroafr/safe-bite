@@ -20,6 +20,7 @@ public class NoticiaResponse {
     private String contenido;
     private String imagenUrl;
     private Set<String> etiquetas;
+    private Set<String> intolerancias;
     private LocalDateTime fechaPublicacion;
 
     public static NoticiaResponse desde(Noticia n) {
@@ -30,6 +31,7 @@ public class NoticiaResponse {
                 .contenido(n.getContenido())
                 .imagenUrl(n.getImagenUrl())
                 .etiquetas(n.getEtiquetas())
+                .intolerancias(n.getIntolerancias())
                 .fechaPublicacion(n.getFechaPublicacion())
                 .build();
     }

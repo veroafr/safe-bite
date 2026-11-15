@@ -28,8 +28,12 @@ public class RestauranteController {
     public ResponseEntity<List<RestauranteResponse>> buscar(
             @RequestParam(required = false) String nombre,
             @RequestParam(required = false) String tipoCocina,
-            @RequestParam(required = false) TipoIntolerancia intolerancia) {
-        return ResponseEntity.ok(restauranteService.buscar(nombre, tipoCocina, intolerancia));
+            @RequestParam(required = false) String intolerancia,
+            @RequestParam(required = false) List<String> intolerancias) {
+        List<String> filtro = new java.util.ArrayList<>();
+        if (intolerancia != null && !intolerancia.isBlank()) filtro.add(intolerancia);
+        if (intolerancias != null) filtro.addAll(intolerancias);
+        return ResponseEntity.ok(restauranteService.buscar(nombre, tipoCocina, filtro));
     }
 
     @GetMapping("/{id}")

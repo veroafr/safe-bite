@@ -5,6 +5,7 @@ import '../../core/models/usuario.dart';
 import '../../core/services/restaurante_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/common_widgets.dart';
+import '../../core/widgets/intolerancias_widgets.dart';
 
 class AdminRestaurantesScreen extends StatefulWidget {
   const AdminRestaurantesScreen({super.key});
@@ -14,6 +15,7 @@ class AdminRestaurantesScreen extends StatefulWidget {
 
 class _AdminRestaurantesScreenState extends State<AdminRestaurantesScreen> {
   late Future<List<Restaurante>> _future;
+  Set<String> _filtro = {};
 
   @override
   void initState() {
@@ -23,7 +25,7 @@ class _AdminRestaurantesScreenState extends State<AdminRestaurantesScreen> {
 
   void _recargar() {
     setState(() {
-      _future = context.read<RestauranteService>().buscar();
+      _future = context.read<RestauranteService>().buscar(intolerancias: _filtro);
     });
   }
 
@@ -35,7 +37,7 @@ class _AdminRestaurantesScreenState extends State<AdminRestaurantesScreen> {
     final lngCtrl = TextEditingController(text: existente?.longitud?.toString() ?? '');
     final imagenCtrl = TextEditingController(text: existente?.imagenUrl ?? '');
     final tiposCocinaCtrl = TextEditingController(text: existente?.tiposCocina.join(', ') ?? '');
-    Set<TipoIntolerancia> opciones = {...(existente?.opcionesAptasPara ?? {})};
+    Set<String> opciones = {...(existente?.opcionesAptasPara ?? <String>{})};
 
     final guardar = await showModalBottomSheet<bool>(
       context: context,
@@ -68,22 +70,12 @@ class _AdminRestaurantesScreenState extends State<AdminRestaurantesScreen> {
                 const SizedBox(height: 10),
                 TextField(controller: tiposCocinaCtrl, decoration: const InputDecoration(labelText: 'Tipos de cocina (separados por coma)')),
                 const SizedBox(height: 10),
-                const Text('Apto para intolerancias'),
-                Wrap(
-                  spacing: 8,
-                  children: TipoIntolerancia.values
-                      .map((t) => FilterChip(
-                            label: Text(etiquetaIntolerancia(t)),
-                            selected: opciones.contains(t),
-                            onSelected: (v) => setModalState(() {
-                              if (v) {
-                                opciones.add(t);
-                              } else {
-                                opciones.remove(t);
-                              }
-                            }),
-                          ))
-                      .toList(),
+                const Text('Tiene opciones aptas para quienes evitan:', style: TextStyle(fontWeight: FontWeight.w600)),
+                const SizedBox(height: 6),
+                SelectorIntolerancias(
+                  seleccionadas: opciones,
+                  prefijo: 'Sin ',
+                  onChanged: (s) => setModalState(() => opciones = s),
                 ),
                 const SizedBox(height: 20),
                 ElevatedButton(
@@ -109,7 +101,7 @@ class _AdminRestaurantesScreenState extends State<AdminRestaurantesScreen> {
         'longitud': double.tryParse(lngCtrl.text.trim()),
         'imagenUrl': imagenCtrl.text.trim().isEmpty ? null : imagenCtrl.text.trim(),
         'tiposCocina': tiposCocinaCtrl.text.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList(),
-        'opcionesAptasPara': opciones.map((e) => e.name).toList(),
+        'opcionesAptasPara': opciones.toList(),
       };
       try {
         final service = context.read<RestauranteService>();
@@ -158,34 +150,51 @@ class _AdminRestaurantesScreenState extends State<AdminRestaurantesScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Gestión de Restaurantes')),
       floatingActionButton: FloatingActionButton(onPressed: () => _abrirFormulario(), child: const Icon(Icons.add)),
-      body: FutureBuilder<List<Restaurante>>(
-        future: _future,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) return const LoadingView();
-          if (snapshot.hasError) return ErrorView(mensaje: snapshot.error.toString(), onReintentar: _recargar);
-          final restaurantes = snapshot.data ?? [];
-          if (restaurantes.isEmpty) return const EmptyView(mensaje: 'No hay restaurantes cargados');
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: restaurantes.length,
-            itemBuilder: (context, i) {
-              final r = restaurantes[i];
-              return Card(
-                child: ListTile(
-                  title: Text(r.nombre),
-                  subtitle: Text(r.direccion ?? ''),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(icon: const Icon(Icons.edit_outlined), onPressed: () => _abrirFormulario(existente: r)),
-                      IconButton(icon: const Icon(Icons.delete_outline, color: AppColors.danger), onPressed: () => _eliminar(r)),
-                    ],
-                  ),
-                ),
-              );
+      body: Column(
+        children: [
+          const SizedBox(height: 8),
+          BarraFiltroIntolerancias(
+            seleccion: _filtro,
+            prefijo: 'Sin ',
+            titulo: 'Locales aptos para...',
+            ayuda: 'Muestra los locales con opciones aptas para TODAS las marcadas.',
+            onChanged: (s) {
+              _filtro = s;
+              _recargar();
             },
-          );
-        },
+          ),
+          Expanded(
+            child: FutureBuilder<List<Restaurante>>(
+              future: _future,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) return const LoadingView();
+                if (snapshot.hasError) return ErrorView(mensaje: snapshot.error.toString(), onReintentar: _recargar);
+                final restaurantes = snapshot.data ?? [];
+                if (restaurantes.isEmpty) return const EmptyView(mensaje: 'No hay restaurantes cargados');
+                return ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: restaurantes.length,
+                  itemBuilder: (context, i) {
+                    final r = restaurantes[i];
+                    return Card(
+                      child: ListTile(
+                        title: Text(r.nombre),
+                        subtitle: Text(r.direccion ?? ''),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(icon: const Icon(Icons.edit_outlined), onPressed: () => _abrirFormulario(existente: r)),
+                            IconButton(icon: const Icon(Icons.delete_outline, color: AppColors.danger), onPressed: () => _eliminar(r)),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }

@@ -5,8 +5,9 @@ class NoticiaService {
   final ApiClient _client;
   NoticiaService(this._client);
 
-  Future<List<Noticia>> listar({String? etiqueta}) async {
-    final data = await _client.get('/noticias', query: {'etiqueta': etiqueta});
+  /// [intolerancias]: noticias relacionadas con alguna de ellas.
+  Future<List<Noticia>> listar({String? etiqueta, Set<String>? intolerancias}) async {
+    final data = await _client.get('/noticias', query: {'etiqueta': etiqueta, 'intolerancias': intolerancias});
     return (data as List).map((e) => Noticia.fromJson(e)).toList();
   }
 

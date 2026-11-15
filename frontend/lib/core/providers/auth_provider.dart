@@ -42,6 +42,8 @@ class AuthProvider extends ChangeNotifier {
     String? ciudad,
     String? pais,
     String idioma = 'es',
+    Set<String> intolerancias = const {},
+    bool buscaAlimentacionSaludable = false,
   }) async {
     final data = await _client.post('/auth/registro', body: {
       'nombre': nombre,
@@ -50,12 +52,28 @@ class AuthProvider extends ChangeNotifier {
       'ciudad': ciudad,
       'pais': pais,
       'idioma': idioma,
+      'intolerancias': intolerancias.toList(),
+      'buscaAlimentacionSaludable': buscaAlimentacionSaludable,
     }, withAuth: false);
     await _persistirSesion(data);
   }
 
+  /// Paso 1 de "Olvidaste tu contraseña": el backend envia un codigo de 6 digitos al email.
   Future<void> recuperarPassword(String email) async {
     await _client.post('/auth/recuperar-password', body: {'email': email}, withAuth: false);
+  }
+
+  /// Paso 2: codigo recibido + nueva contraseña.
+  Future<void> restablecerPassword({
+    required String email,
+    required String codigo,
+    required String passwordNueva,
+  }) async {
+    await _client.post('/auth/restablecer-password', body: {
+      'email': email,
+      'codigo': codigo,
+      'passwordNueva': passwordNueva,
+    }, withAuth: false);
   }
 
   Future<void> _persistirSesion(dynamic data) async {

@@ -4,6 +4,7 @@ import '../../core/models/receta.dart';
 import '../../core/services/receta_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/common_widgets.dart';
+import '../../core/widgets/intolerancias_widgets.dart';
 
 class AdminRecetasScreen extends StatefulWidget {
   const AdminRecetasScreen({super.key});
@@ -13,6 +14,7 @@ class AdminRecetasScreen extends StatefulWidget {
 
 class _AdminRecetasScreenState extends State<AdminRecetasScreen> {
   late Future<List<Receta>> _future;
+  Set<String> _filtro = {};
 
   @override
   void initState() {
@@ -22,7 +24,7 @@ class _AdminRecetasScreenState extends State<AdminRecetasScreen> {
 
   void _recargar() {
     setState(() {
-      _future = context.read<RecetaService>().listar();
+      _future = context.read<RecetaService>().listar(intolerancias: _filtro);
     });
   }
 
@@ -36,6 +38,7 @@ class _AdminRecetasScreenState extends State<AdminRecetasScreen> {
     final ingredientesCtrl = TextEditingController(text: existente?.ingredientes.join('\n') ?? '');
     final pasosCtrl = TextEditingController(text: existente?.pasos.join('\n') ?? '');
     bool esTip = existente?.esTip ?? false;
+    Set<String> libreDe = {...(existente?.libreDe ?? <String>{})};
 
     final guardar = await showModalBottomSheet<bool>(
       context: context,
@@ -69,7 +72,15 @@ class _AdminRecetasScreenState extends State<AdminRecetasScreen> {
                 const SizedBox(height: 10),
                 TextField(controller: imagenCtrl, decoration: const InputDecoration(labelText: 'URL de imagen')),
                 const SizedBox(height: 10),
-                TextField(controller: etiquetasCtrl, decoration: const InputDecoration(labelText: 'Etiquetas (ej: Sin Gluten, Vegano)')),
+                const Text('Receta libre de (apta para quienes evitan):', style: TextStyle(fontWeight: FontWeight.w600)),
+                const SizedBox(height: 6),
+                SelectorIntolerancias(
+                  seleccionadas: libreDe,
+                  prefijo: 'Sin ',
+                  onChanged: (s) => setModalState(() => libreDe = s),
+                ),
+                const SizedBox(height: 10),
+                TextField(controller: etiquetasCtrl, decoration: const InputDecoration(labelText: 'Otras etiquetas (ej: Vegano, Rápida)')),
                 const SizedBox(height: 10),
                 TextField(controller: ingredientesCtrl, decoration: const InputDecoration(labelText: 'Ingredientes (uno por línea)'), maxLines: 4),
                 const SizedBox(height: 10),
@@ -98,6 +109,7 @@ class _AdminRecetasScreenState extends State<AdminRecetasScreen> {
         'imagenUrl': imagenCtrl.text.trim().isEmpty ? null : imagenCtrl.text.trim(),
         'esTip': esTip,
         'etiquetas': etiquetasCtrl.text.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList(),
+        'libreDe': libreDe.toList(),
         'ingredientes': ingredientesCtrl.text.split('\n').map((e) => e.trim()).where((e) => e.isNotEmpty).toList(),
         'pasos': pasosCtrl.text.split('\n').map((e) => e.trim()).where((e) => e.isNotEmpty).toList(),
       };
@@ -132,34 +144,51 @@ class _AdminRecetasScreenState extends State<AdminRecetasScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Gestión de Recetas')),
       floatingActionButton: FloatingActionButton(onPressed: () => _abrirFormulario(), child: const Icon(Icons.add)),
-      body: FutureBuilder<List<Receta>>(
-        future: _future,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) return const LoadingView();
-          if (snapshot.hasError) return ErrorView(mensaje: snapshot.error.toString(), onReintentar: _recargar);
-          final recetas = snapshot.data ?? [];
-          if (recetas.isEmpty) return const EmptyView(mensaje: 'No hay recetas ni tips cargados');
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: recetas.length,
-            itemBuilder: (context, i) {
-              final r = recetas[i];
-              return Card(
-                child: ListTile(
-                  title: Text(r.titulo),
-                  subtitle: Text(r.esTip ? 'Tip de Salud' : 'Receta'),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(icon: const Icon(Icons.edit_outlined), onPressed: () => _abrirFormulario(existente: r)),
-                      IconButton(icon: const Icon(Icons.delete_outline, color: AppColors.danger), onPressed: () => _eliminar(r)),
-                    ],
-                  ),
-                ),
-              );
+      body: Column(
+        children: [
+          const SizedBox(height: 8),
+          BarraFiltroIntolerancias(
+            seleccion: _filtro,
+            prefijo: 'Sin ',
+            titulo: 'Recetas libres de...',
+            ayuda: 'Muestra las recetas aptas para TODAS las marcadas.',
+            onChanged: (s) {
+              _filtro = s;
+              _recargar();
             },
-          );
-        },
+          ),
+          Expanded(
+            child: FutureBuilder<List<Receta>>(
+              future: _future,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) return const LoadingView();
+                if (snapshot.hasError) return ErrorView(mensaje: snapshot.error.toString(), onReintentar: _recargar);
+                final recetas = snapshot.data ?? [];
+                if (recetas.isEmpty) return const EmptyView(mensaje: 'No hay recetas ni tips cargados');
+                return ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: recetas.length,
+                  itemBuilder: (context, i) {
+                    final r = recetas[i];
+                    return Card(
+                      child: ListTile(
+                        title: Text(r.titulo),
+                        subtitle: Text(r.esTip ? 'Tip de Salud' : 'Receta'),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(icon: const Icon(Icons.edit_outlined), onPressed: () => _abrirFormulario(existente: r)),
+                            IconButton(icon: const Icon(Icons.delete_outline, color: AppColors.danger), onPressed: () => _eliminar(r)),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }

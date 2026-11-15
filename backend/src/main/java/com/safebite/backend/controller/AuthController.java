@@ -3,6 +3,7 @@ package com.safebite.backend.controller;
 import com.safebite.backend.dto.request.LoginRequest;
 import com.safebite.backend.dto.request.RecuperarPasswordRequest;
 import com.safebite.backend.dto.request.RegistroRequest;
+import com.safebite.backend.dto.request.RestablecerPasswordRequest;
 import com.safebite.backend.dto.response.AuthResponse;
 import com.safebite.backend.service.AuthService;
 import jakarta.validation.Valid;
@@ -33,6 +34,12 @@ public class AuthController {
     @PostMapping("/recuperar-password")
     public ResponseEntity<Map<String, String>> recuperarPassword(@Valid @RequestBody RecuperarPasswordRequest request) {
         authService.recuperarPassword(request);
-        return ResponseEntity.ok(Map.of("mensaje", "Si el email existe, se enviaron las instrucciones de recuperacion"));
+        return ResponseEntity.ok(Map.of("mensaje", "Si el email está registrado, te enviamos un código para restablecer la contraseña"));
+    }
+
+    @PostMapping("/restablecer-password")
+    public ResponseEntity<Map<String, String>> restablecerPassword(@Valid @RequestBody RestablecerPasswordRequest request) {
+        authService.restablecerPassword(request);
+        return ResponseEntity.ok(Map.of("mensaje", "Tu contraseña fue actualizada. Ya podés iniciar sesión."));
     }
 }

@@ -25,9 +25,18 @@ class ApiClient {
     final uri = Uri.parse('${ApiConfig.baseUrl}$path');
     if (query == null || query.isEmpty) return uri;
 
-    final cleanQuery = <String, String>{};
+    // Uri acepta String o Iterable<String> como valor: las listas se envian
+    // repetidas (?intolerancias=TRIGO&intolerancias=LECHE), que Spring
+    // recibe como List<String>.
+    final cleanQuery = <String, dynamic>{};
     query.forEach((key, value) {
-      if (value != null) cleanQuery[key] = value.toString();
+      if (value == null) return;
+      if (value is Iterable) {
+        final lista = value.map((e) => e.toString()).toList();
+        if (lista.isNotEmpty) cleanQuery[key] = lista;
+      } else {
+        cleanQuery[key] = value.toString();
+      }
     });
     return uri.replace(queryParameters: {...uri.queryParameters, ...cleanQuery});
   }
@@ -63,6 +72,19 @@ class ApiClient {
     bool withAuth = true,
   }) async {
     final response = await http.put(
+      _buildUri(path, null),
+      headers: await _headers(withAuth: withAuth),
+      body: body != null ? jsonEncode(body) : null,
+    );
+    return _handleResponse(response);
+  }
+
+  Future<dynamic> patch(
+    String path, {
+    Map<String, dynamic>? body,
+    bool withAuth = true,
+  }) async {
+    final response = await http.patch(
       _buildUri(path, null),
       headers: await _headers(withAuth: withAuth),
       body: body != null ? jsonEncode(body) : null,

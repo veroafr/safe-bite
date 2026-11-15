@@ -4,6 +4,7 @@ import '../../core/models/usuario.dart';
 import '../../core/services/producto_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/common_widgets.dart';
+import '../../core/widgets/intolerancias_widgets.dart';
 
 /// Pantalla para que el usuario cargue o complete un producto.
 /// Dos modos:
@@ -33,7 +34,7 @@ class _CargarProductoScreenState extends State<CargarProductoScreen> {
   late final _marcaCtrl = TextEditingController(text: widget.marcaInicial ?? '');
   final _categoriaCtrl = TextEditingController();
   final _ingredientesCtrl = TextEditingController();
-  final Set<TipoIntolerancia> _alergenosSeleccionados = {};
+  Set<String> _alergenosSeleccionados = {};
   bool _enviando = false;
   bool _analizandoIA = false;
   String? _observacionIA;
@@ -118,7 +119,7 @@ class _CargarProductoScreenState extends State<CargarProductoScreen> {
             .map((e) => e.trim())
             .where((e) => e.isNotEmpty)
             .toList(),
-        'alergenos': _alergenosSeleccionados.map((a) => a.name).toList(),
+        'alergenos': _alergenosSeleccionados.toList(),
         'fotoFrontalBase64': _fotoFrontalBase64,
         'fotoComposicionBase64': _fotoComposicionBase64,
         'fotoNutricionalBase64': _fotoNutricionalBase64,
@@ -261,22 +262,11 @@ class _CargarProductoScreenState extends State<CargarProductoScreen> {
             ),
             const SizedBox(height: 16),
             const Text('¿Contiene alguno de estos alérgenos?', style: TextStyle(fontWeight: FontWeight.bold)),
-            Wrap(
-              spacing: 8,
-              children: TipoIntolerancia.values.map((t) {
-                final seleccionado = _alergenosSeleccionados.contains(t);
-                return FilterChip(
-                  label: Text(etiquetaIntolerancia(t)),
-                  selected: seleccionado,
-                  onSelected: (v) => setState(() {
-                    if (v) {
-                      _alergenosSeleccionados.add(t);
-                    } else {
-                      _alergenosSeleccionados.remove(t);
-                    }
-                  }),
-                );
-              }).toList(),
+            const SizedBox(height: 6),
+            SelectorIntolerancias(
+              seleccionadas: _alergenosSeleccionados,
+              color: AppColors.danger,
+              onChanged: (s) => setState(() => _alergenosSeleccionados = s),
             ),
             const SizedBox(height: 24),
             SizedBox(

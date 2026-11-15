@@ -16,7 +16,7 @@ public class ProductoRequest {
     private String codigoEan;
     private String imagenUrl;
     private List<String> ingredientes;
-    private Set<TipoIntolerancia> alergenos;
+    private Set<String> alergenos;
 
     private Boolean verificado;
 

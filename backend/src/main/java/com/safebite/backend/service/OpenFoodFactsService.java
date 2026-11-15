@@ -36,7 +36,7 @@ public class OpenFoodFactsService {
             String marca,
             String imagenUrl,
             List<String> ingredientes,
-            Set<TipoIntolerancia> alergenos
+            Set<String> alergenos
     ) {}
 
     @SuppressWarnings("unchecked")
@@ -78,7 +78,7 @@ public class OpenFoodFactsService {
             }
 
             List<String> tagsAlergenos = (List<String>) producto.getOrDefault("allergens_tags", List.of());
-            Set<TipoIntolerancia> alergenos = new java.util.HashSet<>(mapearAlergenos(tagsAlergenos));
+            Set<String> alergenos = new java.util.HashSet<>(mapearAlergenos(tagsAlergenos));
 
             List<String> tagsTrazas = (List<String>) producto.getOrDefault("traces_tags", List.of());
             alergenos.addAll(mapearAlergenos(tagsTrazas));
@@ -107,7 +107,7 @@ public class OpenFoodFactsService {
             String pais,
             String imagenUrl,
             String ingredientesTexto,
-            Set<TipoIntolerancia> alergenos
+            Set<String> alergenos
     ) {}
 
     private record EntradaCache(long vence, List<ProductoSimilar> productos) {}
@@ -167,7 +167,7 @@ public class OpenFoodFactsService {
                 String ingredientes = p.get("ingredients_text") == null ? null : String.valueOf(p.get("ingredients_text"));
                 if (nombre == null || nombre.isBlank() || ingredientes == null || ingredientes.isBlank()) continue;
 
-                Set<TipoIntolerancia> alergenos = new HashSet<>();
+                Set<String> alergenos = new HashSet<>();
                 alergenos.addAll(mapearAlergenos((List<String>) p.getOrDefault("allergens_tags", List.of())));
                 alergenos.addAll(mapearAlergenos((List<String>) p.getOrDefault("traces_tags", List.of())));
                 alergenos.addAll(alergenoTextAnalyzer.detectar(ingredientes));
@@ -225,20 +225,42 @@ public class OpenFoodFactsService {
         };
     }
 
-    private Set<TipoIntolerancia> mapearAlergenos(List<String> tags) {
-        Set<TipoIntolerancia> resultado = new HashSet<>();
+    private Set<String> mapearAlergenos(List<String> tags) {
+        // Taxonomia de alergenos de Open Food Facts -> codigos de SafeBite
+        Set<String> resultado = new HashSet<>();
         for (String tag : tags) {
             String t = tag.toLowerCase();
             if (t.contains("gluten")) {
-                resultado.add(TipoIntolerancia.GLUTEN);
-            } else if (t.contains("milk") || t.contains("lactose")) {
-                resultado.add(TipoIntolerancia.LACTOSA);
-            } else if (t.contains("nuts") || t.contains("peanuts")) {
-                resultado.add(TipoIntolerancia.FRUTOS_SECOS);
-            } else if (t.contains("crustaceans") || t.contains("molluscs") || t.contains("fish")) {
-                resultado.add(TipoIntolerancia.MARISCOS);
+                resultado.addAll(TipoIntolerancia.GRUPO_GLUTEN);
             }
+            if (t.contains("wheat")) resultado.add(TipoIntolerancia.TRIGO);
+            if (t.contains("rye")) resultado.add(TipoIntolerancia.CENTENO);
+            if (t.contains("barley")) resultado.add(TipoIntolerancia.CEBADA);
+            if (t.contains("oat")) resultado.add(TipoIntolerancia.AVENA);
+            if (t.contains("milk") || t.contains("lactose")) resultado.add(TipoIntolerancia.LECHE);
+            if (t.contains("peanut")) resultado.add(TipoIntolerancia.MANI);
+            if (t.endsWith(":nuts") || t.contains("tree-nuts")) {
+                Set<String> frutos = new HashSet<>(TipoIntolerancia.GRUPO_FRUTOS_SECOS);
+                frutos.remove(TipoIntolerancia.MANI);
+                resultado.addAll(frutos);
+            }
+            if (t.contains("almond")) resultado.add(TipoIntolerancia.ALMENDRA);
+            if (t.contains("hazelnut")) resultado.add(TipoIntolerancia.AVELLANA);
+            if (t.contains("cashew")) resultado.add(TipoIntolerancia.CASTANA_CAJU);
+            if (t.contains("brazil-nut")) resultado.add(TipoIntolerancia.CASTANA_PARA);
+            if (t.contains("macadamia")) resultado.add(TipoIntolerancia.MACADAMIA);
+            if (t.contains("walnut")) resultado.add(TipoIntolerancia.NUEZ);
+            if (t.contains("pecan")) resultado.add(TipoIntolerancia.PECAN);
+            if (t.contains("pistachio")) resultado.add(TipoIntolerancia.PISTACHO);
+            if (t.contains("pine-nut")) resultado.add(TipoIntolerancia.PINON);
+            if (t.contains("chestnut")) resultado.add(TipoIntolerancia.CASTANA);
+            if (t.contains("crustacean")) resultado.add(TipoIntolerancia.CRUSTACEOS);
+            if (t.contains("fish")) resultado.add(TipoIntolerancia.PESCADO);
+            if (t.contains("egg")) resultado.add(TipoIntolerancia.HUEVO);
+            if (t.contains("soy")) resultado.add(TipoIntolerancia.SOJA);
+            if (t.contains("latex")) resultado.add(TipoIntolerancia.LATEX);
         }
         return resultado;
     }
+
 }

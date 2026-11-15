@@ -31,8 +31,8 @@ public class CatalogoAlimentos {
                 Arrays.asList(es.split(",")), Arrays.asList(pt.split(",")), variable);
     }
 
-    private static final Map<TipoIntolerancia, List<Familia>> FAMILIAS = Map.of(
-            TipoIntolerancia.GLUTEN, List.of(
+    private static final Map<String, List<Familia>> FAMILIAS = Map.of(
+            "GLUTEN", List.of(
                     // Basicos
                     f("Pan y tostadas", false, "pan,panes,pancito,tostad*,pao,torrada*,sandwich*,lactal",
                             "pan sin tacc,tostadas de arroz", "pão sem glúten,torradas de arroz"),
@@ -59,7 +59,7 @@ public class CatalogoAlimentos {
                     f("Snacks y golosinas", true, "snack*,papas,chizito*,palito*,chocolate*,alfajor*,golosina*,caramelo*,helado*,postre*,sorvete*,chiclet*",
                             "snacks de maíz sin gluten,alfajores sin tacc", "snacks sem glúten,chocolate sem glúten")
             ),
-            TipoIntolerancia.LACTOSA, List.of(
+            "LACTOSA", List.of(
                     f("Leche", false, "leche*,leite*,bebida*",
                             "leche sin lactosa,bebida vegetal de arroz", "leite sem lactose,bebida vegetal de arroz"),
                     f("Yogur y postres lacteos", false, "yogur*,yogurt*,iogurte*,flan*,natilla*,postre*,pudin*",
@@ -73,7 +73,7 @@ public class CatalogoAlimentos {
                     f("Panificados", true, "pan,panes,galleta*,galletita*,bizcoch*,factura*,medialuna*,torta*,tostad*,biscoito*",
                             "pan sin lactosa,galletitas veganas", "pão sem lactose,biscoitos veganos")
             ),
-            TipoIntolerancia.FRUTOS_SECOS, List.of(
+            "FRUTOS_SECOS", List.of(
                     f("Mani y pastas untables", true, "mani,cacahuete*,amendoim,pasta*,untable*,crema*",
                             "pasta de semillas de girasol,untable sin frutos secos", "pasta de sementes de girassol"),
                     f("Chocolates, barras y golosinas", true, "chocolate*,barra*,granola,turron*,alfajor*,golosina*,helado*,bombon*,cereal*",
@@ -81,7 +81,7 @@ public class CatalogoAlimentos {
                     f("Bebidas vegetales", false, "almendra*,bebida*,leche*",
                             "bebida vegetal de arroz,bebida vegetal de avena", "bebida vegetal de arroz,bebida vegetal de aveia")
             ),
-            TipoIntolerancia.MARISCOS, List.of(
+            "MARISCOS", List.of(
                     f("Pescados y mariscos", true, "surimi,camaron*,langostino*,marisco*,pescado*,atun,conserva*,paella,ostra*,calamar*,camarao,lula",
                             "atún en conserva,sardinas en conserva", "atum em conserva,sardinha em conserva"),
                     f("Caldos y salsas", true, "caldo*,salsa*,sopa*,snack*",
@@ -89,10 +89,26 @@ public class CatalogoAlimentos {
             )
     );
 
+    /**
+     * Las familias estan agrupadas por "grupo" (gluten, lactosa, frutos secos,
+     * mariscos). Cada intolerancia del sistema se asocia a un grupo; las que
+     * agrega el admin no tienen familias (devuelven vacio).
+     */
+    public static String grupoDe(String codigo) {
+        if (codigo == null) return null;
+        if (TipoIntolerancia.GRUPO_GLUTEN.contains(codigo)) return "GLUTEN";
+        if (TipoIntolerancia.LECHE.equals(codigo)) return "LACTOSA";
+        if (TipoIntolerancia.GRUPO_FRUTOS_SECOS.contains(codigo)) return "FRUTOS_SECOS";
+        if (TipoIntolerancia.CRUSTACEOS.equals(codigo) || TipoIntolerancia.PESCADO.equals(codigo)) return "MARISCOS";
+        return null;
+    }
+
     /** Primera familia del alergeno que coincide con el texto (nombre/categoria del producto). */
-    public Optional<Familia> buscar(TipoIntolerancia alergeno, String texto) {
+    public Optional<Familia> buscar(String alergeno, String texto) {
+        String grupo = grupoDe(alergeno);
+        if (grupo == null) return Optional.empty();
         Set<String> palabras = palabras(texto);
-        for (Familia fam : FAMILIAS.getOrDefault(alergeno, List.of())) {
+        for (Familia fam : FAMILIAS.getOrDefault(grupo, List.of())) {
             for (String clave : fam.claves()) {
                 if (coincide(clave, palabras)) return Optional.of(fam);
             }
@@ -101,18 +117,18 @@ public class CatalogoAlimentos {
     }
 
     /** true si alguna familia que coincide cambia segun marca/lote (hay que revisar el envase). */
-    public boolean esVariable(Set<TipoIntolerancia> conflicto, String texto) {
-        for (TipoIntolerancia t : conflicto) {
+    public boolean esVariable(Set<String> conflicto, String texto) {
+        for (String t : conflicto) {
             if (buscar(t, texto).map(Familia::variable).orElse(false)) return true;
         }
         return false;
     }
 
-    /** Familias coincidentes (una por alergeno en conflicto). */
-    public List<Familia> familias(Set<TipoIntolerancia> conflicto, String texto) {
-        List<Familia> r = new ArrayList<>();
-        for (TipoIntolerancia t : conflicto) buscar(t, texto).ifPresent(r::add);
-        return r;
+    /** Familias coincidentes (sin repetir: trigo y cebada comparten las del gluten). */
+    public List<Familia> familias(Set<String> conflicto, String texto) {
+        java.util.LinkedHashSet<Familia> r = new java.util.LinkedHashSet<>();
+        for (String t : conflicto) buscar(t, texto).ifPresent(r::add);
+        return new ArrayList<>(r);
     }
 
     private boolean coincide(String clave, Set<String> palabras) {

@@ -16,6 +16,8 @@ public class RecetaRequest {
     private String imagenUrl;
     private boolean esTip;
     private Set<String> etiquetas;
+    /** Codigos de intolerancias para las que la receta es apta. */
+    private Set<String> libreDe;
     private List<String> ingredientes;
     private List<String> pasos;
 }

@@ -7,6 +7,7 @@ import '../../core/models/usuario.dart';
 import '../../core/services/producto_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/common_widgets.dart';
+import '../../core/widgets/intolerancias_widgets.dart';
 
 class AdminProductosScreen extends StatefulWidget {
   const AdminProductosScreen({super.key});
@@ -17,6 +18,9 @@ class AdminProductosScreen extends StatefulWidget {
 class _AdminProductosScreenState extends State<AdminProductosScreen> {
   late Future<List<Producto>> _futurePendientes;
   late Future<List<Producto>> _futureTodos;
+
+  /// Filtro del catalogo: oculta los productos que contienen alguna de estas.
+  Set<String> _filtroSin = {};
 
   @override
   void initState() {
@@ -73,7 +77,7 @@ class _AdminProductosScreenState extends State<AdminProductosScreen> {
     final categoriaCtrl = TextEditingController(text: existente?.categoria ?? '');
     final codigoCtrl = TextEditingController(text: existente?.codigoEan ?? '');
     final ingredientesCtrl = TextEditingController(text: existente?.ingredientes.join(', ') ?? '');
-    final alergenosSeleccionados = <TipoIntolerancia>{...?existente?.alergenos};
+    var alergenosSeleccionados = <String>{...?existente?.alergenos};
 
     String? fotoFrontal = existente?.fotoFrontalBase64;
     String? fotoComposicion = existente?.fotoComposicionBase64;
@@ -180,23 +184,12 @@ class _AdminProductosScreenState extends State<AdminProductosScreen> {
                   maxLines: 3,
                 ),
                 const SizedBox(height: 12),
-                const Text('Alérgenos', style: TextStyle(fontWeight: FontWeight.bold)),
-                Wrap(
-                  spacing: 8,
-                  children: TipoIntolerancia.values.map((t) {
-                    final sel = alergenosSeleccionados.contains(t);
-                    return FilterChip(
-                      label: Text(etiquetaIntolerancia(t)),
-                      selected: sel,
-                      onSelected: (v) => setModalState(() {
-                        if (v) {
-                          alergenosSeleccionados.add(t);
-                        } else {
-                          alergenosSeleccionados.remove(t);
-                        }
-                      }),
-                    );
-                  }).toList(),
+                const Text('Alérgenos que contiene', style: TextStyle(fontWeight: FontWeight.bold)),
+                const SizedBox(height: 6),
+                SelectorIntolerancias(
+                  seleccionadas: alergenosSeleccionados,
+                  color: AppColors.danger,
+                  onChanged: (s) => setModalState(() => alergenosSeleccionados = s),
                 ),
                 const SizedBox(height: 20),
                 ElevatedButton(
@@ -220,7 +213,7 @@ class _AdminProductosScreenState extends State<AdminProductosScreen> {
         'categoria': categoriaCtrl.text.trim().isEmpty ? null : categoriaCtrl.text.trim(),
         'codigoEan': codigoCtrl.text.trim().isEmpty ? null : codigoCtrl.text.trim(),
         'ingredientes': ingredientesCtrl.text.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList(),
-        'alergenos': alergenosSeleccionados.map((a) => a.name).toList(),
+        'alergenos': alergenosSeleccionados.toList(),
         'verificado': true,
         'fotoFrontalBase64': fotoFrontal,
         'fotoComposicionBase64': fotoComposicion,
@@ -330,6 +323,7 @@ class _AdminProductosScreenState extends State<AdminProductosScreen> {
                               const SizedBox(height: 6),
                               Wrap(
                                 spacing: 6,
+                                runSpacing: 4,
                                 children: p.alergenos.map((a) => Chip1(etiquetaIntolerancia(a), color: AppColors.danger)).toList(),
                               ),
                             ],
@@ -371,13 +365,29 @@ class _AdminProductosScreenState extends State<AdminProductosScreen> {
                 );
               },
             ),
-            FutureBuilder<List<Producto>>(
+            Column(
+              children: [
+                const SizedBox(height: 8),
+                BarraFiltroIntolerancias(
+                  seleccion: _filtroSin,
+                  prefijo: 'Sin ',
+                  titulo: 'Productos sin...',
+                  ayuda: 'Oculta los productos que contienen ALGUNA de las marcadas.',
+                  onChanged: (s) => setState(() => _filtroSin = s),
+                ),
+                Expanded(
+                  child: FutureBuilder<List<Producto>>(
               future: _futureTodos,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) return const LoadingView();
                 if (snapshot.hasError) return ErrorView(mensaje: snapshot.error.toString(), onReintentar: _recargar);
-                final productos = snapshot.data ?? [];
-                if (productos.isEmpty) return const EmptyView(mensaje: 'No hay productos cargados');
+                final productos = (snapshot.data ?? [])
+                    .where((p) => _filtroSin.isEmpty || p.alergenos.intersection(_filtroSin).isEmpty)
+                    .toList();
+                if (productos.isEmpty) {
+                  return EmptyView(
+                      mensaje: _filtroSin.isEmpty ? 'No hay productos cargados' : 'Ningún producto cumple el filtro');
+                }
                 return ListView.builder(
                   padding: const EdgeInsets.all(16),
                   itemCount: productos.length,
@@ -391,6 +401,7 @@ class _AdminProductosScreenState extends State<AdminProductosScreen> {
                           if (p.marca != null) p.marca!,
                           if (p.codigoEan != null) 'Código: ${p.codigoEan}',
                           p.verificado ? 'Verificado' : 'Sin verificar',
+                          if (p.alergenos.isNotEmpty) 'Contiene: ${p.alergenos.map(etiquetaIntolerancia).join(', ')}',
                         ].join(' · ')),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -404,6 +415,9 @@ class _AdminProductosScreenState extends State<AdminProductosScreen> {
                   },
                 );
               },
+                  ),
+                ),
+              ],
             ),
           ],
         ),

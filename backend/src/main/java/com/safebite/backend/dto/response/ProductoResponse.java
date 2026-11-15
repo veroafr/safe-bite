@@ -23,7 +23,7 @@ public class ProductoResponse {
     private String codigoEan;
     private String imagenUrl;
     private List<String> ingredientes;
-    private Set<TipoIntolerancia> alergenos;
+    private Set<String> alergenos;
     private OrigenProducto origen;
     private boolean verificado;
     private String aportadoPorEmail;

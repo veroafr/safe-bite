@@ -8,10 +8,12 @@ import '../../core/models/producto.dart';
 import '../../core/models/usuario.dart';
 import '../../core/models/alerta.dart';
 import '../../core/providers/auth_provider.dart';
+import '../../core/providers/filtro_escaner_provider.dart';
 import '../../core/services/producto_service.dart';
 import '../../core/services/alerta_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/common_widgets.dart';
+import '../../core/widgets/intolerancias_widgets.dart';
 import 'cargar_producto_screen.dart';
 
 class EscanerScreen extends StatelessWidget {
@@ -29,20 +31,22 @@ class EscanerScreen extends StatelessWidget {
 }
 
 class _DesgloseIntolerancias extends StatelessWidget {
-  final Set<TipoIntolerancia> alergenosProducto;
+  final Set<String> alergenosProducto;
   const _DesgloseIntolerancias({required this.alergenosProducto});
 
   @override
   Widget build(BuildContext context) {
     final usuario = context.watch<AuthProvider>().usuario;
-    final intolerancias = usuario?.intolerancias ?? <TipoIntolerancia>{};
+    final filtro = context.watch<FiltroEscanerProvider>();
+    final intolerancias = filtro.efectivas(usuario);
     if (intolerancias.isEmpty) return const SizedBox.shrink();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: 10),
-        const Text('Tus intolerancias en este producto:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+        Text(filtro.personalizado ? 'Intolerancias elegidas en el filtro:' : 'Tus intolerancias en este producto:',
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
         const SizedBox(height: 6),
         ...intolerancias.map((t) {
           final esSeguro = !alergenosProducto.contains(t);
@@ -379,7 +383,7 @@ class _AnalisisPaqueteCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final usuario = context.watch<AuthProvider>().usuario;
-    final intolerancias = usuario?.intolerancias ?? <TipoIntolerancia>{};
+    final intolerancias = context.watch<FiltroEscanerProvider>().efectivas(usuario);
     final enConflicto = analisis.alergenos.intersection(intolerancias);
     final hayDatos = analisis.ingredientes.isNotEmpty || analisis.alergenos.isNotEmpty;
     final seguro = hayDatos && enConflicto.isEmpty;
@@ -502,12 +506,16 @@ class _RecomendacionesIaState extends State<_RecomendacionesIa> {
   @override
   void initState() {
     super.initState();
-    _futuro = context.read<ProductoService>().recomendar(widget.analisis);
+    _futuro = _pedir();
   }
+
+  Future<RecomendacionesIa> _pedir() => context
+      .read<ProductoService>()
+      .recomendar(widget.analisis, intolerancias: context.read<FiltroEscanerProvider>().filtro);
 
   void _reintentar() {
     setState(() {
-      _futuro = context.read<ProductoService>().recomendar(widget.analisis);
+      _futuro = _pedir();
     });
   }
 
@@ -879,7 +887,9 @@ class _LectorEanTabState extends State<_LectorEanTab> {
       _ultimoCodigoBuscado = codigo;
     });
     try {
-      final resultado = await context.read<ProductoService>().escanearPorEan(codigo);
+      final resultado = await context
+          .read<ProductoService>()
+          .escanearPorEan(codigo, intolerancias: context.read<FiltroEscanerProvider>().filtro);
       setState(() => _resultado = resultado);
       if (detenerCamara) await _controller.stop();
     } catch (e) {
@@ -980,6 +990,11 @@ class _LectorEanTabState extends State<_LectorEanTab> {
             ],
           ),
         ),
+        _FiltroEscanerBarra(onCambio: () {
+          // Si ya hay un producto en pantalla, se vuelve a evaluar con el filtro nuevo.
+          final codigo = _ultimoCodigoBuscado;
+          if (_resultado != null && codigo != null) _buscarProducto(codigo, detenerCamara: false);
+        }),
         const SizedBox(height: 4),
         Expanded(
           child: _resultado != null
@@ -1018,6 +1033,56 @@ class _LectorEanTabState extends State<_LectorEanTab> {
                             style: TextStyle(color: AppColors.textSecondary)),
                       ),
                     ),
+        ),
+      ],
+    );
+  }
+}
+
+/// "Revisar contra": por defecto las intolerancias del perfil; se pueden
+/// elegir otras para evaluar los productos escaneados.
+class _FiltroEscanerBarra extends StatelessWidget {
+  final VoidCallback onCambio;
+  const _FiltroEscanerBarra({required this.onCambio});
+
+  @override
+  Widget build(BuildContext context) {
+    final usuario = context.watch<AuthProvider>().usuario;
+    final filtro = context.watch<FiltroEscanerProvider>();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 2, 16, 0),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  filtro.personalizado ? 'Revisando contra el filtro elegido:' : 'Revisando contra tus intolerancias:',
+                  style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                ),
+              ),
+              if (filtro.personalizado)
+                TextButton(
+                  style: TextButton.styleFrom(visualDensity: VisualDensity.compact),
+                  onPressed: () {
+                    filtro.restablecer();
+                    onCambio();
+                  },
+                  child: const Text('Usar las mías', style: TextStyle(fontSize: 12)),
+                ),
+            ],
+          ),
+        ),
+        BarraFiltroIntolerancias(
+          seleccion: filtro.efectivas(usuario),
+          titulo: 'Revisar productos contra...',
+          ayuda: 'El escáner te avisa si el producto contiene alguna de las intolerancias marcadas. '
+              'Por defecto se usan las de tu perfil.',
+          onChanged: (s) {
+            filtro.cambiar(s, usuario);
+            onCambio();
+          },
         ),
       ],
     );

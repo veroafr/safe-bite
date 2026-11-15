@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/models/usuario.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/utils/validadores.dart';
+import '../../core/widgets/form_widgets.dart';
 import '../usuario/usuario_home_screen.dart';
 import '../admin/admin_home_screen.dart';
 import 'register_screen.dart';
@@ -22,6 +24,13 @@ class _LoginScreenState extends State<LoginScreen> {
   final _passwordCtrl = TextEditingController();
   bool _cargando = false;
   String? _error;
+
+  @override
+  void dispose() {
+    _emailCtrl.dispose();
+    _passwordCtrl.dispose();
+    super.dispose();
+  }
 
   Future<void> _iniciarSesion() async {
     if (!_formKey.currentState!.validate()) return;
@@ -66,20 +75,21 @@ class _LoginScreenState extends State<LoginScreen> {
                   controller: _emailCtrl,
                   keyboardType: TextInputType.emailAddress,
                   decoration: const InputDecoration(labelText: 'Email', prefixIcon: Icon(Icons.email_outlined)),
-                  validator: (v) => (v == null || v.isEmpty) ? 'Ingresá tu email' : null,
+                  textInputAction: TextInputAction.next,
+                  validator: Validadores.email,
                 ),
                 const SizedBox(height: 14),
-                TextFormField(
+                CampoPassword(
                   controller: _passwordCtrl,
-                  obscureText: true,
-                  decoration: const InputDecoration(labelText: 'Contraseña', prefixIcon: Icon(Icons.lock_outline)),
+                  textInputAction: TextInputAction.done,
+                  onFieldSubmitted: (_) => _cargando ? null : _iniciarSesion(),
                   validator: (v) => (v == null || v.isEmpty) ? 'Ingresá tu contraseña' : null,
                 ),
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton(
-                    onPressed: () => Navigator.of(context).push(
-                        MaterialPageRoute(builder: (_) => const RecuperarPasswordScreen())),
+                    onPressed: () => Navigator.of(context).push(MaterialPageRoute(
+                        builder: (_) => RecuperarPasswordScreen(emailInicial: _emailCtrl.text.trim()))),
                     child: const Text('¿Olvidaste tu contraseña?'),
                   ),
                 ),

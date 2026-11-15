@@ -12,4 +12,7 @@ import lombok.Data;
 public class OcrRequest {
     @NotBlank
     private String textoDetectado;
+
+    /** Opcional: evaluar contra estas intolerancias en lugar de las del usuario (filtro del escaner). */
+    private java.util.List<String> intolerancias;
 }

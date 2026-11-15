@@ -14,7 +14,7 @@ import java.util.Set;
 @AllArgsConstructor
 public class AnalisisIngredientesResponse {
     private boolean seguro;
-    private Set<TipoIntolerancia> alergenosEncontrados;
+    private Set<String> alergenosEncontrados;
     private String mensaje;
     private String textoAnalizado;
 }

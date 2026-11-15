@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../core/models/intolerancia.dart';
 import '../../core/models/receta.dart';
 import '../../core/services/receta_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/common_widgets.dart';
+import '../../core/widgets/intolerancias_widgets.dart';
 import 'receta_detail_screen.dart';
 
 class RecetasScreen extends StatefulWidget {
@@ -14,7 +16,8 @@ class RecetasScreen extends StatefulWidget {
 
 class _RecetasScreenState extends State<RecetasScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  bool _soloAptasParaMi = false;
+  /// Intolerancias elegidas: solo recetas libres de todas ellas.
+  Set<String> _filtro = {};
   late Future<List<Receta>> _future;
 
   @override
@@ -29,7 +32,7 @@ class _RecetasScreenState extends State<RecetasScreen> with SingleTickerProvider
 
   Future<List<Receta>> _cargar() {
     final service = context.read<RecetaService>();
-    return service.listar(esTip: _tabController.index == 1, usarMisIntolerancias: _soloAptasParaMi);
+    return service.listar(esTip: _tabController.index == 1, intolerancias: _filtro);
   }
 
   void _recargar() {
@@ -52,17 +55,18 @@ class _RecetasScreenState extends State<RecetasScreen> with SingleTickerProvider
       ),
       body: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            child: FilterChip(
-              label: const Text('Solo aptas para mis intolerancias'),
-              selected: _soloAptasParaMi,
-              onSelected: (v) {
-                setState(() => _soloAptasParaMi = v);
-                _recargar();
-              },
-            ),
+          const SizedBox(height: 8),
+          BarraFiltroIntolerancias(
+            seleccion: _filtro,
+            prefijo: 'Sin ',
+            titulo: 'Recetas libres de...',
+            ayuda: 'Se muestran las recetas aptas para TODAS las intolerancias que marques.',
+            onChanged: (s) {
+              _filtro = s;
+              _recargar();
+            },
           ),
+          const SizedBox(height: 4),
           Expanded(
             child: FutureBuilder<List<Receta>>(
               future: _future,
@@ -70,7 +74,11 @@ class _RecetasScreenState extends State<RecetasScreen> with SingleTickerProvider
                 if (snapshot.connectionState == ConnectionState.waiting) return const LoadingView();
                 if (snapshot.hasError) return ErrorView(mensaje: snapshot.error.toString(), onReintentar: _recargar);
                 final recetas = snapshot.data ?? [];
-                if (recetas.isEmpty) return const EmptyView(mensaje: 'No hay recetas disponibles', icono: Icons.menu_book_outlined);
+                if (recetas.isEmpty) {
+                  return EmptyView(
+                      mensaje: _filtro.isEmpty ? 'No hay recetas disponibles' : 'No hay recetas libres de todo lo que elegiste',
+                      icono: Icons.menu_book_outlined);
+                }
                 return GridView.builder(
                   padding: const EdgeInsets.all(16),
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -122,7 +130,11 @@ class _TarjetaReceta extends StatelessWidget {
                     ].join(' • '),
                     style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
                   ),
-                  if (receta.etiquetas.isNotEmpty) ...[
+                  if (receta.libreDe.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Chip1('Sin ${etiquetaIntolerancia(receta.libreDe.first)}'
+                        '${receta.libreDe.length > 1 ? ' +${receta.libreDe.length - 1}' : ''}'),
+                  ] else if (receta.etiquetas.isNotEmpty) ...[
                     const SizedBox(height: 4),
                     Chip1(receta.etiquetas.first),
                   ],

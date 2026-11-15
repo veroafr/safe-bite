@@ -16,8 +16,9 @@ public class NoticiaController {
     private final NoticiaService noticiaService;
 
     @GetMapping
-    public ResponseEntity<List<NoticiaResponse>> listar(@RequestParam(required = false) String etiqueta) {
-        return ResponseEntity.ok(noticiaService.listar(etiqueta));
+    public ResponseEntity<List<NoticiaResponse>> listar(@RequestParam(required = false) String etiqueta,
+                                                        @RequestParam(required = false) List<String> intolerancias) {
+        return ResponseEntity.ok(noticiaService.listar(etiqueta, intolerancias));
     }
 
     @GetMapping("/{id}")

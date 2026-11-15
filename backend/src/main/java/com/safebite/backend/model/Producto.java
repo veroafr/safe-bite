@@ -47,12 +47,11 @@ public class Producto {
     @Builder.Default
     private List<String> ingredientes = new ArrayList<>();
 
-    @ElementCollection(targetClass = TipoIntolerancia.class, fetch = FetchType.EAGER)
+    @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "producto_alergenos", joinColumns = @JoinColumn(name = "producto_id"))
-    @Enumerated(EnumType.STRING)
     @Column(name = "alergeno")
     @Builder.Default
-    private Set<TipoIntolerancia> alergenos = new HashSet<>();
+    private Set<String> alergenos = new HashSet<>();
 
     @Enumerated(EnumType.STRING)
     @Builder.Default

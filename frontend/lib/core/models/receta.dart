@@ -7,6 +7,9 @@ class Receta {
   final String? imagenUrl;
   final bool esTip;
   final Set<String> etiquetas;
+
+  /// Codigos de intolerancias para las que la receta es apta ("libre de").
+  final Set<String> libreDe;
   final List<String> ingredientes;
   final List<String> pasos;
 
@@ -19,6 +22,7 @@ class Receta {
     this.imagenUrl,
     required this.esTip,
     required this.etiquetas,
+    this.libreDe = const {},
     required this.ingredientes,
     required this.pasos,
   });
@@ -32,6 +36,7 @@ class Receta {
         imagenUrl: json['imagenUrl'],
         esTip: json['esTip'] ?? false,
         etiquetas: ((json['etiquetas'] as List?) ?? []).map((e) => e.toString()).toSet(),
+        libreDe: ((json['libreDe'] as List?) ?? []).map((e) => e.toString()).toSet(),
         ingredientes: ((json['ingredientes'] as List?) ?? []).map((e) => e.toString()).toList(),
         pasos: ((json['pasos'] as List?) ?? []).map((e) => e.toString()).toList(),
       );
@@ -44,6 +49,7 @@ class Receta {
         'imagenUrl': imagenUrl,
         'esTip': esTip,
         'etiquetas': etiquetas.toList(),
+        'libreDe': libreDe.toList(),
         'ingredientes': ingredientes,
         'pasos': pasos,
       };

@@ -17,7 +17,7 @@ public class EscaneoResponse {
     private ProductoResponse producto;
     private boolean seguro;
     private boolean datosSuficientes;
-    private Set<TipoIntolerancia> alergenosEnConflicto;
+    private Set<String> alergenosEnConflicto;
     private String mensaje;
 
     /**

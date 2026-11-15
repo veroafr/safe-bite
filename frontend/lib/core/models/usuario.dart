@@ -1,6 +1,6 @@
-enum Rol { USUARIO, ADMINISTRADOR }
+export 'intolerancia.dart' show etiquetaIntolerancia, IntoleranciaCatalogo;
 
-enum TipoIntolerancia { GLUTEN, LACTOSA, FRUTOS_SECOS, MARISCOS }
+enum Rol { USUARIO, ADMINISTRADOR }
 
 enum NivelAlerta { BAJO, MEDIO, ALTO }
 
@@ -10,21 +10,9 @@ Rol rolDesde(String? valor) =>
 NivelAlerta nivelAlertaDesde(String? valor) => NivelAlerta.values
     .firstWhere((e) => e.name == valor, orElse: () => NivelAlerta.ALTO);
 
-TipoIntolerancia tipoIntoleranciaDesde(String valor) =>
-    TipoIntolerancia.values.firstWhere((e) => e.name == valor);
-
-String etiquetaIntolerancia(TipoIntolerancia t) {
-  switch (t) {
-    case TipoIntolerancia.GLUTEN:
-      return 'Gluten';
-    case TipoIntolerancia.LACTOSA:
-      return 'Lactosa';
-    case TipoIntolerancia.FRUTOS_SECOS:
-      return 'Frutos Secos';
-    case TipoIntolerancia.MARISCOS:
-      return 'Mariscos';
-  }
-}
+/// Convierte la lista JSON de codigos de intolerancias en un Set<String>.
+Set<String> codigosIntolerancias(dynamic lista) =>
+    ((lista as List?) ?? []).map((e) => e.toString()).toSet();
 
 class Usuario {
   final int id;
@@ -35,7 +23,12 @@ class Usuario {
   final String? pais;
   final String idioma;
   final Rol rol;
-  final Set<TipoIntolerancia> intolerancias;
+
+  /// Codigos de intolerancias (ej: {"TRIGO", "LECHE"}).
+  final Set<String> intolerancias;
+
+  /// Opcion "Busco alimentarme mejor".
+  final bool buscaAlimentacionSaludable;
   final NivelAlerta nivelAlerta;
   final Set<String> tiposCocinaPreferidos;
 
@@ -49,6 +42,7 @@ class Usuario {
     required this.idioma,
     required this.rol,
     required this.intolerancias,
+    this.buscaAlimentacionSaludable = false,
     required this.nivelAlerta,
     required this.tiposCocinaPreferidos,
   });
@@ -63,9 +57,8 @@ class Usuario {
       pais: json['pais'],
       idioma: json['idioma'] ?? 'es',
       rol: rolDesde(json['rol']),
-      intolerancias: ((json['intolerancias'] as List?) ?? [])
-          .map((e) => tipoIntoleranciaDesde(e))
-          .toSet(),
+      intolerancias: codigosIntolerancias(json['intolerancias']),
+      buscaAlimentacionSaludable: json['buscaAlimentacionSaludable'] ?? false,
       nivelAlerta: nivelAlertaDesde(json['nivelAlerta']),
       tiposCocinaPreferidos:
           ((json['tiposCocinaPreferidos'] as List?) ?? []).map((e) => e.toString()).toSet(),
@@ -81,7 +74,8 @@ class Usuario {
         'pais': pais,
         'idioma': idioma,
         'rol': rol.name,
-        'intolerancias': intolerancias.map((e) => e.name).toList(),
+        'intolerancias': intolerancias.toList(),
+        'buscaAlimentacionSaludable': buscaAlimentacionSaludable,
         'nivelAlerta': nivelAlerta.name,
         'tiposCocinaPreferidos': tiposCocinaPreferidos.toList(),
       };

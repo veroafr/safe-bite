@@ -13,4 +13,6 @@ public class NoticiaRequest {
     private String contenido;
     private String imagenUrl;
     private Set<String> etiquetas;
+    /** Codigos de las intolerancias relacionadas. */
+    private Set<String> intolerancias;
 }

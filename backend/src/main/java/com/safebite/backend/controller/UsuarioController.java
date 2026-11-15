@@ -26,7 +26,7 @@ public class UsuarioController {
 
     @PutMapping("/me")
     public ResponseEntity<UsuarioResponse> actualizarPerfil(@AuthenticationPrincipal Usuario usuario,
-                                                              @RequestBody ActualizarPerfilRequest request) {
+                                                              @Valid @RequestBody ActualizarPerfilRequest request) {
         return ResponseEntity.ok(usuarioService.actualizarPerfil(usuario, request));
     }
 

@@ -21,12 +21,14 @@ class UsuarioService {
       });
 
   Future<Usuario> actualizarPreferencias({
-    Set<TipoIntolerancia>? intolerancias,
+    Set<String>? intolerancias,
+    bool? buscaAlimentacionSaludable,
     NivelAlerta? nivelAlerta,
     Set<String>? tiposCocinaPreferidos,
   }) async {
     final data = await _client.put('/usuarios/me/preferencias', body: {
-      if (intolerancias != null) 'intolerancias': intolerancias.map((e) => e.name).toList(),
+      if (intolerancias != null) 'intolerancias': intolerancias.toList(),
+      if (buscaAlimentacionSaludable != null) 'buscaAlimentacionSaludable': buscaAlimentacionSaludable,
       if (nivelAlerta != null) 'nivelAlerta': nivelAlerta.name,
       if (tiposCocinaPreferidos != null) 'tiposCocinaPreferidos': tiposCocinaPreferidos.toList(),
     });
@@ -46,9 +48,9 @@ class UsuarioService {
   }
 
   Future<Usuario> editarAdmin(int id, Map<String, dynamic> body) async {
-    final data = await _client.put('/admin/usuarios/', body: body);
+    final data = await _client.put('/admin/usuarios/$id', body: body);
     return Usuario.fromJson(data);
   }
 
-  Future<void> eliminar(int id) => _client.delete('/admin/usuarios/');
+  Future<void> eliminar(int id) => _client.delete('/admin/usuarios/$id');
 }

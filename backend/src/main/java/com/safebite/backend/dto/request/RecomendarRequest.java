@@ -15,5 +15,7 @@ public class RecomendarRequest {
     private String terminoBusquedaEs;
     private String terminoBusquedaPt;
     private List<String> ingredientes;
-    private Set<TipoIntolerancia> alergenos;
+    private Set<String> alergenos;
+    /** Opcional: intolerancias elegidas en el filtro del escaner (si no, se usan las del usuario). */
+    private Set<String> intolerancias;
 }

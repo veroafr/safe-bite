@@ -13,7 +13,7 @@ class AnalisisFotos {
   final String? terminoBusquedaPt;
   final String? proveedor;
   final List<String> ingredientes;
-  final Set<TipoIntolerancia> alergenos;
+  final Set<String> alergenos;
   final bool pudoLeer;
   final String? observacion;
 
@@ -38,7 +38,7 @@ class AnalisisFotos {
         terminoBusquedaPt: json['terminoBusquedaPt'],
         proveedor: json['proveedor'],
         ingredientes: ((json['ingredientes'] as List?) ?? []).map((e) => e.toString()).toList(),
-        alergenos: ((json['alergenos'] as List?) ?? []).map((e) => tipoIntoleranciaDesde(e)).toSet(),
+        alergenos: codigosIntolerancias(json['alergenos']),
         pudoLeer: json['pudoLeer'] ?? false,
         observacion: json['observacion'],
       );
@@ -97,23 +97,33 @@ class ProductoService {
   final ApiClient _client;
   ProductoService(this._client);
 
-  Future<List<Producto>> buscarPorNombre(String nombre) async {
-    final data = await _client.get('/productos/buscar', query: {'nombre': nombre});
+  /// [excluirIntolerancias]: descarta los productos que contienen alguna.
+  Future<List<Producto>> buscarPorNombre(String nombre, {Set<String>? excluirIntolerancias}) async {
+    final data = await _client.get('/productos/buscar',
+        query: {'nombre': nombre, 'excluirIntolerancias': excluirIntolerancias});
     return (data as List).map((e) => Producto.fromJson(e)).toList();
   }
 
-  Future<ResultadoEscaneo> escanearPorEan(String codigo) async {
-    final data = await _client.get('/productos/ean/$codigo');
+  /// [intolerancias]: si se indica, el producto se evalua contra estas en
+  /// lugar de las del perfil (filtro del escaner).
+  Future<ResultadoEscaneo> escanearPorEan(String codigo, {Set<String>? intolerancias}) async {
+    final data = await _client.get('/productos/ean/$codigo', query: {'intolerancias': intolerancias});
     return ResultadoEscaneo.fromJson(data);
   }
 
-  Future<ResultadoEscaneo> escanearPorOcr(String textoDetectado) async {
-    final data = await _client.post('/productos/ocr', body: {'textoDetectado': textoDetectado});
+  Future<ResultadoEscaneo> escanearPorOcr(String textoDetectado, {Set<String>? intolerancias}) async {
+    final data = await _client.post('/productos/ocr', body: {
+      'textoDetectado': textoDetectado,
+      if (intolerancias != null && intolerancias.isNotEmpty) 'intolerancias': intolerancias.toList(),
+    });
     return ResultadoEscaneo.fromJson(data);
   }
 
-  Future<AnalisisIngredientes> analizarIngredientes(String textoDetectado) async {
-    final data = await _client.post('/productos/analizar-ingredientes', body: {'textoDetectado': textoDetectado});
+  Future<AnalisisIngredientes> analizarIngredientes(String textoDetectado, {Set<String>? intolerancias}) async {
+    final data = await _client.post('/productos/analizar-ingredientes', body: {
+      'textoDetectado': textoDetectado,
+      if (intolerancias != null && intolerancias.isNotEmpty) 'intolerancias': intolerancias.toList(),
+    });
     return AnalisisIngredientes.fromJson(data);
   }
 
@@ -151,7 +161,7 @@ class ProductoService {
   /// Pide alternativas aptas para el usuario logueado a partir de un
   /// producto leido con "Escanear paquete" (base propia + Open Food Facts
   /// de Uruguay, Argentina y Brasil; la IA elige y explica).
-  Future<RecomendacionesIa> recomendar(AnalisisFotos a) async {
+  Future<RecomendacionesIa> recomendar(AnalisisFotos a, {Set<String>? intolerancias}) async {
     final data = await _client.post('/productos/recomendar', body: {
       'nombre': a.nombreSugerido,
       'marca': a.marcaSugerida,
@@ -159,7 +169,8 @@ class ProductoService {
       'terminoBusquedaEs': a.terminoBusquedaEs,
       'terminoBusquedaPt': a.terminoBusquedaPt,
       'ingredientes': a.ingredientes,
-      'alergenos': a.alergenos.map((e) => e.name.toUpperCase()).toList(),
+      'alergenos': a.alergenos.toList(),
+      if (intolerancias != null && intolerancias.isNotEmpty) 'intolerancias': intolerancias.toList(),
     });
     return RecomendacionesIa.fromJson(data);
   }
@@ -193,10 +204,11 @@ class ProductoService {
     final data = await _client.put('/admin/productos/${p.id}', body: {
       'nombre': p.nombre,
       'marca': p.marca,
+      'categoria': p.categoria,
       'codigoEan': p.codigoEan,
       'imagenUrl': p.imagenUrl,
       'ingredientes': p.ingredientes,
-      'alergenos': p.alergenos.map((a) => a.name).toList(),
+      'alergenos': p.alergenos.toList(),
       'verificado': true,
       'fotoFrontalBase64': p.fotoFrontalBase64,
       'fotoComposicionBase64': p.fotoComposicionBase64,

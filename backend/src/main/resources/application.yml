@@ -30,6 +30,13 @@ safebite:
     # USD por millon de tokens. Defaults = Haiku 5.5. Si cambias CLAUDE_MODEL, actualiza estos valores.
     price-in-per-mtok: ${CLAUDE_PRICE_IN:0.10}
     price-out-per-mtok: ${CLAUDE_PRICE_OUT:0.50}
+  mail:
+    # Remitente de los emails (codigo de "Olvidaste tu contraseña").
+    # Para enviar emails de verdad configura el SMTP con variables de entorno:
+    #   SPRING_MAIL_HOST, SPRING_MAIL_PORT, SPRING_MAIL_USERNAME, SPRING_MAIL_PASSWORD,
+    #   SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH=true, SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE=true
+    # Sin SMTP, el codigo se escribe en el log del servidor (util para desarrollo).
+    from: ${MAIL_FROM:no-reply@safebite.app}
   ia:
     # Al llegar a este gasto estimado se deja de usar Claude y se usa solo el respaldo (Gemini).
     presupuesto-usd: ${IA_PRESUPUESTO_USD:4.5}

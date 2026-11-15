@@ -23,7 +23,7 @@ public class RestauranteResponse {
     private String imagenUrl;
     private Double ratingPromedio;
     private Set<String> tiposCocina;
-    private Set<TipoIntolerancia> opcionesAptasPara;
+    private Set<String> opcionesAptasPara;
 
     public static RestauranteResponse desde(Restaurante r) {
         return RestauranteResponse.builder()

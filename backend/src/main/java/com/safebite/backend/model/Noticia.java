@@ -39,6 +39,13 @@ public class Noticia {
     @Builder.Default
     private Set<String> etiquetas = new HashSet<>();
 
+    /** Codigos de las intolerancias a las que se refiere la noticia. */
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "noticia_intolerancias", joinColumns = @JoinColumn(name = "noticia_id"))
+    @Column(name = "intolerancia")
+    @Builder.Default
+    private Set<String> intolerancias = new HashSet<>();
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "publicado_por")
     private Usuario publicadoPor;

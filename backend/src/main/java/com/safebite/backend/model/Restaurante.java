@@ -45,12 +45,11 @@ public class Restaurante {
     @Builder.Default
     private Set<String> tiposCocina = new HashSet<>();
 
-    @ElementCollection(targetClass = TipoIntolerancia.class, fetch = FetchType.EAGER)
+    @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "restaurante_opciones_aptas", joinColumns = @JoinColumn(name = "restaurante_id"))
-    @Enumerated(EnumType.STRING)
     @Column(name = "intolerancia")
     @Builder.Default
-    private Set<TipoIntolerancia> opcionesAptasPara = new HashSet<>();
+    private Set<String> opcionesAptasPara = new HashSet<>();
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "creado_por")

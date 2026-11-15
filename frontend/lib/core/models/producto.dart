@@ -8,7 +8,8 @@ class Producto {
   final String? codigoEan;
   final String? imagenUrl;
   final List<String> ingredientes;
-  final Set<TipoIntolerancia> alergenos;
+  /// Codigos de intolerancias que contiene el producto.
+  final Set<String> alergenos;
   final String origen;
   final bool verificado;
   final String? aportadoPorEmail;
@@ -41,7 +42,7 @@ class Producto {
         codigoEan: json['codigoEan'],
         imagenUrl: json['imagenUrl'],
         ingredientes: ((json['ingredientes'] as List?) ?? []).map((e) => e.toString()).toList(),
-        alergenos: ((json['alergenos'] as List?) ?? []).map((e) => tipoIntoleranciaDesde(e)).toSet(),
+        alergenos: codigosIntolerancias(json['alergenos']),
         origen: json['origen'] ?? 'ADMIN',
         verificado: json['verificado'] ?? true,
         aportadoPorEmail: json['aportadoPorEmail'],
@@ -58,7 +59,7 @@ class ResultadoEscaneo {
   final Producto producto;
   final bool seguro;
   final bool datosSuficientes;
-  final Set<TipoIntolerancia> alergenosEnConflicto;
+  final Set<String> alergenosEnConflicto;
   final String mensaje;
   final List<Producto> alternativas;
 
@@ -75,9 +76,7 @@ class ResultadoEscaneo {
         producto: Producto.fromJson(json['producto']),
         seguro: json['seguro'] ?? false,
         datosSuficientes: json['datosSuficientes'] ?? true,
-        alergenosEnConflicto: ((json['alergenosEnConflicto'] as List?) ?? [])
-            .map((e) => tipoIntoleranciaDesde(e))
-            .toSet(),
+        alergenosEnConflicto: codigosIntolerancias(json['alergenosEnConflicto']),
         mensaje: json['mensaje'] ?? '',
         alternativas: ((json['alternativas'] as List?) ?? []).map((e) => Producto.fromJson(e)).toList(),
       );
@@ -85,7 +84,7 @@ class ResultadoEscaneo {
 
 class AnalisisIngredientes {
   final bool seguro;
-  final Set<TipoIntolerancia> alergenosEncontrados;
+  final Set<String> alergenosEncontrados;
   final String mensaje;
   final String textoAnalizado;
 
@@ -98,9 +97,7 @@ class AnalisisIngredientes {
 
   factory AnalisisIngredientes.fromJson(Map<String, dynamic> json) => AnalisisIngredientes(
         seguro: json['seguro'] ?? false,
-        alergenosEncontrados: ((json['alergenosEncontrados'] as List?) ?? [])
-            .map((e) => tipoIntoleranciaDesde(e))
-            .toSet(),
+        alergenosEncontrados: codigosIntolerancias(json['alergenosEncontrados']),
         mensaje: json['mensaje'] ?? '',
         textoAnalizado: json['textoAnalizado'] ?? '',
       );

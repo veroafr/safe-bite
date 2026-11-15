@@ -15,6 +15,7 @@ import 'admin_usuarios_screen.dart';
 import 'admin_recetas_screen.dart';
 import 'admin_reportes_screen.dart';
 import 'admin_productos_screen.dart';
+import 'admin_intolerancias_screen.dart';
 
 class AdminHomeScreen extends StatefulWidget {
   const AdminHomeScreen({super.key});
@@ -149,6 +150,14 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         pantalla: const AdminRecetasScreen(),
         notificaciones: 0,
         color: const Color(0xFF009688),
+      ),
+      _ModuloAdmin(
+        titulo: 'Intolerancias',
+        subtitulo: 'Alérgenos del sistema',
+        icono: Icons.no_food_rounded,
+        pantalla: const AdminIntoleranciasScreen(),
+        notificaciones: 0,
+        color: const Color(0xFFE91E63),
       ),
       _ModuloAdmin(
         titulo: 'Usuarios',

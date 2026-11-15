@@ -25,7 +25,8 @@ public class UsuarioResponse {
     private String pais;
     private String idioma;
     private Rol rol;
-    private Set<TipoIntolerancia> intolerancias;
+    private Set<String> intolerancias;
+    private boolean buscaAlimentacionSaludable;
     private NivelAlerta nivelAlerta;
     private Set<String> tiposCocinaPreferidos;
     private boolean activo;
@@ -42,6 +43,7 @@ public class UsuarioResponse {
                 .idioma(u.getIdioma())
                 .rol(u.getRol())
                 .intolerancias(u.getIntolerancias())
+                .buscaAlimentacionSaludable(u.isBuscaAlimentacionSaludable())
                 .nivelAlerta(u.getNivelAlerta())
                 .tiposCocinaPreferidos(u.getTiposCocinaPreferidos())
                 .activo(u.isActivo())

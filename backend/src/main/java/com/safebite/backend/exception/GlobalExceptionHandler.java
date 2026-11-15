@@ -49,6 +49,8 @@ public class GlobalExceptionHandler {
             errores.put(fe.getField(), fe.getDefaultMessage());
         }
         body.put("errores", errores);
+        // "mensaje" lo muestra el frontend tal cual (ApiClient lee esa clave)
+        body.put("mensaje", errores.isEmpty() ? "Datos invalidos" : String.join(". ", errores.values()));
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body);
     }
 

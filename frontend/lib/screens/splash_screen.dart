@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../core/providers/auth_provider.dart';
+import '../core/providers/intolerancias_provider.dart';
 import '../core/models/usuario.dart';
 import '../core/theme/app_theme.dart';
 import 'auth/welcome_screen.dart';
@@ -22,6 +23,8 @@ class _SplashScreenState extends State<SplashScreen> {
 
   Future<void> _iniciar() async {
     final auth = context.read<AuthProvider>();
+    // Se precarga la lista de intolerancias (nombres para chips y filtros).
+    context.read<IntoleranciasProvider>().cargar();
     await auth.cargarSesionGuardada();
     if (!mounted) return;
 

@@ -1,7 +1,6 @@
 package com.safebite.backend.controller;
 
 import com.safebite.backend.dto.response.RecetaResponse;
-import com.safebite.backend.model.TipoIntolerancia;
 import com.safebite.backend.model.Usuario;
 import com.safebite.backend.service.RecetaService;
 import lombok.RequiredArgsConstructor;
@@ -9,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
 
 @RestController
@@ -21,11 +21,15 @@ public class RecetaController {
     @GetMapping
     public ResponseEntity<List<RecetaResponse>> listar(
             @RequestParam(required = false) Boolean esTip,
-            @RequestParam(required = false) TipoIntolerancia filtrarPorIntolerancia,
+            @RequestParam(required = false) String filtrarPorIntolerancia,
+            @RequestParam(required = false) List<String> intolerancias,
             @RequestParam(required = false, defaultValue = "false") boolean usarMisIntolerancias,
             @AuthenticationPrincipal Usuario usuario) {
-        var intoleranciasUsuario = (usarMisIntolerancias && usuario != null) ? usuario.getIntolerancias() : null;
-        return ResponseEntity.ok(recetaService.listar(esTip, filtrarPorIntolerancia, intoleranciasUsuario));
+        List<String> filtro = new ArrayList<>();
+        if (filtrarPorIntolerancia != null && !filtrarPorIntolerancia.isBlank()) filtro.add(filtrarPorIntolerancia);
+        if (intolerancias != null) filtro.addAll(intolerancias);
+        if (usarMisIntolerancias && usuario != null) filtro.addAll(usuario.getIntolerancias());
+        return ResponseEntity.ok(recetaService.listar(esTip, filtro));
     }
 
     @GetMapping("/{id}")

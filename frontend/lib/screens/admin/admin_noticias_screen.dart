@@ -4,6 +4,7 @@ import '../../core/models/noticia.dart';
 import '../../core/services/noticia_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/common_widgets.dart';
+import '../../core/widgets/intolerancias_widgets.dart';
 
 class AdminNoticiasScreen extends StatefulWidget {
   const AdminNoticiasScreen({super.key});
@@ -13,6 +14,7 @@ class AdminNoticiasScreen extends StatefulWidget {
 
 class _AdminNoticiasScreenState extends State<AdminNoticiasScreen> {
   late Future<List<Noticia>> _future;
+  Set<String> _filtro = {};
 
   @override
   void initState() {
@@ -22,7 +24,7 @@ class _AdminNoticiasScreenState extends State<AdminNoticiasScreen> {
 
   void _recargar() {
     setState(() {
-      _future = context.read<NoticiaService>().listar();
+      _future = context.read<NoticiaService>().listar(intolerancias: _filtro);
     });
   }
 
@@ -32,12 +34,13 @@ class _AdminNoticiasScreenState extends State<AdminNoticiasScreen> {
     final contenidoCtrl = TextEditingController(text: existente?.contenido ?? '');
     final imagenCtrl = TextEditingController(text: existente?.imagenUrl ?? '');
     final etiquetasCtrl = TextEditingController(text: existente?.etiquetas.join(', ') ?? '');
+    Set<String> intolerancias = {...(existente?.intolerancias ?? <String>{})};
 
     final guardar = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-      builder: (ctx) => Padding(
+      builder: (ctx) => StatefulBuilder(builder: (ctx, setModalState) => Padding(
         padding: EdgeInsets.only(left: 20, right: 20, top: 20, bottom: MediaQuery.of(ctx).viewInsets.bottom + 20),
         child: SingleChildScrollView(
           child: Column(
@@ -54,7 +57,14 @@ class _AdminNoticiasScreenState extends State<AdminNoticiasScreen> {
               const SizedBox(height: 10),
               TextField(controller: imagenCtrl, decoration: const InputDecoration(labelText: 'URL de imagen')),
               const SizedBox(height: 10),
-              TextField(controller: etiquetasCtrl, decoration: const InputDecoration(labelText: 'Etiquetas (separadas por coma)')),
+              const Text('Intolerancias relacionadas:', style: TextStyle(fontWeight: FontWeight.w600)),
+              const SizedBox(height: 6),
+              SelectorIntolerancias(
+                seleccionadas: intolerancias,
+                onChanged: (s) => setModalState(() => intolerancias = s),
+              ),
+              const SizedBox(height: 10),
+              TextField(controller: etiquetasCtrl, decoration: const InputDecoration(labelText: 'Otras etiquetas (separadas por coma)')),
               const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: () {
@@ -66,7 +76,7 @@ class _AdminNoticiasScreenState extends State<AdminNoticiasScreen> {
             ],
           ),
         ),
-      ),
+      )),
     );
 
     if (guardar == true) {
@@ -76,6 +86,7 @@ class _AdminNoticiasScreenState extends State<AdminNoticiasScreen> {
         'contenido': contenidoCtrl.text.trim(),
         'imagenUrl': imagenCtrl.text.trim().isEmpty ? null : imagenCtrl.text.trim(),
         'etiquetas': etiquetasCtrl.text.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList(),
+        'intolerancias': intolerancias.toList(),
       };
       try {
         final service = context.read<NoticiaService>();
@@ -108,34 +119,51 @@ class _AdminNoticiasScreenState extends State<AdminNoticiasScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Gestión de Noticias')),
       floatingActionButton: FloatingActionButton(onPressed: () => _abrirFormulario(), child: const Icon(Icons.add)),
-      body: FutureBuilder<List<Noticia>>(
-        future: _future,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) return const LoadingView();
-          if (snapshot.hasError) return ErrorView(mensaje: snapshot.error.toString(), onReintentar: _recargar);
-          final noticias = snapshot.data ?? [];
-          if (noticias.isEmpty) return const EmptyView(mensaje: 'No hay noticias publicadas');
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: noticias.length,
-            itemBuilder: (context, i) {
-              final n = noticias[i];
-              return Card(
-                child: ListTile(
-                  title: Text(n.titulo),
-                  subtitle: Text(n.resumen ?? '', maxLines: 1, overflow: TextOverflow.ellipsis),
-                  trailing: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      IconButton(icon: const Icon(Icons.edit_outlined), onPressed: () => _abrirFormulario(existente: n)),
-                      IconButton(icon: const Icon(Icons.delete_outline, color: AppColors.danger), onPressed: () => _eliminar(n)),
-                    ],
-                  ),
-                ),
-              );
+      body: Column(
+        children: [
+          const SizedBox(height: 8),
+          BarraFiltroIntolerancias(
+            seleccion: _filtro,
+            prefijo: '',
+            titulo: 'Noticias sobre...',
+            ayuda: 'Muestra las noticias relacionadas con ALGUNA de las marcadas.',
+            onChanged: (s) {
+              _filtro = s;
+              _recargar();
             },
-          );
-        },
+          ),
+          Expanded(
+            child: FutureBuilder<List<Noticia>>(
+              future: _future,
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) return const LoadingView();
+                if (snapshot.hasError) return ErrorView(mensaje: snapshot.error.toString(), onReintentar: _recargar);
+                final noticias = snapshot.data ?? [];
+                if (noticias.isEmpty) return const EmptyView(mensaje: 'No hay noticias publicadas');
+                return ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: noticias.length,
+                  itemBuilder: (context, i) {
+                    final n = noticias[i];
+                    return Card(
+                      child: ListTile(
+                        title: Text(n.titulo),
+                        subtitle: Text(n.resumen ?? '', maxLines: 1, overflow: TextOverflow.ellipsis),
+                        trailing: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            IconButton(icon: const Icon(Icons.edit_outlined), onPressed: () => _abrirFormulario(existente: n)),
+                            IconButton(icon: const Icon(Icons.delete_outline, color: AppColors.danger), onPressed: () => _eliminar(n)),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
       ),
     );
   }

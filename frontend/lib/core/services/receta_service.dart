@@ -1,15 +1,15 @@
 import '../api/api_client.dart';
 import '../models/receta.dart';
-import '../models/usuario.dart';
 
 class RecetaService {
   final ApiClient _client;
   RecetaService(this._client);
 
-  Future<List<Receta>> listar({bool? esTip, TipoIntolerancia? filtrarPorIntolerancia, bool usarMisIntolerancias = false}) async {
+  /// [intolerancias]: solo recetas libres de todas las indicadas.
+  Future<List<Receta>> listar({bool? esTip, Set<String>? intolerancias, bool usarMisIntolerancias = false}) async {
     final data = await _client.get('/recetas', query: {
       'esTip': esTip,
-      'filtrarPorIntolerancia': filtrarPorIntolerancia?.name,
+      'intolerancias': intolerancias,
       'usarMisIntolerancias': usarMisIntolerancias,
     });
     return (data as List).map((e) => Receta.fromJson(e)).toList();

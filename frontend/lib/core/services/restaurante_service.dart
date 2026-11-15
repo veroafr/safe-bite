@@ -1,16 +1,16 @@
 import '../api/api_client.dart';
 import '../models/restaurante.dart';
-import '../models/usuario.dart';
 
 class RestauranteService {
   final ApiClient _client;
   RestauranteService(this._client);
 
-  Future<List<Restaurante>> buscar({String? nombre, String? tipoCocina, TipoIntolerancia? intolerancia}) async {
+  /// [intolerancias]: el local tiene que tener opciones aptas para todas.
+  Future<List<Restaurante>> buscar({String? nombre, String? tipoCocina, Set<String>? intolerancias}) async {
     final data = await _client.get('/restaurantes', query: {
       'nombre': nombre,
       'tipoCocina': tipoCocina,
-      'intolerancia': intolerancia?.name,
+      'intolerancias': intolerancias,
     });
     return (data as List).map((e) => Restaurante.fromJson(e)).toList();
   }

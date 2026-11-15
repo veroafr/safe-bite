@@ -32,26 +32,28 @@ public class ProductoController {
     private final RecomendacionService recomendacionService;
 
     @GetMapping("/buscar")
-    public ResponseEntity<List<ProductoResponse>> buscar(@RequestParam String nombre) {
-        return ResponseEntity.ok(productoService.buscarPorNombre(nombre));
+    public ResponseEntity<List<ProductoResponse>> buscar(@RequestParam(required = false, defaultValue = "") String nombre,
+                                                         @RequestParam(required = false) List<String> excluirIntolerancias) {
+        return ResponseEntity.ok(productoService.buscarPorNombre(nombre, excluirIntolerancias));
     }
 
     @GetMapping("/ean/{codigo}")
     public ResponseEntity<EscaneoResponse> escanearEan(@PathVariable String codigo,
+                                                         @RequestParam(required = false) List<String> intolerancias,
                                                          @AuthenticationPrincipal Usuario usuario) {
-        return ResponseEntity.ok(productoService.escanearPorEan(codigo, usuario));
+        return ResponseEntity.ok(productoService.escanearPorEan(codigo, usuario, intolerancias));
     }
 
     @PostMapping("/ocr")
     public ResponseEntity<EscaneoResponse> escanearOcr(@Valid @RequestBody OcrRequest request,
                                                          @AuthenticationPrincipal Usuario usuario) {
-        return ResponseEntity.ok(productoService.escanearPorOcr(request.getTextoDetectado(), usuario));
+        return ResponseEntity.ok(productoService.escanearPorOcr(request.getTextoDetectado(), usuario, request.getIntolerancias()));
     }
 
     @PostMapping("/analizar-ingredientes")
     public ResponseEntity<AnalisisIngredientesResponse> analizarIngredientes(@Valid @RequestBody OcrRequest request,
                                                                                @AuthenticationPrincipal Usuario usuario) {
-        return ResponseEntity.ok(productoService.analizarIngredientes(request.getTextoDetectado(), usuario));
+        return ResponseEntity.ok(productoService.analizarIngredientes(request.getTextoDetectado(), usuario, request.getIntolerancias()));
     }
 
     @PostMapping("/aportar")

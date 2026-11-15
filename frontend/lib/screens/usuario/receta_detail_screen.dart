@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../core/models/intolerancia.dart';
 import '../../core/models/receta.dart';
 import '../../core/services/receta_service.dart';
 import '../../core/widgets/common_widgets.dart';
@@ -54,6 +55,14 @@ class _RecetaDetailScreenState extends State<RecetaDetailScreen> {
                       if (_receta!.dificultad != null) Chip(label: Text(_receta!.dificultad!)),
                       ..._receta!.etiquetas.map((e) => Chip(label: Text(e))),
                     ]),
+                    if (_receta!.libreDe.isNotEmpty) ...[
+                      const SeccionTitulo('Apta para quienes evitan'),
+                      Wrap(
+                        spacing: 6,
+                        runSpacing: 4,
+                        children: _receta!.libreDe.map((c) => Chip1('Sin ${etiquetaIntolerancia(c)}')).toList(),
+                      ),
+                    ],
                     if (_receta!.descripcion != null) ...[
                       const SeccionTitulo('Descripción'),
                       Text(_receta!.descripcion!),

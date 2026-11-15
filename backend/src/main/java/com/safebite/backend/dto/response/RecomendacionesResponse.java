@@ -16,7 +16,7 @@ import java.util.Set;
 public class RecomendacionesResponse {
     private boolean seguro;
     private boolean hayDatos;
-    private Set<TipoIntolerancia> alergenosEnConflicto;
+    private Set<String> alergenosEnConflicto;
     private String mensaje;
     /** true si las explicaciones las redacto la IA; false si es una lista simple por reglas. */
     private boolean conIa;

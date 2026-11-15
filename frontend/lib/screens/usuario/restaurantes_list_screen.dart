@@ -5,6 +5,7 @@ import '../../core/models/usuario.dart';
 import '../../core/services/restaurante_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/common_widgets.dart';
+import '../../core/widgets/intolerancias_widgets.dart';
 import 'restaurante_detail_screen.dart';
 
 class RestaurantesListScreen extends StatefulWidget {
@@ -15,7 +16,8 @@ class RestaurantesListScreen extends StatefulWidget {
 
 class _RestaurantesListScreenState extends State<RestaurantesListScreen> {
   final _buscadorCtrl = TextEditingController();
-  TipoIntolerancia? _filtroIntolerancia;
+  /// Intolerancias elegidas: el local tiene que ser apto para todas.
+  Set<String> _filtroIntolerancias = {};
   String? _filtroTipoCocina;
 
   late Future<List<Restaurante>> _future;
@@ -31,7 +33,7 @@ class _RestaurantesListScreenState extends State<RestaurantesListScreen> {
     return service.buscar(
       nombre: _buscadorCtrl.text.trim().isEmpty ? null : _buscadorCtrl.text.trim(),
       tipoCocina: _filtroTipoCocina,
-      intolerancia: _filtroIntolerancia,
+      intolerancias: _filtroIntolerancias,
     );
   }
 
@@ -46,7 +48,6 @@ class _RestaurantesListScreenState extends State<RestaurantesListScreen> {
       context: context,
       shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
       builder: (ctx) {
-        TipoIntolerancia? intoleranciaTemp = _filtroIntolerancia;
         String? cocinaTemp = _filtroTipoCocina;
         return StatefulBuilder(builder: (ctx, setModalState) {
           return Padding(
@@ -56,23 +57,6 @@ class _RestaurantesListScreenState extends State<RestaurantesListScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text('Filtros', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 16),
-                const Text('Apto para intolerancia'),
-                Wrap(
-                  spacing: 8,
-                  children: [
-                    ChoiceChip(
-                      label: const Text('Todas'),
-                      selected: intoleranciaTemp == null,
-                      onSelected: (_) => setModalState(() => intoleranciaTemp = null),
-                    ),
-                    ...TipoIntolerancia.values.map((t) => ChoiceChip(
-                          label: Text(etiquetaIntolerancia(t)),
-                          selected: intoleranciaTemp == t,
-                          onSelected: (_) => setModalState(() => intoleranciaTemp = t),
-                        )),
-                  ],
-                ),
                 const SizedBox(height: 16),
                 const Text('Tipo de cocina'),
                 Wrap(
@@ -93,7 +77,7 @@ class _RestaurantesListScreenState extends State<RestaurantesListScreen> {
                 ),
                 const SizedBox(height: 20),
                 ElevatedButton(
-                  onPressed: () => Navigator.pop(ctx, {'intolerancia': intoleranciaTemp, 'cocina': cocinaTemp}),
+                  onPressed: () => Navigator.pop(ctx, {'cocina': cocinaTemp}),
                   child: const Text('Aplicar filtros'),
                 ),
               ],
@@ -105,7 +89,6 @@ class _RestaurantesListScreenState extends State<RestaurantesListScreen> {
 
     if (resultado != null) {
       setState(() {
-        _filtroIntolerancia = resultado['intolerancia'];
         _filtroTipoCocina = resultado['cocina'];
       });
       _recargar();
@@ -138,12 +121,23 @@ class _RestaurantesListScreenState extends State<RestaurantesListScreen> {
                     decoration: BoxDecoration(color: AppColors.primary, borderRadius: BorderRadius.circular(12)),
                     child: IconButton(
                       icon: const Icon(Icons.filter_list, color: Colors.white),
+                      tooltip: 'Tipo de cocina',
                       onPressed: _abrirFiltros,
                     ),
                   ),
                 ],
               ),
             ),
+            BarraFiltroIntolerancias(
+              seleccion: _filtroIntolerancias,
+              titulo: 'Locales aptos para...',
+              ayuda: 'Se muestran los locales con opciones aptas para TODAS las intolerancias que marques.',
+              onChanged: (s) {
+                _filtroIntolerancias = s;
+                _recargar();
+              },
+            ),
+            const SizedBox(height: 4),
             Expanded(
               child: FutureBuilder<List<Restaurante>>(
                 future: _future,
@@ -154,7 +148,11 @@ class _RestaurantesListScreenState extends State<RestaurantesListScreen> {
                   }
                   final restaurantes = snapshot.data ?? [];
                   if (restaurantes.isEmpty) {
-                    return const EmptyView(mensaje: 'No se encontraron restaurantes', icono: Icons.restaurant_outlined);
+                    return EmptyView(
+                        mensaje: _filtroIntolerancias.isEmpty
+                            ? 'No se encontraron restaurantes'
+                            : 'No hay locales aptos para todas las intolerancias elegidas',
+                        icono: Icons.restaurant_outlined);
                   }
                   return RefreshIndicator(
                     onRefresh: () async => _recargar(),
@@ -219,6 +217,7 @@ class _TarjetaRestaurante extends StatelessWidget {
                       const SizedBox(height: 6),
                       Wrap(
                         spacing: 6,
+                        runSpacing: 4,
                         children: restaurante.opcionesAptasPara
                             .map((t) => Chip1('Sin ${etiquetaIntolerancia(t)}'))
                             .toList(),

@@ -27,10 +27,28 @@ public class ProductoService {
     private final ProductoRepository productoRepository;
     private final OpenFoodFactsService openFoodFactsService;
     private final AlergenoTextAnalyzer alergenoTextAnalyzer;
+    private final IntoleranciaService intoleranciaService;
 
     public List<ProductoResponse> buscarPorNombre(String nombre) {
-        return productoRepository.findByNombreContainingIgnoreCase(nombre)
-                .stream().map(ProductoResponse::desde).toList();
+        return buscarPorNombre(nombre, null);
+    }
+
+    /** Busca por nombre y, si se indican intolerancias, descarta los productos que contienen alguna. */
+    public List<ProductoResponse> buscarPorNombre(String nombre, java.util.Collection<String> excluirIntolerancias) {
+        Set<String> excluir = intoleranciaService.normalizar(excluirIntolerancias);
+        return productoRepository.findByNombreContainingIgnoreCase(nombre == null ? "" : nombre)
+                .stream()
+                .filter(p -> excluir.isEmpty() || p.getAlergenos().stream().noneMatch(excluir::contains))
+                .map(ProductoResponse::desde).toList();
+    }
+
+    /**
+     * Intolerancias contra las que se evalua un producto: las del usuario, o las
+     * que eligio en el filtro del escaner (por ejemplo, si compra para otra persona).
+     */
+    public Set<String> intoleranciasEfectivas(Usuario usuario, java.util.Collection<String> filtro) {
+        if (filtro != null && !filtro.isEmpty()) return intoleranciaService.normalizar(filtro);
+        return usuario != null ? usuario.getIntolerancias() : Set.of();
     }
 
     /**
@@ -44,11 +62,16 @@ public class ProductoService {
      */
     @Transactional
     public EscaneoResponse escanearPorEan(String codigoEan, Usuario usuario) {
+        return escanearPorEan(codigoEan, usuario, null);
+    }
+
+    @Transactional
+    public EscaneoResponse escanearPorEan(String codigoEan, Usuario usuario, java.util.Collection<String> filtro) {
         Producto producto = productoRepository.findByCodigoEan(codigoEan)
                 .orElseGet(() -> buscarYCachearDesdeOpenFoodFacts(codigoEan)
                         .orElseThrow(() -> new ResourceNotFoundException(
                                 "No se encontro ningun producto con el codigo " + codigoEan)));
-        return evaluarParaUsuario(producto, usuario);
+        return evaluarParaUsuario(producto, intoleranciasEfectivas(usuario, filtro));
     }
 
     private java.util.Optional<Producto> buscarYCachearDesdeOpenFoodFacts(String codigoEan) {
@@ -68,17 +91,25 @@ public class ProductoService {
     }
 
     public EscaneoResponse escanearPorOcr(String textoDetectado, Usuario usuario) {
+        return escanearPorOcr(textoDetectado, usuario, null);
+    }
+
+    public EscaneoResponse escanearPorOcr(String textoDetectado, Usuario usuario, java.util.Collection<String> filtro) {
         List<Producto> coincidencias = productoRepository.findByNombreContainingIgnoreCase(textoDetectado.trim());
         if (coincidencias.isEmpty()) {
             throw new ResourceNotFoundException("No se pudo reconocer el producto a partir del texto detectado");
         }
-        return evaluarParaUsuario(coincidencias.get(0), usuario);
+        return evaluarParaUsuario(coincidencias.get(0), intoleranciasEfectivas(usuario, filtro));
     }
 
     public AnalisisIngredientesResponse analizarIngredientes(String texto, Usuario usuario) {
-        Set<TipoIntolerancia> detectados = alergenoTextAnalyzer.detectar(texto);
-        Set<TipoIntolerancia> intoleranciasUsuario = usuario != null ? usuario.getIntolerancias() : Set.of();
-        Set<TipoIntolerancia> enConflicto = new HashSet<>(detectados);
+        return analizarIngredientes(texto, usuario, null);
+    }
+
+    public AnalisisIngredientesResponse analizarIngredientes(String texto, Usuario usuario, java.util.Collection<String> filtro) {
+        Set<String> detectados = alergenoTextAnalyzer.detectar(texto);
+        Set<String> intoleranciasUsuario = intoleranciasEfectivas(usuario, filtro);
+        Set<String> enConflicto = new HashSet<>(detectados);
         enConflicto.retainAll(intoleranciasUsuario);
 
         boolean seguro = enConflicto.isEmpty();
@@ -113,7 +144,7 @@ public class ProductoService {
                 .codigoEan(request.getCodigoEan())
                 .imagenUrl(request.getImagenUrl())
                 .ingredientes(request.getIngredientes() != null ? request.getIngredientes() : List.of())
-                .alergenos(request.getAlergenos() != null ? request.getAlergenos() : Set.of())
+                .alergenos(intoleranciaService.normalizar(request.getAlergenos()))
                 .origen(OrigenProducto.USUARIO)
                 .verificado(false)
                 .aportadoPorEmail(usuario != null ? usuario.getEmail() : null)
@@ -162,7 +193,7 @@ public class ProductoService {
             producto.setIngredientes(request.getIngredientes());
         }
         if (request.getAlergenos() != null && !request.getAlergenos().isEmpty()) {
-            producto.setAlergenos(request.getAlergenos());
+            producto.setAlergenos(intoleranciaService.normalizar(request.getAlergenos()));
         }
         if (request.getFotoFrontalBase64() != null) {
             producto.setFotoFrontalBase64(request.getFotoFrontalBase64());
@@ -181,9 +212,8 @@ public class ProductoService {
         return ProductoResponse.desde(productoRepository.save(producto));
     }
 
-    private EscaneoResponse evaluarParaUsuario(Producto producto, Usuario usuario) {
-        Set<TipoIntolerancia> intoleranciasUsuario = usuario != null ? usuario.getIntolerancias() : Set.of();
-        Set<TipoIntolerancia> enConflicto = new HashSet<>(producto.getAlergenos());
+    private EscaneoResponse evaluarParaUsuario(Producto producto, Set<String> intoleranciasUsuario) {
+        Set<String> enConflicto = new HashSet<>(producto.getAlergenos());
         enConflicto.retainAll(intoleranciasUsuario);
 
         boolean datosSuficientes = !producto.getIngredientes().isEmpty() || !producto.getAlergenos().isEmpty();
@@ -221,7 +251,7 @@ public class ProductoService {
      * si"). Si el producto no tiene categoria cargada, hace un fallback
      * simple por palabras compartidas del nombre.
      */
-    private List<ProductoResponse> buscarAlternativas(Producto original, Set<TipoIntolerancia> intoleranciasUsuario) {
+    private List<ProductoResponse> buscarAlternativas(Producto original, Set<String> intoleranciasUsuario) {
         List<Producto> candidatos;
         if (original.getCategoria() != null && !original.getCategoria().isBlank()) {
             candidatos = productoRepository.findByVerificadoTrueAndCategoriaIgnoreCaseAndIdNot(
@@ -235,7 +265,7 @@ public class ProductoService {
         return candidatos.stream()
                 .filter(p -> !p.getIngredientes().isEmpty() || !p.getAlergenos().isEmpty())
                 .filter(p -> {
-                    Set<TipoIntolerancia> conflicto = new HashSet<>(p.getAlergenos());
+                    Set<String> conflicto = new HashSet<>(p.getAlergenos());
                     conflicto.retainAll(intoleranciasUsuario);
                     return conflicto.isEmpty();
                 })
@@ -275,7 +305,7 @@ public class ProductoService {
                 .codigoEan(request.getCodigoEan())
                 .imagenUrl(request.getImagenUrl())
                 .ingredientes(request.getIngredientes())
-                .alergenos(request.getAlergenos())
+                .alergenos(intoleranciaService.normalizar(request.getAlergenos()))
                 .origen(OrigenProducto.ADMIN)
                 .verificado(true)
                 .fotoFrontalBase64(request.getFotoFrontalBase64())
@@ -294,7 +324,7 @@ public class ProductoService {
         producto.setCodigoEan(request.getCodigoEan());
         producto.setImagenUrl(request.getImagenUrl());
         if (request.getIngredientes() != null) producto.setIngredientes(request.getIngredientes());
-        if (request.getAlergenos() != null) producto.setAlergenos(request.getAlergenos());
+        if (request.getAlergenos() != null) producto.setAlergenos(intoleranciaService.normalizar(request.getAlergenos()));
         if (request.getVerificado() != null) producto.setVerificado(request.getVerificado());
         if (request.getFotoFrontalBase64() != null) producto.setFotoFrontalBase64(request.getFotoFrontalBase64());
         if (request.getFotoComposicionBase64() != null) producto.setFotoComposicionBase64(request.getFotoComposicionBase64());

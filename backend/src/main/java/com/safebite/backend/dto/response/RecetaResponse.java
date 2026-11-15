@@ -23,6 +23,7 @@ public class RecetaResponse {
     private String imagenUrl;
     private boolean esTip;
     private Set<String> etiquetas;
+    private Set<String> libreDe;
     private List<String> ingredientes;
     private List<String> pasos;
     private LocalDateTime fechaPublicacion;
@@ -37,6 +38,7 @@ public class RecetaResponse {
                 .imagenUrl(r.getImagenUrl())
                 .esTip(r.isEsTip())
                 .etiquetas(r.getEtiquetas())
+                .libreDe(r.getLibreDe())
                 .ingredientes(r.getIngredientes())
                 .pasos(r.getPasos())
                 .fechaPublicacion(r.getFechaPublicacion())

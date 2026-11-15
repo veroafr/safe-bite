@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import '../../core/models/intolerancia.dart';
 import '../../core/models/noticia.dart';
 import '../../core/services/noticia_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/common_widgets.dart';
+import '../../core/widgets/intolerancias_widgets.dart';
 
 class NoticiasScreen extends StatefulWidget {
   const NoticiasScreen({super.key});
@@ -15,6 +17,9 @@ class NoticiasScreen extends StatefulWidget {
 class _NoticiasScreenState extends State<NoticiasScreen> {
   late Future<List<Noticia>> _future;
 
+  /// Intolerancias elegidas: noticias relacionadas con alguna de ellas.
+  Set<String> _filtro = {};
+
   @override
   void initState() {
     super.initState();
@@ -23,7 +28,7 @@ class _NoticiasScreenState extends State<NoticiasScreen> {
 
   void _recargar() {
     setState(() {
-      _future = context.read<NoticiaService>().listar();
+      _future = context.read<NoticiaService>().listar(intolerancias: _filtro);
     });
   }
 
@@ -31,13 +36,37 @@ class _NoticiasScreenState extends State<NoticiasScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('Noticias')),
-      body: FutureBuilder<List<Noticia>>(
+      body: Column(
+        children: [
+          const SizedBox(height: 8),
+          BarraFiltroIntolerancias(
+            seleccion: _filtro,
+            titulo: 'Noticias sobre...',
+            ayuda: 'Se muestran las noticias relacionadas con ALGUNA de las intolerancias que marques.',
+            onChanged: (s) {
+              _filtro = s;
+              _recargar();
+            },
+          ),
+          const SizedBox(height: 4),
+          Expanded(child: _lista()),
+        ],
+      ),
+    );
+  }
+
+  Widget _lista() {
+    return FutureBuilder<List<Noticia>>(
         future: _future,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) return const LoadingView();
           if (snapshot.hasError) return ErrorView(mensaje: snapshot.error.toString(), onReintentar: _recargar);
           final noticias = snapshot.data ?? [];
-          if (noticias.isEmpty) return const EmptyView(mensaje: 'No hay noticias por el momento', icono: Icons.newspaper_outlined);
+          if (noticias.isEmpty) {
+            return EmptyView(
+                mensaje: _filtro.isEmpty ? 'No hay noticias por el momento' : 'No hay noticias sobre esas intolerancias',
+                icono: Icons.newspaper_outlined);
+          }
           return RefreshIndicator(
             onRefresh: () async => _recargar(),
             child: ListView.builder(
@@ -64,6 +93,17 @@ class _NoticiasScreenState extends State<NoticiasScreen> {
                               Text(n.titulo, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
                               const SizedBox(height: 4),
                               if (n.resumen != null) Text(n.resumen!, maxLines: 2, overflow: TextOverflow.ellipsis),
+                              if (n.intolerancias.isNotEmpty) ...[
+                                const SizedBox(height: 6),
+                                Wrap(
+                                  spacing: 6,
+                                  runSpacing: 4,
+                                  children: [
+                                    ...n.intolerancias.take(4).map((c) => Chip1(etiquetaIntolerancia(c))),
+                                    if (n.intolerancias.length > 4) Chip1('+${n.intolerancias.length - 4}'),
+                                  ],
+                                ),
+                              ],
                               const SizedBox(height: 6),
                               Text(DateFormat('dd/MM/yyyy').format(n.fechaPublicacion),
                                   style: const TextStyle(color: AppColors.textSecondary, fontSize: 11)),
@@ -78,7 +118,6 @@ class _NoticiasScreenState extends State<NoticiasScreen> {
             ),
           );
         },
-      ),
     );
   }
 }
@@ -105,6 +144,14 @@ class NoticiaDetailScreen extends StatelessWidget {
           const SizedBox(height: 8),
           Text(DateFormat('dd/MM/yyyy').format(noticia.fechaPublicacion),
               style: const TextStyle(color: AppColors.textSecondary)),
+          if (noticia.intolerancias.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 6,
+              runSpacing: 4,
+              children: noticia.intolerancias.map((c) => Chip1(etiquetaIntolerancia(c))).toList(),
+            ),
+          ],
           const SizedBox(height: 16),
           Text(noticia.contenido ?? '', style: const TextStyle(height: 1.5)),
         ],

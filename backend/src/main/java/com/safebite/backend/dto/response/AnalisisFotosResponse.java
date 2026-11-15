@@ -20,7 +20,7 @@ public class AnalisisFotosResponse {
     private String terminoBusquedaEs;
     private String terminoBusquedaPt;
     private List<String> ingredientes;
-    private Set<TipoIntolerancia> alergenos;
+    private Set<String> alergenos;
     private boolean pudoLeer;
     private String observacion;
     private String proveedor;

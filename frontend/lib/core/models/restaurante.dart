@@ -10,7 +10,8 @@ class Restaurante {
   final String? imagenUrl;
   final double ratingPromedio;
   final Set<String> tiposCocina;
-  final Set<TipoIntolerancia> opcionesAptasPara;
+  /// Codigos de intolerancias para las que el local tiene opciones aptas.
+  final Set<String> opcionesAptasPara;
 
   Restaurante({
     required this.id,
@@ -36,9 +37,7 @@ class Restaurante {
       imagenUrl: json['imagenUrl'],
       ratingPromedio: (json['ratingPromedio'] as num?)?.toDouble() ?? 0.0,
       tiposCocina: ((json['tiposCocina'] as List?) ?? []).map((e) => e.toString()).toSet(),
-      opcionesAptasPara: ((json['opcionesAptasPara'] as List?) ?? [])
-          .map((e) => tipoIntoleranciaDesde(e))
-          .toSet(),
+      opcionesAptasPara: codigosIntolerancias(json['opcionesAptasPara']),
     );
   }
 }

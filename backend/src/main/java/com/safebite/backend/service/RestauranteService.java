@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -25,8 +26,12 @@ public class RestauranteService {
     private final RestauranteRepository restauranteRepository;
     private final ComentarioRepository comentarioRepository;
     private final EvaluacionRepository evaluacionRepository;
+    private final IntoleranciaService intoleranciaService;
 
-    public List<RestauranteResponse> buscar(String nombre, String tipoCocina, TipoIntolerancia intolerancia) {
+    /**
+     * @param intolerancias el restaurante tiene que tener opciones aptas para TODAS las indicadas
+     */
+    public List<RestauranteResponse> buscar(String nombre, String tipoCocina, java.util.Collection<String> intolerancias) {
         Specification<Restaurante> spec = Specification.where(
                 (root, query, cb) -> cb.equal(root.get("activo"), true));
 
@@ -40,14 +45,11 @@ public class RestauranteService {
                 return cb.isMember(tipoCocina, root.get("tiposCocina"));
             });
         }
-        if (intolerancia != null) {
-            spec = spec.and((root, query, cb) -> {
-                query.distinct(true);
-                return cb.isMember(intolerancia, root.get("opcionesAptasPara"));
-            });
-        }
+        Set<String> filtro = intoleranciaService.normalizar(intolerancias);
 
-        return restauranteRepository.findAll(spec).stream().map(RestauranteResponse::desde).toList();
+        return restauranteRepository.findAll(spec).stream()
+                .filter(r -> r.getOpcionesAptasPara().containsAll(filtro))
+                .map(RestauranteResponse::desde).toList();
     }
 
     public RestauranteResponse obtener(Long id) {
@@ -69,7 +71,7 @@ public class RestauranteService {
                 .longitud(request.getLongitud())
                 .imagenUrl(request.getImagenUrl())
                 .tiposCocina(request.getTiposCocina())
-                .opcionesAptasPara(request.getOpcionesAptasPara())
+                .opcionesAptasPara(intoleranciaService.normalizar(request.getOpcionesAptasPara()))
                 .creadoPor(admin)
                 .build();
         return RestauranteResponse.desde(restauranteRepository.save(restaurante));
@@ -85,7 +87,7 @@ public class RestauranteService {
         restaurante.setLongitud(request.getLongitud());
         restaurante.setImagenUrl(request.getImagenUrl());
         if (request.getTiposCocina() != null) restaurante.setTiposCocina(request.getTiposCocina());
-        if (request.getOpcionesAptasPara() != null) restaurante.setOpcionesAptasPara(request.getOpcionesAptasPara());
+        if (request.getOpcionesAptasPara() != null) restaurante.setOpcionesAptasPara(intoleranciaService.normalizar(request.getOpcionesAptasPara()));
         return RestauranteResponse.desde(restauranteRepository.save(restaurante));
     }
 

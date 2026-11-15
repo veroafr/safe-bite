@@ -7,6 +7,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -25,9 +26,13 @@ public class DataSeeder implements CommandLineRunner {
     private final NoticiaRepository noticiaRepository;
     private final ProductoRepository productoRepository;
     private final PasswordEncoder passwordEncoder;
+    private final MigracionIntolerancias migracionIntolerancias;
 
     @Override
     public void run(String... args) {
+        // Siempre: intolerancias predefinidas + migracion de datos del enum viejo.
+        migracionIntolerancias.ejecutar();
+
         if (usuarioRepository.count() > 0) {
             return;
         }
@@ -48,7 +53,8 @@ public class DataSeeder implements CommandLineRunner {
                 .rol(Rol.USUARIO)
                 .ciudad("Buenos Aires")
                 .pais("Argentina")
-                .intolerancias(Set.of(TipoIntolerancia.GLUTEN, TipoIntolerancia.FRUTOS_SECOS))
+                .intolerancias(new HashSet<>(Set.of(TipoIntolerancia.TRIGO, TipoIntolerancia.CENTENO, TipoIntolerancia.CEBADA,
+                        TipoIntolerancia.AVENA, TipoIntolerancia.MANI, TipoIntolerancia.NUEZ, TipoIntolerancia.ALMENDRA)))
                 .nivelAlerta(NivelAlerta.ALTO)
                 .tiposCocinaPreferidos(Set.of("Vegana", "Sin Gluten"))
                 .build());
@@ -61,7 +67,7 @@ public class DataSeeder implements CommandLineRunner {
                 .longitud(-58.3816)
                 .imagenUrl("https://picsum.photos/seed/restaurante1/400/300")
                 .tiposCocina(Set.of("Casera", "Saludable"))
-                .opcionesAptasPara(Set.of(TipoIntolerancia.GLUTEN))
+                .opcionesAptasPara(new HashSet<>(TipoIntolerancia.GRUPO_GLUTEN))
                 .ratingPromedio(4.2)
                 .creadoPor(admin)
                 .build());
@@ -74,7 +80,8 @@ public class DataSeeder implements CommandLineRunner {
                 .longitud(-58.3974)
                 .imagenUrl("https://picsum.photos/seed/restaurante2/400/300")
                 .tiposCocina(Set.of("Vegana", "Cafeteria"))
-                .opcionesAptasPara(Set.of(TipoIntolerancia.LACTOSA, TipoIntolerancia.GLUTEN))
+                .opcionesAptasPara(new HashSet<>(Set.of(TipoIntolerancia.LECHE, TipoIntolerancia.TRIGO,
+                        TipoIntolerancia.CENTENO, TipoIntolerancia.CEBADA, TipoIntolerancia.AVENA)))
                 .ratingPromedio(4.8)
                 .creadoPor(admin)
                 .build());
@@ -86,6 +93,7 @@ public class DataSeeder implements CommandLineRunner {
                 .dificultad("Facil")
                 .imagenUrl("https://picsum.photos/seed/receta1/400/300")
                 .etiquetas(Set.of("Sin Gluten"))
+                .libreDe(new HashSet<>(TipoIntolerancia.GRUPO_GLUTEN))
                 .ingredientes(List.of("200g harina sin TACC", "2 huevos", "Sal", "Aceite de oliva"))
                 .pasos(List.of("Mezclar los ingredientes", "Amasar 10 minutos", "Cocinar en agua hirviendo 3-4 minutos"))
                 .publicadoPor(admin)
@@ -110,6 +118,7 @@ public class DataSeeder implements CommandLineRunner {
                 .dificultad("Medio")
                 .imagenUrl("https://picsum.photos/seed/receta3/400/300")
                 .etiquetas(Set.of("Sin Lactosa"))
+                .libreDe(new HashSet<>(Set.of(TipoIntolerancia.LECHE)))
                 .ingredientes(List.of("Avena", "Aceite de coco", "Azucar mascabo", "Pasas de uva"))
                 .pasos(List.of("Mezclar ingredientes secos", "Incorporar aceite", "Hornear 15 minutos a 180C"))
                 .publicadoPor(admin)
@@ -133,6 +142,7 @@ public class DataSeeder implements CommandLineRunner {
                 .contenido("Este mes se sumaron cinco nuevos restaurantes a nuestra red de locales certificados libres de gluten...")
                 .imagenUrl("https://picsum.photos/seed/noticia1/400/300")
                 .etiquetas(Set.of("Gluten"))
+                .intolerancias(new HashSet<>(TipoIntolerancia.GRUPO_GLUTEN))
                 .publicadoPor(admin)
                 .build());
 
@@ -151,7 +161,7 @@ public class DataSeeder implements CommandLineRunner {
                 .codigoEan("123456789")
                 .imagenUrl("https://picsum.photos/seed/producto1/400/300")
                 .ingredientes(List.of("Arroz integral", "Aceite de girasol", "Sal"))
-                .alergenos(Set.of(TipoIntolerancia.GLUTEN))
+                .alergenos(new HashSet<>())
                 .build());
 
         productoRepository.save(Producto.builder()
@@ -160,7 +170,7 @@ public class DataSeeder implements CommandLineRunner {
                 .codigoEan("987654321")
                 .imagenUrl("https://picsum.photos/seed/producto2/400/300")
                 .ingredientes(List.of("Agua", "Almendras", "Sal marina"))
-                .alergenos(Set.of(TipoIntolerancia.FRUTOS_SECOS))
+                .alergenos(new HashSet<>(Set.of(TipoIntolerancia.ALMENDRA)))
                 .build());
     }
 }
