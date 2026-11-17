@@ -8,4 +8,6 @@ FROM eclipse-temurin:17-jre-alpine
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
 EXPOSE 8080
-ENTRYPOINT ["java", "-jar", "app.jar"]
+# Render gratis da 512 MB: por defecto Java usa solo el 25 % para el heap
+# (~128 MB) y una foto en base64 puede agotarlo. Se permite usar el 75 %.
+ENTRYPOINT ["java", "-XX:MaxRAMPercentage=75", "-XX:+ExitOnOutOfMemoryError", "-jar", "app.jar"]

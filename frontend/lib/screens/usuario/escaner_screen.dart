@@ -893,7 +893,7 @@ class _LectorEanTabState extends State<_LectorEanTab> {
       if (mounted) {
         setState(() => _escaneandoPaquete = false);
         // Si no quedó un producto en pantalla, se vuelve a encender el lector.
-        if (_resultado == null) await _encenderLector();
+        if (_resultado == null) await _encenderLector(conEspera: true);
       }
     }
   }
@@ -904,11 +904,25 @@ class _LectorEanTabState extends State<_LectorEanTab> {
     } catch (_) {}
   }
 
-  Future<void> _encenderLector() async {
-    try {
-      await _controller.start();
-    } catch (_) {
-      // Ya estaba encendido o no hay cámara: el errorBuilder lo muestra.
+  /// Vuelve a encender la cámara del lector. Después de sacar una foto con la
+  /// cámara del sistema, el navegador puede negar la cámara unos instantes
+  /// (la app todavía no recuperó el foco) y el lector mostraba "No hay
+  /// permiso". Por eso espera un momento y reintenta algunas veces.
+  Future<void> _encenderLector({bool conEspera = false}) async {
+    for (var intento = 0; intento < 4; intento++) {
+      if (!mounted) return;
+      if (conEspera || intento > 0) {
+        await Future.delayed(Duration(milliseconds: 600 * (intento + 1)));
+        if (!mounted) return;
+      }
+      try {
+        // stop() borra el error anterior; sin eso start() no vuelve a intentar.
+        if (_controller.value.error != null) await _controller.stop();
+        await _controller.start();
+      } catch (_) {
+        // Se reintenta abajo.
+      }
+      if (_controller.value.error == null) return;
     }
   }
 

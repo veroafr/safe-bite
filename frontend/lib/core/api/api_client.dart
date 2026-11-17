@@ -46,10 +46,10 @@ class ApiClient {
     Map<String, dynamic>? query,
     bool withAuth = true,
   }) async {
-    final response = await http.get(
+    final response = await _conexion(() => http.get(
       _buildUri(path, query),
       headers: await _headers(withAuth: withAuth),
-    );
+    ));
     return _handleResponse(response);
   }
 
@@ -58,11 +58,11 @@ class ApiClient {
     Map<String, dynamic>? body,
     bool withAuth = true,
   }) async {
-    final response = await http.post(
+    final response = await _conexion(() => http.post(
       _buildUri(path, null),
       headers: await _headers(withAuth: withAuth),
       body: body != null ? jsonEncode(body) : null,
-    );
+    ));
     return _handleResponse(response);
   }
 
@@ -71,11 +71,11 @@ class ApiClient {
     Map<String, dynamic>? body,
     bool withAuth = true,
   }) async {
-    final response = await http.put(
+    final response = await _conexion(() => http.put(
       _buildUri(path, null),
       headers: await _headers(withAuth: withAuth),
       body: body != null ? jsonEncode(body) : null,
-    );
+    ));
     return _handleResponse(response);
   }
 
@@ -84,27 +84,27 @@ class ApiClient {
     Map<String, dynamic>? body,
     bool withAuth = true,
   }) async {
-    final response = await http.patch(
+    final response = await _conexion(() => http.patch(
       _buildUri(path, null),
       headers: await _headers(withAuth: withAuth),
       body: body != null ? jsonEncode(body) : null,
-    );
+    ));
     return _handleResponse(response);
   }
 
   Future<dynamic> delete(String path, {bool withAuth = true}) async {
-    final response = await http.delete(
+    final response = await _conexion(() => http.delete(
       _buildUri(path, null),
       headers: await _headers(withAuth: withAuth),
-    );
+    ));
     return _handleResponse(response);
   }
 
   Future<List<int>> getBytes(String path, {bool withAuth = true}) async {
-    final response = await http.get(
+    final response = await _conexion(() => http.get(
       _buildUri(path, null),
       headers: await _headers(withAuth: withAuth),
-    );
+    ));
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException(
         response.statusCode,
@@ -112,6 +112,20 @@ class ApiClient {
       );
     }
     return response.bodyBytes;
+  }
+
+  /// Hace la petición y traduce los errores de red ("Failed to fetch") a un
+  /// mensaje entendible. En la web, ese error aparece cuando el servidor no
+  /// responde: Render todavía está arrancando o publicando una versión nueva,
+  /// se reinició, o no hay conexión.
+  Future<http.Response> _conexion(Future<http.Response> Function() peticion) async {
+    try {
+      return await peticion();
+    } on http.ClientException {
+      throw ApiException(0,
+          'No se pudo conectar con el servidor. Si recién se publicó una versión o estuvo inactivo, '
+          'puede tardar 1 o 2 minutos en arrancar: esperá un momento y volvé a intentar.');
+    }
   }
 
   dynamic _handleResponse(http.Response response) {

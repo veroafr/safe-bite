@@ -249,7 +249,9 @@ public class VisionAnalysisService {
 
         int ultimoStatus = 0;
         String ultimoError = null;
-        for (int intento = 1; intento <= 3; intento++) {
+        // Dos intentos por modelo: con varios modelos de respaldo, mas intentos
+        // harian esperar demasiado al usuario.
+        for (int intento = 1; intento <= 2; intento++) {
             try {
                 ResponseEntity<String> response = restTemplate.exchange(
                         url, org.springframework.http.HttpMethod.POST, new HttpEntity<>(body, headers), String.class);
@@ -271,9 +273,9 @@ public class VisionAnalysisService {
                 // 503 "alta demanda": temporal, se reintenta
                 ultimoStatus = e.getStatusCode().value();
                 ultimoError = IaEstadoService.explicar("Gemini (" + modelo + ")", ultimoStatus, e.getResponseBodyAsString());
-                log.warn("Gemini fallo (intento {}/3): {}", intento, e.getStatusCode());
+                log.warn("Gemini fallo (intento {}/2): {}", intento, e.getStatusCode());
                 estado.error("GEMINI", ultimoError);
-                if (intento < 3) {
+                if (intento < 2) {
                     try { Thread.sleep(2000L * intento); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); break; }
                 }
             } catch (HttpClientErrorException e) {
