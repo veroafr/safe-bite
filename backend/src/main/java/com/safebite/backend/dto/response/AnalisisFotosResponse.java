@@ -24,4 +24,6 @@ public class AnalisisFotosResponse {
     private boolean pudoLeer;
     private String observacion;
     private String proveedor;
+    /** Codigo de barras leido en la foto, si se vio (para buscar el producto por EAN). */
+    private String codigoBarras;
 }

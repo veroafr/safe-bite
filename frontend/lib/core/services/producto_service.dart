@@ -16,6 +16,8 @@ class AnalisisFotos {
   final Set<String> alergenos;
   final bool pudoLeer;
   final String? observacion;
+  /// Código de barras que la IA leyó en la foto, si se veía.
+  final String? codigoBarras;
 
   AnalisisFotos({
     this.nombreSugerido,
@@ -28,6 +30,7 @@ class AnalisisFotos {
     required this.alergenos,
     required this.pudoLeer,
     this.observacion,
+    this.codigoBarras,
   });
 
   factory AnalisisFotos.fromJson(Map<String, dynamic> json) => AnalisisFotos(
@@ -41,6 +44,7 @@ class AnalisisFotos {
         alergenos: codigosIntolerancias(json['alergenos']),
         pudoLeer: json['pudoLeer'] ?? false,
         observacion: json['observacion'],
+        codigoBarras: json['codigoBarras'],
       );
 }
 

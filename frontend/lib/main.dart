@@ -1,4 +1,6 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
 
 import 'core/api/api_client.dart';
@@ -17,6 +19,13 @@ import 'core/theme/app_theme.dart';
 import 'screens/splash_screen.dart';
 
 void main() {
+  // En la versión web el lector de códigos usa la librería ZXing. Se sirve
+  // desde la propia app (web/zxing) en lugar de descargarla de unpkg.com en
+  // cada uso: si ese sitio falla o cambia, el lector deja de reconocer códigos.
+  if (kIsWeb) {
+    MobileScannerPlatform.instance.setBarcodeLibraryScriptUrl('zxing/index.min.js');
+  }
+
   final apiClient = ApiClient();
   final intoleranciaService = IntoleranciaService(apiClient);
 

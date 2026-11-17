@@ -92,6 +92,7 @@ public class ProductoController {
                 .pudoLeer(resultado.pudoLeer())
                 .observacion(resultado.observacion())
                 .proveedor(resultado.proveedor())
+                .codigoBarras(resultado.codigoBarras())
                 .build());
     }
 

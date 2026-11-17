@@ -1,0 +1,104 @@
+import 'usuario.dart';
+
+class Producto {
+  final int id;
+  final String nombre;
+  final String? marca;
+  final String? categoria;
+  final String? codigoEan;
+  final String? imagenUrl;
+  final List<String> ingredientes;
+  /// Codigos de intolerancias que contiene el producto.
+  final Set<String> alergenos;
+  final String origen;
+  final bool verificado;
+  final String? aportadoPorEmail;
+  final String? fotoFrontalBase64;
+  final String? fotoComposicionBase64;
+  final String? fotoNutricionalBase64;
+
+  Producto({
+    required this.id,
+    required this.nombre,
+    this.marca,
+    this.categoria,
+    this.codigoEan,
+    this.imagenUrl,
+    required this.ingredientes,
+    required this.alergenos,
+    this.origen = 'ADMIN',
+    this.verificado = true,
+    this.aportadoPorEmail,
+    this.fotoFrontalBase64,
+    this.fotoComposicionBase64,
+    this.fotoNutricionalBase64,
+  });
+
+  factory Producto.fromJson(Map<String, dynamic> json) => Producto(
+        id: json['id'],
+        nombre: json['nombre'] ?? '',
+        marca: json['marca'],
+        categoria: json['categoria'],
+        codigoEan: json['codigoEan'],
+        imagenUrl: json['imagenUrl'],
+        ingredientes: ((json['ingredientes'] as List?) ?? []).map((e) => e.toString()).toList(),
+        alergenos: codigosIntolerancias(json['alergenos']),
+        origen: json['origen'] ?? 'ADMIN',
+        verificado: json['verificado'] ?? true,
+        aportadoPorEmail: json['aportadoPorEmail'],
+        fotoFrontalBase64: json['fotoFrontalBase64'],
+        fotoComposicionBase64: json['fotoComposicionBase64'],
+        fotoNutricionalBase64: json['fotoNutricionalBase64'],
+      );
+
+  /// True si hay alguna imagen para mostrar (propia o de Open Food Facts).
+  bool get tieneFotoPrincipal => fotoFrontalBase64 != null || imagenUrl != null;
+}
+
+class ResultadoEscaneo {
+  final Producto producto;
+  final bool seguro;
+  final bool datosSuficientes;
+  final Set<String> alergenosEnConflicto;
+  final String mensaje;
+  final List<Producto> alternativas;
+
+  ResultadoEscaneo({
+    required this.producto,
+    required this.seguro,
+    required this.datosSuficientes,
+    required this.alergenosEnConflicto,
+    required this.mensaje,
+    this.alternativas = const [],
+  });
+
+  factory ResultadoEscaneo.fromJson(Map<String, dynamic> json) => ResultadoEscaneo(
+        producto: Producto.fromJson(json['producto']),
+        seguro: json['seguro'] ?? false,
+        datosSuficientes: json['datosSuficientes'] ?? true,
+        alergenosEnConflicto: codigosIntolerancias(json['alergenosEnConflicto']),
+        mensaje: json['mensaje'] ?? '',
+        alternativas: ((json['alternativas'] as List?) ?? []).map((e) => Producto.fromJson(e)).toList(),
+      );
+}
+
+class AnalisisIngredientes {
+  final bool seguro;
+  final Set<String> alergenosEncontrados;
+  final String mensaje;
+  final String textoAnalizado;
+
+  AnalisisIngredientes({
+    required this.seguro,
+    required this.alergenosEncontrados,
+    required this.mensaje,
+    required this.textoAnalizado,
+  });
+
+  factory AnalisisIngredientes.fromJson(Map<String, dynamic> json) => AnalisisIngredientes(
+        seguro: json['seguro'] ?? false,
+        alergenosEncontrados: codigosIntolerancias(json['alergenosEncontrados']),
+        mensaje: json['mensaje'] ?? '',
+        textoAnalizado: json['textoAnalizado'] ?? '',
+      );
+}

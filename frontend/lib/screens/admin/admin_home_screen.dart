@@ -16,6 +16,7 @@ import 'admin_recetas_screen.dart';
 import 'admin_reportes_screen.dart';
 import 'admin_productos_screen.dart';
 import 'admin_intolerancias_screen.dart';
+import 'admin_ia_screen.dart';
 
 class AdminHomeScreen extends StatefulWidget {
   const AdminHomeScreen({super.key});
@@ -166,6 +167,14 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         pantalla: const AdminUsuariosScreen(),
         notificaciones: 0,
         color: const Color(0xFF00B8D4),
+      ),
+      _ModuloAdmin(
+        titulo: 'Inteligencia artificial',
+        subtitulo: 'Gasto y diagnóstico',
+        icono: Icons.auto_awesome_rounded,
+        pantalla: const AdminIaScreen(),
+        notificaciones: 0,
+        color: const Color(0xFF6D4C41),
       ),
       _ModuloAdmin(
         titulo: 'Reportes',

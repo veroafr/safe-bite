@@ -816,7 +816,18 @@ class _LectorEanTab extends StatefulWidget {
 }
 
 class _LectorEanTabState extends State<_LectorEanTab> {
-  final MobileScannerController _controller = MobileScannerController();
+  // Solo los formatos de productos: con menos formatos el lector web (ZXing)
+  // reconoce mas rapido y con menos errores.
+  final MobileScannerController _controller = MobileScannerController(
+    formats: [
+      BarcodeFormat.ean13,
+      BarcodeFormat.ean8,
+      BarcodeFormat.upcA,
+      BarcodeFormat.upcE,
+      BarcodeFormat.code128,
+      BarcodeFormat.itf,
+    ],
+  );
   final _codigoManualCtrl = TextEditingController();
   ResultadoEscaneo? _resultado;
   String? _error;
@@ -826,12 +837,31 @@ class _LectorEanTabState extends State<_LectorEanTab> {
 
   Future<void> _escanearPaquete() async {
     setState(() => _escaneandoPaquete = true);
+    // En el celular la cámara no se puede compartir: se libera el lector de
+    // códigos mientras se saca la foto y se vuelve a encender al terminar.
+    await _detenerLector();
     try {
       final bytes = await elegirFotoCamaraOGaleria(context);
       if (bytes == null) return;
+      if (!mounted) return;
 
       final foto64 = base64Encode(bytes);
       final analisis = await context.read<ProductoService>().analizarFotos(fotoFrontalBase64: foto64);
+
+      // Si la IA leyó el código de barras en la foto, se busca el producto
+      // por código: así se usan los datos verificados de la base.
+      final codigo = analisis.codigoBarras;
+      if (codigo != null && codigo.isNotEmpty && mounted) {
+        final encontrado = await _buscarProducto(codigo, detenerCamara: true, silencioso: true);
+        if (encontrado) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Código $codigo leído en la foto')),
+            );
+          }
+          return;
+        }
+      }
 
       if (!analisis.pudoLeer) {
         if (mounted) {
@@ -860,7 +890,25 @@ class _LectorEanTabState extends State<_LectorEanTab> {
     } catch (e) {
       if (mounted) mostrarError(context, e);
     } finally {
-      if (mounted) setState(() => _escaneandoPaquete = false);
+      if (mounted) {
+        setState(() => _escaneandoPaquete = false);
+        // Si no quedó un producto en pantalla, se vuelve a encender el lector.
+        if (_resultado == null) await _encenderLector();
+      }
+    }
+  }
+
+  Future<void> _detenerLector() async {
+    try {
+      await _controller.stop();
+    } catch (_) {}
+  }
+
+  Future<void> _encenderLector() async {
+    try {
+      await _controller.start();
+    } catch (_) {
+      // Ya estaba encendido o no hay cámara: el errorBuilder lo muestra.
     }
   }
 
@@ -868,6 +916,9 @@ class _LectorEanTabState extends State<_LectorEanTab> {
     if (_procesando) return;
     final codigo = capture.barcodes.firstOrNull?.rawValue;
     if (codigo == null || codigo.isEmpty) return;
+    // Si ese mismo código ya dio error (no está en la base), no se vuelve a
+    // consultar en cada cuadro de la cámara.
+    if (codigo == _ultimoCodigoBuscado && _error != null) return;
 
     await _buscarProducto(codigo, detenerCamara: true);
   }
@@ -879,8 +930,11 @@ class _LectorEanTabState extends State<_LectorEanTab> {
     await _buscarProducto(codigo, detenerCamara: false);
   }
 
-  Future<void> _buscarProducto(String codigo, {required bool detenerCamara}) async {
-    if (_procesando) return;
+  /// Busca el producto por código. Devuelve true si lo encontró.
+  /// Con [silencioso] no muestra el error en pantalla (se usa cuando el
+  /// código lo leyó la IA y, si no está, se muestra el análisis de la foto).
+  Future<bool> _buscarProducto(String codigo, {required bool detenerCamara, bool silencioso = false}) async {
+    if (_procesando) return false;
     setState(() {
       _procesando = true;
       _error = null;
@@ -890,10 +944,13 @@ class _LectorEanTabState extends State<_LectorEanTab> {
       final resultado = await context
           .read<ProductoService>()
           .escanearPorEan(codigo, intolerancias: context.read<FiltroEscanerProvider>().filtro);
+      if (!mounted) return true;
       setState(() => _resultado = resultado);
-      if (detenerCamara) await _controller.stop();
+      if (detenerCamara) await _detenerLector();
+      return true;
     } catch (e) {
-      setState(() => _error = e.toString());
+      if (mounted && !silencioso) setState(() => _error = 'Código leído: $codigo\n$e');
+      return false;
     } finally {
       if (mounted) setState(() => _procesando = false);
     }
@@ -906,7 +963,7 @@ class _LectorEanTabState extends State<_LectorEanTab> {
       _ultimoCodigoBuscado = null;
     });
     _codigoManualCtrl.clear();
-    _controller.start();
+    _encenderLector();
   }
 
   Future<void> _irACargarProducto() async {
@@ -937,7 +994,17 @@ class _LectorEanTabState extends State<_LectorEanTab> {
             child: Stack(
               fit: StackFit.expand,
               children: [
-                MobileScanner(controller: _controller, onDetect: _onDetect),
+                MobileScanner(
+                  controller: _controller,
+                  onDetect: _onDetect,
+                  errorBuilder: (context, error, child) => _ErrorCamara(
+                    error: error,
+                    onReintentar: () async {
+                      await _detenerLector();
+                      await _encenderLector();
+                    },
+                  ),
+                ),
                 Center(
                   child: Container(
                     width: 220,
@@ -1091,4 +1158,50 @@ class _FiltroEscanerBarra extends StatelessWidget {
 
 extension _FirstOrNull<T> on List<T> {
   T? get firstOrNull => isEmpty ? null : first;
+}
+
+
+/// Se muestra en lugar de la cámara cuando el lector no puede arrancar,
+/// con el motivo, para que el usuario sepa qué hacer.
+class _ErrorCamara extends StatelessWidget {
+  final MobileScannerException error;
+  final VoidCallback onReintentar;
+  const _ErrorCamara({required this.error, required this.onReintentar});
+
+  String get _mensaje {
+    switch (error.errorCode) {
+      case MobileScannerErrorCode.permissionDenied:
+        return 'No hay permiso para usar la cámara. Habilitalo en la configuración del navegador o del teléfono.';
+      case MobileScannerErrorCode.unsupported:
+        return 'Este dispositivo o navegador no permite leer códigos con la cámara. Ingresá el código a mano o usá "Escanear paquete".';
+      default:
+        final detalle = error.errorDetails?.message;
+        return 'No se pudo iniciar la cámara.${detalle != null ? ' ($detalle)' : ''}';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: Colors.black87,
+      padding: const EdgeInsets.all(12),
+      alignment: Alignment.center,
+      child: SingleChildScrollView(
+        child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Icon(Icons.no_photography_outlined, color: Colors.white70, size: 36),
+          const SizedBox(height: 8),
+          Text(_mensaje, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white, fontSize: 12)),
+          const SizedBox(height: 8),
+          OutlinedButton(
+            onPressed: onReintentar,
+            style: OutlinedButton.styleFrom(foregroundColor: Colors.white, side: const BorderSide(color: Colors.white54)),
+            child: const Text('Reintentar'),
+          ),
+        ],
+        ),
+      ),
+    );
+  }
 }
