@@ -6,6 +6,7 @@ import '../../core/providers/auth_provider.dart';
 import '../../core/services/alerta_service.dart';
 import '../../core/services/producto_service.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/marca_widgets.dart';
 
 import '../auth/welcome_screen.dart';
 import 'admin_restaurantes_screen.dart';
@@ -187,27 +188,16 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     ];
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF4F6F8),
+      backgroundColor: AppColors.background,
 
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        surfaceTintColor: Colors.white,
-        centerTitle: true,
-        title: const Text(
-          'SafeBite Admin',
-          style: TextStyle(
-            fontWeight: FontWeight.w700,
-            color: Color(0xFF212121),
-          ),
-        ),
+      appBar: AppBarSafeBite(
         actions: [
           // Actualizar manualmente
           IconButton(
             tooltip: 'Actualizar',
             icon: const Icon(
               Icons.refresh_rounded,
-              color: Color(0xFF555555),
+              color: Colors.white,
             ),
             onPressed: _cargando ? null : _cargarPendientes,
           ),
@@ -216,7 +206,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
             tooltip: 'Cerrar sesión',
             icon: const Icon(
               Icons.logout_rounded,
-              color: Color(0xFF555555),
+              color: Colors.white,
             ),
             onPressed: () async {
               await context.read<AuthProvider>().logout();

@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../../core/models/producto.dart';
@@ -12,6 +13,7 @@ import '../../core/services/producto_service.dart';
 import '../../core/services/alerta_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/common_widgets.dart';
+import '../../core/widgets/marca_widgets.dart';
 import '../../core/widgets/intolerancias_widgets.dart';
 import 'cargar_producto_screen.dart';
 import '../../core/web/lector_codigo_foto.dart';
@@ -21,11 +23,8 @@ class EscanerScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Escáner de Productos'),
-      ),
-      body: const _LectorEanTab(),
+    return const Scaffold(
+      body: _LectorEanTab(),
     );
   }
 }
@@ -969,130 +968,210 @@ class _LectorEanTabState extends State<_LectorEanTab> {
     super.dispose();
   }
 
-  Widget _botonPrincipal({
+  /// Tarjeta de acción del diseño "Fresco": ícono en un recuadro de color,
+  /// título y una línea de ayuda.
+  Widget _tarjetaAccion({
     required IconData icono,
+    required Color colorIcono,
+    required Color fondoIcono,
     required String texto,
+    required String ayuda,
     required String textoCargando,
     required bool cargando,
     required VoidCallback onPressed,
   }) {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton.icon(
-        onPressed: _ocupado ? null : onPressed,
-        style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
-        icon: cargando
-            ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2))
-            : Icon(icono),
-        label: Text(cargando ? textoCargando : texto),
+    return Expanded(
+      child: Material(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(22),
+        elevation: 0,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(22),
+          onTap: _ocupado ? null : onPressed,
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(22),
+              boxShadow: AppColors.sombraSuave,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 48,
+                  height: 48,
+                  decoration: BoxDecoration(color: fondoIcono, borderRadius: BorderRadius.circular(16)),
+                  child: cargando
+                      ? Padding(
+                          padding: const EdgeInsets.all(13),
+                          child: CircularProgressIndicator(strokeWidth: 2.4, color: colorIcono),
+                        )
+                      : Icon(icono, color: colorIcono, size: 26),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  cargando ? textoCargando : texto,
+                  style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, height: 1.25, color: AppColors.textPrimary),
+                ),
+                const SizedBox(height: 4),
+                Text(ayuda, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _contenidoResultado() {
+    if (_procesando) {
+      return const Padding(
+        padding: EdgeInsets.all(32),
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+    if (_resultado != null) {
+      return Column(children: [
+        Padding(
+          padding: const EdgeInsets.only(top: 8),
+          child: TextButton.icon(
+            onPressed: _reiniciar,
+            icon: const Icon(Icons.barcode_reader),
+            label: const Text('Escanear otro producto'),
+          ),
+        ),
+        ResultadoEscaneoCard(resultado: _resultado!),
+      ]);
+    }
+    if (_error != null) {
+      return Column(
+        children: [
+          ErrorView(mensaje: _error!, onReintentar: _reiniciar),
+          if (_ultimoCodigoBuscado != null)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 16),
+              child: ElevatedButton.icon(
+                onPressed: _irACargarProducto,
+                icon: const Icon(Icons.add_box_outlined),
+                label: const Text('Cargar este producto'),
+              ),
+            ),
+        ],
+      );
+    }
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+      child: Column(
+        children: [
+          Container(
+            width: 64,
+            height: 64,
+            decoration: const BoxDecoration(color: AppColors.primarySoft, shape: BoxShape.circle),
+            child: const Icon(Icons.verified_user_outlined, color: AppColors.primary, size: 30),
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'Sacá una foto del código de barras para ver el producto, '
+            'o de la lista de ingredientes para que la IA la analice.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: AppColors.textSecondary, height: 1.4),
+          ),
+        ],
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
-          child: Column(
-            children: [
-              _botonPrincipal(
-                icono: Icons.barcode_reader,
-                texto: 'Escanear código de barras',
-                textoCargando: 'Leyendo el código...',
-                cargando: _leyendoFotoCodigo,
-                onPressed: _escanearCodigoDeBarras,
-              ),
-              const SizedBox(height: 10),
-              _botonPrincipal(
-                icono: Icons.inventory_2_outlined,
-                texto: 'Escanear ingredientes del paquete',
-                textoCargando: 'Analizando con IA...',
-                cargando: _escaneandoPaquete,
-                onPressed: _escanearIngredientes,
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 12),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _codigoManualCtrl,
-                  keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    hintText: 'O ingresá el código manualmente...',
-                    isDense: true,
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const EncabezadoSafeBite(
+              titulo: '¿Qué vas a comer hoy?',
+              subtitulo: 'Revisamos cada producto contra tus restricciones.',
+              espacioInferior: 64,
+            ),
+            // Las dos tarjetas se superponen al encabezado.
+            Transform.translate(
+              offset: const Offset(0, -44),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                child: IntrinsicHeight(
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _tarjetaAccion(
+                        icono: Icons.barcode_reader,
+                        colorIcono: AppColors.primary,
+                        fondoIcono: AppColors.primarySoft,
+                        texto: 'Escanear código de barras',
+                        ayuda: 'Foto del código',
+                        textoCargando: 'Leyendo el código...',
+                        cargando: _leyendoFotoCodigo,
+                        onPressed: _escanearCodigoDeBarras,
+                      ),
+                      const SizedBox(width: 12),
+                      _tarjetaAccion(
+                        icono: Icons.auto_awesome,
+                        colorIcono: const Color(0xFFB26A00),
+                        fondoIcono: AppColors.accentSoft,
+                        texto: 'Escanear ingredientes del paquete',
+                        ayuda: 'La IA lee la etiqueta',
+                        textoCargando: 'Analizando con IA...',
+                        cargando: _escaneandoPaquete,
+                        onPressed: _escanearIngredientes,
+                      ),
+                    ],
                   ),
-                  onSubmitted: (_) => _buscarConCodigoManual(),
                 ),
               ),
-              const SizedBox(width: 8),
-              IconButton(
-                icon: const Icon(Icons.search, color: AppColors.primary),
-                onPressed: _ocupado ? null : _buscarConCodigoManual,
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 6),
-        _FiltroEscanerBarra(onCambio: () {
-          // Si ya hay un producto en pantalla, se vuelve a evaluar con el filtro nuevo.
-          final codigo = _ultimoCodigoBuscado;
-          if (_resultado != null && codigo != null) _buscarProducto(codigo);
-        }),
-        const SizedBox(height: 4),
-        Expanded(
-          child: _procesando
-              ? const Center(child: CircularProgressIndicator())
-              : _resultado != null
-                  ? SingleChildScrollView(
-                      child: Column(children: [
-                        Padding(
-                          padding: const EdgeInsets.only(top: 8),
-                          child: TextButton.icon(
-                            onPressed: _reiniciar,
-                            icon: const Icon(Icons.barcode_reader),
-                            label: const Text('Escanear otro producto'),
-                          ),
-                        ),
-                        ResultadoEscaneoCard(resultado: _resultado!),
-                      ]),
-                    )
-                  : _error != null
-                      ? SingleChildScrollView(
-                          child: Column(
-                            children: [
-                              ErrorView(mensaje: _error!, onReintentar: _reiniciar),
-                              if (_ultimoCodigoBuscado != null)
-                                Padding(
-                                  padding: const EdgeInsets.only(bottom: 16),
-                                  child: ElevatedButton.icon(
-                                    onPressed: _irACargarProducto,
-                                    icon: const Icon(Icons.add_box_outlined),
-                                    label: const Text('Cargar este producto'),
-                                  ),
-                                ),
-                            ],
-                          ),
-                        )
-                      : const SingleChildScrollView(
-                          child: Padding(
-                            padding: EdgeInsets.all(24),
-                            child: Text(
-                              'Sacá una foto del código de barras para ver el producto, '
-                              'o una foto de la lista de ingredientes para que la IA la analice.',
-                              textAlign: TextAlign.center,
-                              style: TextStyle(color: AppColors.textSecondary),
+            ),
+            Transform.translate(
+              offset: const Offset(0, -28),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    child: TextField(
+                      controller: _codigoManualCtrl,
+                      keyboardType: TextInputType.number,
+                      onSubmitted: (_) => _buscarConCodigoManual(),
+                      decoration: InputDecoration(
+                        hintText: 'Ingresá el código a mano',
+                        prefixIcon: const Icon(Icons.dialpad_rounded, color: AppColors.textSecondary),
+                        suffixIcon: Padding(
+                          padding: const EdgeInsets.all(6),
+                          child: IconButton.filled(
+                            tooltip: 'Buscar',
+                            style: IconButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                             ),
+                            icon: const Icon(Icons.search_rounded),
+                            onPressed: _ocupado ? null : _buscarConCodigoManual,
                           ),
                         ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  _FiltroEscanerBarra(onCambio: () {
+                    // Si ya hay un producto en pantalla, se vuelve a evaluar con el filtro nuevo.
+                    final codigo = _ultimoCodigoBuscado;
+                    if (_resultado != null && codigo != null) _buscarProducto(codigo);
+                  }),
+                  _contenidoResultado(),
+                ],
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 }

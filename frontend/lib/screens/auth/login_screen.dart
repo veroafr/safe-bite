@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/models/usuario.dart';
 import '../../core/theme/app_theme.dart';
+import '../../core/widgets/marca_widgets.dart';
 import '../../core/utils/validadores.dart';
 import '../../core/widgets/form_widgets.dart';
 import '../usuario/usuario_home_screen.dart';
@@ -66,11 +67,8 @@ class _LoginScreenState extends State<LoginScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Icon(Icons.dining, color: AppColors.primary, size: 56),
-                const SizedBox(height: 8),
-                const Text('Safe-Bite', textAlign: TextAlign.center,
-                    style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: AppColors.primaryDark)),
-                const SizedBox(height: 24),
+                const Center(child: LogoSafeBite(alto: 64)),
+                const SizedBox(height: 28),
                 TextFormField(
                   controller: _emailCtrl,
                   keyboardType: TextInputType.emailAddress,

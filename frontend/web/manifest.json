@@ -1,11 +1,11 @@
 {
-    "name": "safebite_app",
-    "short_name": "safebite_app",
+    "name": "SafeBite",
+    "short_name": "SafeBite",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#0B4D2C",
+    "theme_color": "#0B4D2C",
+    "description": "SafeBite: productos, restaurantes y recetas seguros para tus restricciones alimentarias.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

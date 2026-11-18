@@ -48,8 +48,11 @@ class _RecetasScreenState extends State<RecetasScreen> with SingleTickerProvider
         title: const Text('Recetas y Tips'),
         bottom: TabBar(
           controller: _tabController,
-          labelColor: AppColors.primary,
-          indicatorColor: AppColors.primary,
+          labelColor: Colors.white,
+          unselectedLabelColor: Colors.white70,
+          indicatorColor: AppColors.lime,
+          indicatorWeight: 3,
+          dividerColor: Colors.transparent,
           tabs: const [Tab(text: 'Recetas'), Tab(text: 'Tips de Salud')],
         ),
       ),

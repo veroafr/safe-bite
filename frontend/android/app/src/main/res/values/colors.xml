@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Colores de la marca SafeBite (los mismos del logo y de la app) -->
+    <color name="safebite_verde_claro">#0E5C34</color>
+    <color name="safebite_verde_oscuro">#05321C</color>
+    <color name="safebite_fondo">#F1F6F2</color>
+</resources>

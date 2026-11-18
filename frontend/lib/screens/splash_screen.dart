@@ -4,6 +4,7 @@ import '../core/providers/auth_provider.dart';
 import '../core/providers/intolerancias_provider.dart';
 import '../core/models/usuario.dart';
 import '../core/theme/app_theme.dart';
+import '../core/widgets/marca_widgets.dart';
 import 'auth/welcome_screen.dart';
 import 'usuario/usuario_home_screen.dart';
 import 'admin/admin_home_screen.dart';
@@ -40,21 +41,21 @@ class _SplashScreenState extends State<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      backgroundColor: AppColors.background,
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.eco, color: AppColors.primary, size: 72),
-            SizedBox(height: 12),
-            Text('Safe-Bite',
-                style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: AppColors.primary)),
-            SizedBox(height: 4),
-            Text('Tu compañero alimentario seguro', style: TextStyle(color: AppColors.textSecondary)),
-            SizedBox(height: 24),
-            CircularProgressIndicator(color: AppColors.primary),
-          ],
+    return Scaffold(
+      body: Container(
+        decoration: const BoxDecoration(gradient: AppColors.headerGradient),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const LogoSafeBite(alto: 80, claro: true),
+              const SizedBox(height: 12),
+              Text('Tu compañero alimentario seguro',
+                  style: TextStyle(color: Colors.white.withValues(alpha: 0.85))),
+              const SizedBox(height: 28),
+              const CircularProgressIndicator(color: AppColors.lime),
+            ],
+          ),
         ),
       ),
     );

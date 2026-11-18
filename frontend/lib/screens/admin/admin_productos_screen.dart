@@ -267,7 +267,13 @@ class _AdminProductosScreenState extends State<AdminProductosScreen> {
       child: Scaffold(
         appBar: AppBar(
           title: const Text('Gestión de Productos'),
-          bottom: const TabBar(tabs: [
+          bottom: const TabBar(
+              labelColor: Colors.white,
+              unselectedLabelColor: Colors.white70,
+              indicatorColor: AppColors.lime,
+              indicatorWeight: 3,
+              dividerColor: Colors.transparent,
+              tabs: [
             Tab(text: 'Pendientes de revisión'),
             Tab(text: 'Catálogo completo'),
           ]),
