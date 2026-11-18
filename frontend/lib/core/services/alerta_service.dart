@@ -5,12 +5,21 @@ class AlertaService {
   final ApiClient _client;
   AlertaService(this._client);
 
-  Future<Alerta> crear({required TipoAlerta tipo, int? restauranteId, int? productoId, required String descripcion}) async {
+  Future<Alerta> crear({
+    required TipoAlerta tipo,
+    int? restauranteId,
+    int? productoId,
+    required String descripcion,
+    String? telefonoContacto,
+    List<String> pruebas = const [],
+  }) async {
     final data = await _client.post('/alertas', body: {
       'tipo': tipo.name,
       'restauranteId': restauranteId,
       'productoId': productoId,
       'descripcion': descripcion,
+      'telefonoContacto': telefonoContacto,
+      'pruebas': pruebas,
     });
     return Alerta.fromJson(data);
   }

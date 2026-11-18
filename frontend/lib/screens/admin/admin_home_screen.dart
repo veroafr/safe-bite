@@ -18,6 +18,8 @@ import 'admin_reportes_screen.dart';
 import 'admin_productos_screen.dart';
 import 'admin_intolerancias_screen.dart';
 import 'admin_ia_screen.dart';
+import 'admin_resenas_screen.dart';
+import '../../core/services/restaurante_service.dart';
 
 class AdminHomeScreen extends StatefulWidget {
   const AdminHomeScreen({super.key});
@@ -29,6 +31,7 @@ class AdminHomeScreen extends StatefulWidget {
 class _AdminHomeScreenState extends State<AdminHomeScreen> {
   int _productosPendientes = 0;
   int _alertasPendientes = 0;
+  int _resenasPendientes = 0;
 
   bool _cargando = true;
   bool _error = false;
@@ -63,6 +66,8 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         alertaService.listarPorEstado(
           estado: EstadoAlerta.PENDIENTE,
         ),
+        // Si el backend todavía no tiene la moderación, no rompe el panel.
+        _resenasPorAprobar(),
       ]);
 
       final productos = resultados[0] as List;
@@ -73,6 +78,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       setState(() {
         _productosPendientes = productos.length;
         _alertasPendientes = alertas.length;
+        _resenasPendientes = (resultados[2] as List).length;
         _cargando = false;
       });
     } catch (e) {
@@ -81,14 +87,23 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       setState(() {
         _productosPendientes = 0;
         _alertasPendientes = 0;
+        _resenasPendientes = 0;
         _cargando = false;
         _error = true;
       });
     }
   }
 
+  Future<List<Object>> _resenasPorAprobar() async {
+    try {
+      return await context.read<RestauranteService>().listarResenas();
+    } catch (_) {
+      return const [];
+    }
+  }
+
   int get _totalPendientes =>
-      _productosPendientes + _alertasPendientes;
+      _productosPendientes + _alertasPendientes + _resenasPendientes;
 
   // =========================================================
   // ABRIR PANTALLA Y ACTUALIZAR AL VOLVER
@@ -128,6 +143,14 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         pantalla: const AdminRestaurantesScreen(),
         notificaciones: 0,
         color: const Color(0xFF00C853),
+      ),
+      _ModuloAdmin(
+        titulo: 'Reseñas',
+        subtitulo: 'Aprobar comentarios',
+        icono: Icons.rate_review_rounded,
+        pantalla: const AdminResenasScreen(),
+        notificaciones: _resenasPendientes,
+        color: const Color(0xFFFFB300),
       ),
       _ModuloAdmin(
         titulo: 'Alertas',
@@ -527,6 +550,22 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
           onTap: () {
             _abrirPantalla(
               const AdminProductosScreen(),
+            );
+          },
+        ),
+      );
+    }
+
+    if (_resenasPendientes > 0) {
+      tarjetas.add(
+        _PendingCard(
+          titulo: 'Reseñas por aprobar',
+          valor: _resenasPendientes,
+          icono: Icons.rate_review_rounded,
+          color: const Color(0xFFFFB300),
+          onTap: () {
+            _abrirPantalla(
+              const AdminResenasScreen(),
             );
           },
         ),

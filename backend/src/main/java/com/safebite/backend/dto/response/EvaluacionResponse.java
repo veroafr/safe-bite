@@ -19,6 +19,9 @@ public class EvaluacionResponse {
     private Integer puntuacion;
     private String comentario;
     private LocalDateTime fecha;
+    private String estado;
+    private String motivoRechazo;
+    private String restauranteNombre;
 
     public static EvaluacionResponse desde(Evaluacion e) {
         return EvaluacionResponse.builder()
@@ -28,6 +31,9 @@ public class EvaluacionResponse {
                 .puntuacion(e.getPuntuacion())
                 .comentario(e.getComentario())
                 .fecha(e.getFecha())
+                .estado(e.getEstado() == null ? Evaluacion.APROBADA : e.getEstado())
+                .motivoRechazo(e.getMotivoRechazo())
+                .restauranteNombre(e.getRestaurante().getNombre())
                 .build();
     }
 }

@@ -35,9 +35,30 @@ class RestauranteService {
     return (data as List).map((e) => Evaluacion.fromJson(e)).toList();
   }
 
-  Future<Evaluacion> evaluar(int restauranteId, int puntuacion, String? comentario) async {
+  /// Envía la reseña (estrellas + comentario). Queda pendiente hasta que el admin la apruebe.
+  Future<Evaluacion> evaluar(int restauranteId, int puntuacion, String comentario) async {
     final data = await _client.post('/restaurantes/$restauranteId/evaluaciones',
         body: {'puntuacion': puntuacion, 'comentario': comentario});
+    return Evaluacion.fromJson(data);
+  }
+
+  /// La reseña propia del usuario en ese restaurante (null si no tiene).
+  Future<Evaluacion?> miEvaluacion(int restauranteId) async {
+    final data = await _client.get('/restaurantes/$restauranteId/mi-evaluacion');
+    if (data == null) return null;
+    return Evaluacion.fromJson(data);
+  }
+
+  // ---- Moderación de reseñas (admin) ----
+
+  Future<List<Evaluacion>> listarResenas({String estado = 'PENDIENTE'}) async {
+    final data = await _client.get('/admin/restaurantes/resenas', query: {'estado': estado});
+    return (data as List).map((e) => Evaluacion.fromJson(e)).toList();
+  }
+
+  Future<Evaluacion> moderarResena(int id, {required bool aprobar, String? motivo}) async {
+    final data = await _client.put('/admin/restaurantes/resenas/$id/moderar',
+        body: {'aprobar': aprobar, 'motivo': motivo});
     return Evaluacion.fromJson(data);
   }
 

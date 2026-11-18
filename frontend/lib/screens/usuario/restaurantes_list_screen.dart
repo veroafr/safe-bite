@@ -5,6 +5,7 @@ import '../../core/models/usuario.dart';
 import '../../core/services/restaurante_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/common_widgets.dart';
+import '../../core/widgets/recortar_imagen.dart';
 import '../../core/widgets/intolerancias_widgets.dart';
 import 'restaurante_detail_screen.dart';
 
@@ -189,11 +190,15 @@ class _TarjetaRestaurante extends StatelessWidget {
           child: Row(
             children: [
               ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: restaurante.imagenUrl != null
-                    ? Image.network(restaurante.imagenUrl!, width: 64, height: 64, fit: BoxFit.cover,
-                        errorBuilder: (_, __, ___) => _placeholder())
-                    : _placeholder(),
+                borderRadius: BorderRadius.circular(16),
+                child: SizedBox(
+                  width: 76,
+                  height: 76,
+                  child: ImagenFlexible(
+                    fuente: restaurante.imagenMiniatura ?? restaurante.imagenUrl,
+                    sinImagen: _placeholder(),
+                  ),
+                ),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -234,9 +239,7 @@ class _TarjetaRestaurante extends StatelessWidget {
   }
 
   Widget _placeholder() => Container(
-        width: 64,
-        height: 64,
-        color: const Color(0xFFE0E0E0),
-        child: const Icon(Icons.restaurant, color: Colors.white),
+        color: AppColors.primarySoft,
+        child: const Icon(Icons.restaurant_rounded, color: AppColors.primary, size: 30),
       );
 }

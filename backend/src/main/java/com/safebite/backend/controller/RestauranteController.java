@@ -58,6 +58,16 @@ public class RestauranteController {
         return ResponseEntity.ok(restauranteService.listarEvaluaciones(id));
     }
 
+    /** La reseña propia del usuario (para ver si está pendiente, aprobada o rechazada). */
+    @GetMapping("/{id}/mi-evaluacion")
+    public ResponseEntity<EvaluacionResponse> miEvaluacion(@PathVariable Long id,
+                                                         @org.springframework.security.core.annotation.AuthenticationPrincipal com.safebite.backend.model.Usuario usuario) {
+        if (usuario == null) return ResponseEntity.noContent().build();
+        return restauranteService.miEvaluacion(id, usuario)
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.noContent().build());
+    }
+
     @PostMapping("/{id}/evaluaciones")
     public ResponseEntity<EvaluacionResponse> evaluar(@PathVariable Long id,
                                                         @AuthenticationPrincipal Usuario usuario,

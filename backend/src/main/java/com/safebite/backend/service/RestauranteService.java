@@ -49,7 +49,7 @@ public class RestauranteService {
 
         return restauranteRepository.findAll(spec).stream()
                 .filter(r -> r.getOpcionesAptasPara().containsAll(filtro))
-                .map(RestauranteResponse::desde).toList();
+                .map(RestauranteResponse::resumen).toList();
     }
 
     public RestauranteResponse obtener(Long id) {
@@ -74,6 +74,7 @@ public class RestauranteService {
                 .opcionesAptasPara(intoleranciaService.normalizar(request.getOpcionesAptasPara()))
                 .creadoPor(admin)
                 .build();
+        aplicarFotos(restaurante, request);
         return RestauranteResponse.desde(restauranteRepository.save(restaurante));
     }
 
@@ -88,7 +89,22 @@ public class RestauranteService {
         restaurante.setImagenUrl(request.getImagenUrl());
         if (request.getTiposCocina() != null) restaurante.setTiposCocina(request.getTiposCocina());
         if (request.getOpcionesAptasPara() != null) restaurante.setOpcionesAptasPara(intoleranciaService.normalizar(request.getOpcionesAptasPara()));
+        aplicarFotos(restaurante, request);
         return RestauranteResponse.desde(restauranteRepository.save(restaurante));
+    }
+
+    /** null = no se toca la foto; "" = se quita; otra cosa = foto nueva, ajustada al tamaño final. */
+    private void aplicarFotos(Restaurante restaurante, RestauranteRequest request) {
+        String mini = request.getImagenMiniatura();
+        if (mini != null) {
+            restaurante.setImagenMiniatura(mini.isBlank() ? null
+                    : ImagenRestauranteUtil.preparar(mini, ImagenRestauranteUtil.MINIATURA_LADO, ImagenRestauranteUtil.MINIATURA_LADO));
+        }
+        String banner = request.getImagenBanner();
+        if (banner != null) {
+            restaurante.setImagenBanner(banner.isBlank() ? null
+                    : ImagenRestauranteUtil.preparar(banner, ImagenRestauranteUtil.BANNER_ANCHO, ImagenRestauranteUtil.BANNER_ALTO));
+        }
     }
 
     @Transactional
@@ -118,6 +134,11 @@ public class RestauranteService {
 
     // ---- Evaluaciones ----
 
+    /**
+     * Guarda la reseña (estrellas + comentario) como PENDIENTE: se publica
+     * recién cuando el administrador la aprueba, para evitar reseñas falsas.
+     * Si el usuario ya tenía una, se reemplaza y vuelve a revisión.
+     */
     @Transactional
     public EvaluacionResponse evaluar(Long restauranteId, Usuario usuario, EvaluacionRequest request) {
         Restaurante restaurante = buscarEntidad(restauranteId);
@@ -126,19 +147,52 @@ public class RestauranteService {
                 .orElse(Evaluacion.builder().restaurante(restaurante).usuario(usuario).build());
 
         evaluacion.setPuntuacion(request.getPuntuacion());
-        evaluacion.setComentario(request.getComentario());
+        evaluacion.setComentario(request.getComentario().trim());
         evaluacion.setFecha(java.time.LocalDateTime.now());
+        evaluacion.setEstado(Evaluacion.PENDIENTE);
+        evaluacion.setMotivoRechazo(null);
+        evaluacion.setFechaRevision(null);
         evaluacion = evaluacionRepository.save(evaluacion);
 
-        Double promedio = evaluacionRepository.promedioPorRestaurante(restauranteId);
-        restaurante.setRatingPromedio(promedio != null ? Math.round(promedio * 10.0) / 10.0 : 0.0);
-        restauranteRepository.save(restaurante);
-
+        // Si reemplazó una reseña ya publicada, el promedio deja de contarla.
+        recalcularPromedio(restaurante);
         return EvaluacionResponse.desde(evaluacion);
     }
 
+    /** Reseñas publicadas del restaurante. */
     public List<EvaluacionResponse> listarEvaluaciones(Long restauranteId) {
         return evaluacionRepository.findByRestauranteIdOrderByFechaDesc(restauranteId)
-                .stream().map(EvaluacionResponse::desde).toList();
+                .stream().filter(Evaluacion::estaPublicada).map(EvaluacionResponse::desde).toList();
+    }
+
+    /** La reseña del usuario para ese restaurante (con su estado), si tiene. */
+    public java.util.Optional<EvaluacionResponse> miEvaluacion(Long restauranteId, Usuario usuario) {
+        return evaluacionRepository.findByRestauranteIdAndUsuarioId(restauranteId, usuario.getId())
+                .map(EvaluacionResponse::desde);
+    }
+
+    // ---- Moderación (administrador) ----
+
+    public List<EvaluacionResponse> listarPorEstado(String estado) {
+        String e = estado == null || estado.isBlank() ? Evaluacion.PENDIENTE : estado.toUpperCase();
+        return evaluacionRepository.findByEstadoOrderByFechaAsc(e).stream().map(EvaluacionResponse::desde).toList();
+    }
+
+    @Transactional
+    public EvaluacionResponse moderar(Long evaluacionId, boolean aprobar, String motivo) {
+        Evaluacion evaluacion = evaluacionRepository.findById(evaluacionId)
+                .orElseThrow(() -> new ResourceNotFoundException("Reseña no encontrada"));
+        evaluacion.setEstado(aprobar ? Evaluacion.APROBADA : Evaluacion.RECHAZADA);
+        evaluacion.setMotivoRechazo(aprobar ? null : (motivo == null || motivo.isBlank() ? null : motivo.trim()));
+        evaluacion.setFechaRevision(java.time.LocalDateTime.now());
+        evaluacion = evaluacionRepository.save(evaluacion);
+        recalcularPromedio(evaluacion.getRestaurante());
+        return EvaluacionResponse.desde(evaluacion);
+    }
+
+    private void recalcularPromedio(Restaurante restaurante) {
+        Double promedio = evaluacionRepository.promedioPorRestaurante(restaurante.getId());
+        restaurante.setRatingPromedio(promedio != null ? Math.round(promedio * 10.0) / 10.0 : 0.0);
+        restauranteRepository.save(restaurante);
     }
 }

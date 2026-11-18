@@ -15,6 +15,12 @@ public class RestauranteRequest {
     private Double latitud;
     private Double longitud;
     private String imagenUrl;
+    /**
+     * Fotos en base64 (o data URL). null = no se cambia; "" = se quita.
+     * El servidor las ajusta a 400×400 (miniatura) y 1200×600 (banner).
+     */
+    private String imagenMiniatura;
+    private String imagenBanner;
     private Set<String> tiposCocina;
     private Set<String> opcionesAptasPara;
 }

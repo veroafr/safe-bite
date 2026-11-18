@@ -36,4 +36,26 @@ public class Evaluacion {
 
     @Builder.Default
     private LocalDateTime fecha = LocalDateTime.now();
+
+    /**
+     * PENDIENTE (recién enviada), APROBADA (visible para todos) o RECHAZADA.
+     * Las reseñas solo se publican cuando el administrador las aprueba.
+     * Las anteriores a este cambio (null) se consideran aprobadas.
+     */
+    @Column(length = 12)
+    private String estado;
+
+    /** Motivo que el administrador indica al rechazar (lo ve el autor). */
+    @Column(length = 500)
+    private String motivoRechazo;
+
+    private LocalDateTime fechaRevision;
+
+    public static final String PENDIENTE = "PENDIENTE";
+    public static final String APROBADA = "APROBADA";
+    public static final String RECHAZADA = "RECHAZADA";
+
+    public boolean estaPublicada() {
+        return estado == null || APROBADA.equals(estado);
+    }
 }

@@ -45,12 +45,36 @@ public class AlertaService {
             throw new BadRequestException("La alerta debe estar asociada a un restaurante o a un producto");
         }
 
+        String telefono = request.getTelefonoContacto() == null ? null : request.getTelefonoContacto().trim();
+        if (telefono != null && telefono.isEmpty()) telefono = null;
+        if (telefono != null) {
+            long digitos = telefono.chars().filter(Character::isDigit).count();
+            if (digitos < 8 || digitos > 15 || !telefono.matches("[0-9+()\\s.-]+")) {
+                throw new BadRequestException("El teléfono de contacto no es válido");
+            }
+        }
+        if (restaurante != null && telefono == null) {
+            throw new BadRequestException("Indicá un teléfono de contacto para poder comunicarnos con vos");
+        }
+
+        java.util.List<String> pruebas = new java.util.ArrayList<>();
+        if (request.getPruebas() != null) {
+            if (request.getPruebas().size() > 3) throw new BadRequestException("Podés adjuntar hasta 3 imágenes");
+            for (String img : request.getPruebas()) {
+                if (img == null || img.isBlank()) continue;
+                if (img.length() > 12_000_000) throw new BadRequestException("Una de las imágenes es demasiado grande");
+                pruebas.add(ImagenRestauranteUtil.ajustar(img, 1280));
+            }
+        }
+
         Alerta alerta = Alerta.builder()
                 .usuario(usuario)
                 .tipo(request.getTipo())
                 .restaurante(restaurante)
                 .producto(producto)
-                .descripcion(request.getDescripcion())
+                .descripcion(request.getDescripcion().trim())
+                .telefonoContacto(telefono)
+                .pruebas(pruebas)
                 .estado(EstadoAlerta.PENDIENTE)
                 .build();
 

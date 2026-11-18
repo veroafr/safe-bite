@@ -5,6 +5,7 @@ import '../../core/models/alerta.dart';
 import '../../core/services/alerta_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/common_widgets.dart';
+import '../../core/widgets/recortar_imagen.dart';
 
 class AdminAlertasScreen extends StatefulWidget {
   const AdminAlertasScreen({super.key});
@@ -37,6 +38,31 @@ class _AdminAlertasScreenState extends State<AdminAlertasScreen> {
     } catch (e) {
       if (mounted) mostrarError(context, e);
     }
+  }
+
+  void _verPrueba(String imagen) {
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        insetPadding: const EdgeInsets.all(12),
+        clipBehavior: Clip.antiAlias,
+        child: Stack(children: [
+          InteractiveViewer(
+            maxScale: 5,
+            child: ImagenFlexible(
+              fuente: imagen,
+              fit: BoxFit.contain,
+              sinImagen: const SizedBox(height: 200, child: Center(child: Text('No se pudo mostrar'))),
+            ),
+          ),
+          Positioned(
+            right: 4,
+            top: 4,
+            child: IconButton.filled(onPressed: () => Navigator.pop(ctx), icon: const Icon(Icons.close)),
+          ),
+        ]),
+      ),
+    );
   }
 
   @override
@@ -91,6 +117,44 @@ class _AdminAlertasScreenState extends State<AdminAlertasScreen> {
                             ),
                             const SizedBox(height: 6),
                             Text(a.descripcion),
+                            if (a.telefonoContacto != null) ...[
+                              const SizedBox(height: 8),
+                              InkWell(
+                                onTap: () => abrirEnlace(context, 'tel:${a.telefonoContacto!.replaceAll(RegExp(r'[^0-9+]'), '')}'),
+                                child: Row(children: [
+                                  const Icon(Icons.phone_outlined, size: 18, color: AppColors.primary),
+                                  const SizedBox(width: 6),
+                                  Text(a.telefonoContacto!,
+                                      style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.w600)),
+                                ]),
+                              ),
+                            ],
+                            if (a.pruebas.isNotEmpty) ...[
+                              const SizedBox(height: 8),
+                              Text('Pruebas (${a.pruebas.length})',
+                                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                              const SizedBox(height: 6),
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: a.pruebas
+                                    .map((img) => InkWell(
+                                          onTap: () => _verPrueba(img),
+                                          child: ClipRRect(
+                                            borderRadius: BorderRadius.circular(10),
+                                            child: SizedBox(
+                                              width: 80,
+                                              height: 80,
+                                              child: ImagenFlexible(
+                                                fuente: img,
+                                                sinImagen: Container(color: const Color(0xFFE0E0E0)),
+                                              ),
+                                            ),
+                                          ),
+                                        ))
+                                    .toList(),
+                              ),
+                            ],
                             const SizedBox(height: 6),
                             Text('Reportado por ${a.usuarioNombre ?? '-'} el ${DateFormat('dd/MM/yyyy HH:mm').format(a.fecha)}',
                                 style: const TextStyle(color: AppColors.textSecondary, fontSize: 11)),

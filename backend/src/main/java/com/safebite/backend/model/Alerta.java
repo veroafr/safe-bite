@@ -39,6 +39,18 @@ public class Alerta {
     @Column(nullable = false, length = 1000)
     private String descripcion;
 
+    /** Teléfono para que el equipo contacte a quien reporta. */
+    @Column(length = 30)
+    private String telefonoContacto;
+
+    /** Pruebas opcionales (fotos) como data URL JPEG, máximo 3. */
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "alerta_pruebas", joinColumns = @JoinColumn(name = "alerta_id"))
+    @Column(name = "imagen", columnDefinition = "TEXT")
+    @OrderColumn(name = "orden")
+    @Builder.Default
+    private java.util.List<String> pruebas = new java.util.ArrayList<>();
+
     @Enumerated(EnumType.STRING)
     @Builder.Default
     private EstadoAlerta estado = EstadoAlerta.PENDIENTE;

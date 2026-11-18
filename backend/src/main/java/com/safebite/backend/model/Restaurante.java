@@ -36,6 +36,14 @@ public class Restaurante {
 
     private String imagenUrl;
 
+    /** Foto cuadrada para la lista (data URL JPEG 400×400). */
+    @Column(columnDefinition = "TEXT")
+    private String imagenMiniatura;
+
+    /** Foto rectangular 2:1 para la ficha del restaurante (data URL JPEG 1200×600). */
+    @Column(columnDefinition = "TEXT")
+    private String imagenBanner;
+
     @Builder.Default
     private Double ratingPromedio = 0.0;
 

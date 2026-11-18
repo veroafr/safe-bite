@@ -34,4 +34,22 @@ public class AdminRestauranteController {
         restauranteService.eliminar(id);
         return ResponseEntity.noContent().build();
     }
+
+    // ---- Moderación de reseñas (estrellas + comentario) ----
+
+    /** Reseñas por estado: PENDIENTE (por defecto), APROBADA o RECHAZADA. */
+    @GetMapping("/resenas")
+    public ResponseEntity<java.util.List<com.safebite.backend.dto.response.EvaluacionResponse>> resenas(
+            @RequestParam(required = false) String estado) {
+        return ResponseEntity.ok(restauranteService.listarPorEstado(estado));
+    }
+
+    /** Body: {"aprobar": true|false, "motivo": "opcional al rechazar"} */
+    @PutMapping("/resenas/{id}/moderar")
+    public ResponseEntity<com.safebite.backend.dto.response.EvaluacionResponse> moderar(
+            @PathVariable Long id, @RequestBody java.util.Map<String, Object> body) {
+        boolean aprobar = Boolean.TRUE.equals(body.get("aprobar"));
+        Object motivo = body.get("motivo");
+        return ResponseEntity.ok(restauranteService.moderar(id, aprobar, motivo == null ? null : motivo.toString()));
+    }
 }

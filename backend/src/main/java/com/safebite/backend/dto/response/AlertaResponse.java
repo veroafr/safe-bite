@@ -23,6 +23,8 @@ public class AlertaResponse {
     private Long productoId;
     private String productoNombre;
     private String descripcion;
+    private String telefonoContacto;
+    private java.util.List<String> pruebas;
     private EstadoAlerta estado;
     private LocalDateTime fecha;
     private LocalDateTime fechaRevision;
@@ -37,6 +39,8 @@ public class AlertaResponse {
                 .productoId(a.getProducto() != null ? a.getProducto().getId() : null)
                 .productoNombre(a.getProducto() != null ? a.getProducto().getNombre() : null)
                 .descripcion(a.getDescripcion())
+                .telefonoContacto(a.getTelefonoContacto())
+                .pruebas(a.getPruebas() == null ? java.util.List.of() : java.util.List.copyOf(a.getPruebas()))
                 .estado(a.getEstado())
                 .fecha(a.getFecha())
                 .fechaRevision(a.getFechaRevision())

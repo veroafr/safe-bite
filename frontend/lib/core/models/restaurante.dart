@@ -8,6 +8,12 @@ class Restaurante {
   final double? latitud;
   final double? longitud;
   final String? imagenUrl;
+
+  /// Foto cuadrada de la lista (data URL o enlace).
+  final String? imagenMiniatura;
+
+  /// Foto rectangular 2:1 de la ficha (solo viene al abrir el restaurante).
+  final String? imagenBanner;
   final double ratingPromedio;
   final Set<String> tiposCocina;
   /// Codigos de intolerancias para las que el local tiene opciones aptas.
@@ -21,6 +27,8 @@ class Restaurante {
     this.latitud,
     this.longitud,
     this.imagenUrl,
+    this.imagenMiniatura,
+    this.imagenBanner,
     required this.ratingPromedio,
     required this.tiposCocina,
     required this.opcionesAptasPara,
@@ -35,6 +43,8 @@ class Restaurante {
       latitud: (json['latitud'] as num?)?.toDouble(),
       longitud: (json['longitud'] as num?)?.toDouble(),
       imagenUrl: json['imagenUrl'],
+      imagenMiniatura: json['imagenMiniatura'],
+      imagenBanner: json['imagenBanner'],
       ratingPromedio: (json['ratingPromedio'] as num?)?.toDouble() ?? 0.0,
       tiposCocina: ((json['tiposCocina'] as List?) ?? []).map((e) => e.toString()).toSet(),
       opcionesAptasPara: codigosIntolerancias(json['opcionesAptasPara']),
@@ -73,6 +83,10 @@ class Evaluacion {
   final int puntuacion;
   final String? comentario;
   final DateTime fecha;
+  /// PENDIENTE, APROBADA o RECHAZADA.
+  final String estado;
+  final String? motivoRechazo;
+  final String? restauranteNombre;
 
   Evaluacion({
     required this.id,
@@ -81,7 +95,13 @@ class Evaluacion {
     required this.puntuacion,
     this.comentario,
     required this.fecha,
+    this.estado = 'APROBADA',
+    this.motivoRechazo,
+    this.restauranteNombre,
   });
+
+  bool get pendiente => estado == 'PENDIENTE';
+  bool get rechazada => estado == 'RECHAZADA';
 
   factory Evaluacion.fromJson(Map<String, dynamic> json) => Evaluacion(
         id: json['id'],
@@ -90,5 +110,8 @@ class Evaluacion {
         puntuacion: json['puntuacion'] ?? 0,
         comentario: json['comentario'],
         fecha: DateTime.tryParse(json['fecha'] ?? '') ?? DateTime.now(),
+        estado: json['estado'] ?? 'APROBADA',
+        motivoRechazo: json['motivoRechazo'],
+        restauranteNombre: json['restauranteNombre'],
       );
 }

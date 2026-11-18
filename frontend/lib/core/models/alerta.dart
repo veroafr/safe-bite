@@ -14,6 +14,8 @@ class Alerta {
   final int? productoId;
   final String? productoNombre;
   final String descripcion;
+  final String? telefonoContacto;
+  final List<String> pruebas;
   final EstadoAlerta estado;
   final DateTime fecha;
 
@@ -26,6 +28,8 @@ class Alerta {
     this.productoId,
     this.productoNombre,
     required this.descripcion,
+    this.telefonoContacto,
+    this.pruebas = const [],
     required this.estado,
     required this.fecha,
   });
@@ -39,6 +43,8 @@ class Alerta {
         productoId: json['productoId'],
         productoNombre: json['productoNombre'],
         descripcion: json['descripcion'] ?? '',
+        telefonoContacto: json['telefonoContacto'],
+        pruebas: ((json['pruebas'] as List?) ?? const []).map((e) => e.toString()).toList(),
         estado: estadoAlertaDesde(json['estado']),
         fecha: DateTime.tryParse(json['fecha'] ?? '') ?? DateTime.now(),
       );
