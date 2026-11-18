@@ -46,7 +46,7 @@ class ApiClient {
     Map<String, dynamic>? query,
     bool withAuth = true,
   }) async {
-    final response = await _conexion(() => http.get(
+    final response = await _conexion(() async => http.get(
       _buildUri(path, query),
       headers: await _headers(withAuth: withAuth),
     ));
@@ -58,7 +58,7 @@ class ApiClient {
     Map<String, dynamic>? body,
     bool withAuth = true,
   }) async {
-    final response = await _conexion(() => http.post(
+    final response = await _conexion(() async => http.post(
       _buildUri(path, null),
       headers: await _headers(withAuth: withAuth),
       body: body != null ? jsonEncode(body) : null,
@@ -71,7 +71,7 @@ class ApiClient {
     Map<String, dynamic>? body,
     bool withAuth = true,
   }) async {
-    final response = await _conexion(() => http.put(
+    final response = await _conexion(() async => http.put(
       _buildUri(path, null),
       headers: await _headers(withAuth: withAuth),
       body: body != null ? jsonEncode(body) : null,
@@ -84,7 +84,7 @@ class ApiClient {
     Map<String, dynamic>? body,
     bool withAuth = true,
   }) async {
-    final response = await _conexion(() => http.patch(
+    final response = await _conexion(() async => http.patch(
       _buildUri(path, null),
       headers: await _headers(withAuth: withAuth),
       body: body != null ? jsonEncode(body) : null,
@@ -93,7 +93,7 @@ class ApiClient {
   }
 
   Future<dynamic> delete(String path, {bool withAuth = true}) async {
-    final response = await _conexion(() => http.delete(
+    final response = await _conexion(() async => http.delete(
       _buildUri(path, null),
       headers: await _headers(withAuth: withAuth),
     ));
@@ -101,7 +101,7 @@ class ApiClient {
   }
 
   Future<List<int>> getBytes(String path, {bool withAuth = true}) async {
-    final response = await _conexion(() => http.get(
+    final response = await _conexion(() async => http.get(
       _buildUri(path, null),
       headers: await _headers(withAuth: withAuth),
     ));
