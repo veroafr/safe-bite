@@ -61,7 +61,10 @@ public class ClaudeClient {
 
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("model", model);
-        body.put("max_tokens", maxTokens);
+        // El razonamiento (thinking) tambien consume tokens de salida: con un
+        // limite chico se cortaba antes de escribir la respuesta. Solo se
+        // cobra lo que efectivamente se genera.
+        body.put("max_tokens", Math.max(maxTokens, 8000));
         body.put("messages", List.of(Map.of("role", "user", "content", contenido)));
 
         HttpHeaders headers = new HttpHeaders();
@@ -80,9 +83,17 @@ public class ClaudeClient {
                 double costo = in * precioEntrada / 1_000_000.0 + out * precioSalida / 1_000_000.0;
                 gasto.registrar("CLAUDE", operacion, in, out, costo);
 
-                String texto = raiz.path("content").path(0).path("text").asText("");
+                // Los modelos nuevos (Haiku 5.5 y posteriores) piensan por defecto:
+                // la respuesta puede empezar con bloques "thinking". El texto de
+                // la respuesta esta en los bloques de tipo "text".
+                StringBuilder sb = new StringBuilder();
+                for (JsonNode bloque : raiz.path("content")) {
+                    if ("text".equals(bloque.path("type").asText())) sb.append(bloque.path("text").asText(""));
+                }
+                String texto = sb.toString().trim();
                 if (texto.isBlank()) {
-                    estado.error("CLAUDE", "Claude respondio sin texto (" + operacion + ")");
+                    estado.error("CLAUDE", "Claude respondio sin texto (" + operacion + ", stop_reason="
+                            + raiz.path("stop_reason").asText("?") + ")");
                     return Optional.empty();
                 }
                 estado.exito("CLAUDE", operacion + " con " + model);
@@ -142,7 +153,7 @@ public class ClaudeClient {
         }
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("model", model);
-        body.put("max_tokens", 5);
+        body.put("max_tokens", 2000);
         body.put("messages", List.of(Map.of("role", "user", "content", "Responde solo: OK")));
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);

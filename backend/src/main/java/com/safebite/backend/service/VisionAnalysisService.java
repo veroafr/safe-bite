@@ -220,8 +220,9 @@ public class VisionAnalysisService {
         for (String modelo : modelosGemini()) {
             ResultadoGemini r = llamarGemini(modelo, body, "LECTURA_PAQUETE");
             if (r.texto() != null) return Optional.of(r.texto());
-            // Solo se pasa al modelo siguiente si este no existe o no tiene cuota.
-            if (r.status() != 404 && r.status() != 429) break;
+            // Se pasa al modelo siguiente si este no existe, no tiene cuota o
+            // esta sobrecargado (503, frecuente en los modelos mas nuevos).
+            if (r.status() != 404 && r.status() != 429 && r.status() < 500) break;
         }
         return Optional.empty();
     }

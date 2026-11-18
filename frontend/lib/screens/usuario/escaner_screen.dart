@@ -15,6 +15,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/widgets/common_widgets.dart';
 import '../../core/widgets/intolerancias_widgets.dart';
 import 'cargar_producto_screen.dart';
+import '../../core/web/lector_codigo_foto.dart';
 
 class EscanerScreen extends StatelessWidget {
   const EscanerScreen({super.key});
@@ -834,6 +835,41 @@ class _LectorEanTabState extends State<_LectorEanTab> {
   bool _procesando = false;
   String? _ultimoCodigoBuscado;
   bool _escaneandoPaquete = false;
+  bool _leyendoFotoCodigo = false;
+
+  /// Lee el código de barras en una foto sacada con la cámara del teléfono.
+  /// La foto tiene mejor resolución y enfoque que el video en vivo, por eso
+  /// es la forma más confiable. Primero se intenta en el propio teléfono
+  /// (instantáneo y gratis); si no se puede, la IA lee los números.
+  Future<void> _leerCodigoConFoto() async {
+    setState(() => _leyendoFotoCodigo = true);
+    await _detenerLector();
+    try {
+      final bytes = await elegirFotoCamaraOGaleria(context);
+      if (bytes == null || !mounted) return;
+      final datos = Uint8List.fromList(bytes);
+
+      String? codigo = await leerCodigoEnFoto(datos);
+      if (codigo == null && mounted) {
+        final analisis = await context.read<ProductoService>().analizarFotos(fotoFrontalBase64: base64Encode(datos));
+        codigo = analisis.codigoBarras;
+      }
+      if (!mounted) return;
+      if (codigo == null || codigo.isEmpty) {
+        mostrarError(context, 'No se pudo leer el código en la foto. Sacala de frente, a unos 15 cm y con buena luz, o ingresá el número a mano.');
+        return;
+      }
+      _codigoManualCtrl.text = codigo;
+      await _buscarProducto(codigo, detenerCamara: true);
+    } catch (e) {
+      if (mounted) mostrarError(context, e);
+    } finally {
+      if (mounted) {
+        setState(() => _leyendoFotoCodigo = false);
+        if (_resultado == null) await _encenderLector(conEspera: true);
+      }
+    }
+  }
 
   Future<void> _escanearPaquete() async {
     setState(() => _escaneandoPaquete = true);
@@ -848,22 +884,14 @@ class _LectorEanTabState extends State<_LectorEanTab> {
       final foto64 = base64Encode(bytes);
       final analisis = await context.read<ProductoService>().analizarFotos(fotoFrontalBase64: foto64);
 
-      // Si la IA leyó el código de barras en la foto, se busca el producto
-      // por código: así se usan los datos verificados de la base.
-      final codigo = analisis.codigoBarras;
-      if (codigo != null && codigo.isNotEmpty && mounted) {
-        final encontrado = await _buscarProducto(codigo, detenerCamara: true, silencioso: true);
-        if (encontrado) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(content: Text('Código $codigo leído en la foto')),
-            );
-          }
-          return;
-        }
-      }
-
       if (!analisis.pudoLeer) {
+        // No se pudieron leer los ingredientes, pero si la IA vio el código de
+        // barras, se busca el producto por código.
+        final codigo = analisis.codigoBarras;
+        if (codigo != null && codigo.isNotEmpty && mounted) {
+          final encontrado = await _buscarProducto(codigo, detenerCamara: true, silencioso: true);
+          if (encontrado) return;
+        }
         if (mounted) {
           mostrarError(context, analisis.observacion ?? 'No se pudo leer el envase. Probá con mejor luz y más cerca.');
         }
@@ -1061,7 +1089,17 @@ class _LectorEanTabState extends State<_LectorEanTab> {
             children: [
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: _escaneandoPaquete ? null : _escanearPaquete,
+                  onPressed: (_leyendoFotoCodigo || _escaneandoPaquete) ? null : _leerCodigoConFoto,
+                  icon: _leyendoFotoCodigo
+                      ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
+                      : const Icon(Icons.photo_camera_outlined),
+                  label: Text(_leyendoFotoCodigo ? 'Leyendo...' : 'Foto del código'),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: (_escaneandoPaquete || _leyendoFotoCodigo) ? null : _escanearPaquete,
                   icon: _escaneandoPaquete
                       ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
                       : const Icon(Icons.inventory_2_outlined),
