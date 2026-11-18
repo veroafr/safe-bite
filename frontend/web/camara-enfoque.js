@@ -31,6 +31,13 @@
         throw error;
       })
       .then(function (stream) {
+        // Se guarda la pista de video para poder sacar una foto desde el
+        // propio escaner (ver lector-foto.js), sin abrir la camara del
+        // sistema, que en Android choca con la camara que ya esta en uso.
+        try {
+          var pista = stream.getVideoTracks()[0];
+          if (pista) window.__safebitePista = pista;
+        } catch (e) {}
         try {
           stream.getVideoTracks().forEach(function (track) {
             var caps = typeof track.getCapabilities === 'function' ? track.getCapabilities() : {};

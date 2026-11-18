@@ -59,6 +59,52 @@
     return null;
   }
 
+  function pistaActiva() {
+    var p = window.__safebitePista;
+    return p && p.readyState === 'live' ? p : null;
+  }
+
+  // ¿Hay una camara del escaner encendida de la que sacar la foto?
+  window.safebitePuedeFotografiarVideo = function () {
+    return !!pistaActiva();
+  };
+
+  async function reducir(fuente, maxLado) {
+    var w = fuente.width || fuente.videoWidth;
+    var h = fuente.height || fuente.videoHeight;
+    var escala = Math.min(1, maxLado / Math.max(w, h));
+    var lienzo = document.createElement('canvas');
+    lienzo.width = Math.round(w * escala);
+    lienzo.height = Math.round(h * escala);
+    lienzo.getContext('2d').drawImage(fuente, 0, 0, lienzo.width, lienzo.height);
+    var blob = await new Promise(function (r) { lienzo.toBlob(r, 'image/jpeg', 0.9); });
+    return blob ? new Uint8Array(await blob.arrayBuffer()) : null;
+  }
+
+  // Saca una foto con la camara que ya usa el escaner. Con ImageCapture
+  // (Chrome en Android) la foto sale a resolucion completa y enfocada; si no,
+  // se copia el cuadro actual del video. Devuelve un JPEG o null.
+  window.safebiteTomarFotoDelVideo = async function () {
+    var pista = pistaActiva();
+    if (!pista) return null;
+    if (typeof window.ImageCapture === 'function') {
+      try {
+        var foto = await new window.ImageCapture(pista).takePhoto();
+        var bmp = await createImageBitmap(foto);
+        return await reducir(bmp, 2000);
+      } catch (e) {
+        // Se usa el cuadro del video.
+      }
+    }
+    var videos = document.querySelectorAll('video');
+    for (var i = 0; i < videos.length; i++) {
+      if (videos[i].videoWidth > 0) {
+        try { return await reducir(videos[i], 2000); } catch (e) {}
+      }
+    }
+    return null;
+  };
+
   window.safebiteLeerCodigoEnFoto = async function (bytes) {
     var imagen;
     try {

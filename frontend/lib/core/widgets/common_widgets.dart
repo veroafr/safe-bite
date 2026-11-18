@@ -100,18 +100,31 @@ class Chip1 extends StatelessWidget {
   }
 }
 
+/// Devuelve la función que saca la foto sin abrir la cámara del sistema, o
+/// null si en este momento no se puede (entonces se usa la cámara del sistema).
+typedef CapturaFoto = Future<Uint8List?> Function();
+typedef FotoDirecta = CapturaFoto? Function();
+
 /// Le pregunta al usuario si quiere tomar una foto nueva con la cámara o
 /// elegir una existente de la galería. Devuelve los bytes de la imagen ya
 /// leídos (o null si canceló), listos para pasar a base64Encode().
-Future<List<int>?> elegirFotoCamaraOGaleria(BuildContext context) async {
+///
+/// [fotoDirecta]: si se pasa y devuelve una función, "Tomar foto" usa esa
+/// función en lugar de abrir la cámara del sistema (el escáner saca la foto
+/// con la cámara que ya tiene encendida).
+Future<List<int>?> elegirFotoCamaraOGaleria(
+  BuildContext context, {
+  FotoDirecta? fotoDirecta,
+}) async {
   // En el navegador, la cámara o la galería solo se abren si el pedido se hace
-  // en el mismo toque del usuario. Por eso el selector se llama directamente
-  // dentro de onTap (sin esperar a que se cierre la hoja) y la hoja devuelve
-  // la operación en curso.
-  Future<XFile?> abrir(ImageSource origen) =>
-      ImagePicker().pickImage(source: origen, imageQuality: 70, maxWidth: 1400);
+  // en el mismo toque del usuario. Por eso el pedido se inicia dentro de onTap
+  // (sin esperar a que se cierre la hoja) y la hoja devuelve la operación en curso.
+  Future<List<int>?> abrir(ImageSource origen) async {
+    final archivo = await ImagePicker().pickImage(source: origen, imageQuality: 70, maxWidth: 1400);
+    return archivo?.readAsBytes();
+  }
 
-  final pedido = await showModalBottomSheet<Future<XFile?>>(
+  final pedido = await showModalBottomSheet<Future<List<int>?>>(
     context: context,
     shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
     builder: (ctx) => SafeArea(
@@ -125,7 +138,10 @@ Future<List<int>?> elegirFotoCamaraOGaleria(BuildContext context) async {
           ListTile(
             leading: const Icon(Icons.camera_alt_outlined, color: AppColors.primary),
             title: const Text('Tomar foto con la cámara'),
-            onTap: () => Navigator.pop(ctx, abrir(ImageSource.camera)),
+            onTap: () {
+              final directa = fotoDirecta?.call();
+              Navigator.pop(ctx, directa != null ? directa() : abrir(ImageSource.camera));
+            },
           ),
           ListTile(
             leading: const Icon(Icons.photo_library_outlined, color: AppColors.primary),
@@ -139,9 +155,7 @@ Future<List<int>?> elegirFotoCamaraOGaleria(BuildContext context) async {
   );
 
   if (pedido == null) return null;
-  final archivo = await pedido;
-  if (archivo == null) return null;
-  return archivo.readAsBytes();
+  return pedido;
 }
 
 /// Widget de selección de foto con miniatura, para usar en formularios.

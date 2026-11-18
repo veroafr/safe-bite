@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
 import '../../core/models/producto.dart';
 import '../../core/models/usuario.dart';
@@ -817,18 +816,6 @@ class _LectorEanTab extends StatefulWidget {
 }
 
 class _LectorEanTabState extends State<_LectorEanTab> {
-  // Solo los formatos de productos: con menos formatos el lector web (ZXing)
-  // reconoce mas rapido y con menos errores.
-  final MobileScannerController _controller = MobileScannerController(
-    formats: [
-      BarcodeFormat.ean13,
-      BarcodeFormat.ean8,
-      BarcodeFormat.upcA,
-      BarcodeFormat.upcE,
-      BarcodeFormat.code128,
-      BarcodeFormat.itf,
-    ],
-  );
   final _codigoManualCtrl = TextEditingController();
   ResultadoEscaneo? _resultado;
   String? _error;
@@ -837,19 +824,22 @@ class _LectorEanTabState extends State<_LectorEanTab> {
   bool _escaneandoPaquete = false;
   bool _leyendoFotoCodigo = false;
 
-  /// Lee el código de barras en una foto sacada con la cámara del teléfono.
-  /// La foto tiene mejor resolución y enfoque que el video en vivo, por eso
-  /// es la forma más confiable. Primero se intenta en el propio teléfono
-  /// (instantáneo y gratis); si no se puede, la IA lee los números.
-  Future<void> _leerCodigoConFoto() async {
+  bool get _ocupado => _procesando || _escaneandoPaquete || _leyendoFotoCodigo;
+
+  /// Botón "Escanear código de barras": abre la cámara, se saca una foto del
+  /// código y se busca el producto (base propia o Open Food Facts).
+  /// El código se lee primero en el propio teléfono (instantáneo y gratis);
+  /// si no se puede, la IA lee los números de la foto.
+  Future<void> _escanearCodigoDeBarras() async {
+    // La cámara se abre directamente, en el mismo toque (el navegador solo la
+    // abre así). Resolución alta para que las barras se vean nítidas.
+    final pedido = ImagePicker().pickImage(source: ImageSource.camera, maxWidth: 2000, imageQuality: 90);
     setState(() => _leyendoFotoCodigo = true);
-    // Sin await: si apagar la cámara tardara, no debe demorar el selector
-    // de fotos (el navegador solo lo abre durante el toque del usuario).
-    _detenerLector();
     try {
-      final bytes = await elegirFotoCamaraOGaleria(context);
-      if (bytes == null || !mounted) return;
-      final datos = Uint8List.fromList(bytes);
+      final foto = await pedido;
+      if (foto == null || !mounted) return;
+      final datos = await foto.readAsBytes();
+      if (!mounted) return;
 
       String? codigo = await leerCodigoEnFoto(datos);
       if (codigo == null && mounted) {
@@ -858,42 +848,38 @@ class _LectorEanTabState extends State<_LectorEanTab> {
       }
       if (!mounted) return;
       if (codigo == null || codigo.isEmpty) {
-        mostrarError(context, 'No se pudo leer el código en la foto. Sacala de frente, a unos 15 cm y con buena luz, o ingresá el número a mano.');
+        mostrarError(context,
+            'No se pudo leer el código en la foto. Sacala de frente, a unos 15 cm y con buena luz, o ingresá el número a mano.');
         return;
       }
       _codigoManualCtrl.text = codigo;
-      await _buscarProducto(codigo, detenerCamara: true);
+      await _buscarProducto(codigo);
     } catch (e) {
       if (mounted) mostrarError(context, e);
     } finally {
-      if (mounted) {
-        setState(() => _leyendoFotoCodigo = false);
-        if (_resultado == null) await _encenderLector(conEspera: true);
-      }
+      if (mounted) setState(() => _leyendoFotoCodigo = false);
     }
   }
 
-  Future<void> _escanearPaquete() async {
+  /// Botón "Escanear ingredientes del paquete": se saca una foto de la
+  /// etiqueta y la IA (Claude, con Gemini de respaldo) lee ingredientes y
+  /// alérgenos.
+  Future<void> _escanearIngredientes() async {
     setState(() => _escaneandoPaquete = true);
-    // En el celular la cámara no se puede compartir: se libera el lector de
-    // códigos mientras se saca la foto y se vuelve a encender al terminar.
-    // Sin await: si apagar la cámara tardara, no debe demorar el selector
-    // de fotos (el navegador solo lo abre durante el toque del usuario).
-    _detenerLector();
     try {
       final bytes = await elegirFotoCamaraOGaleria(context);
-      if (bytes == null) return;
-      if (!mounted) return;
+      if (bytes == null || !mounted) return;
 
       final foto64 = base64Encode(bytes);
       final analisis = await context.read<ProductoService>().analizarFotos(fotoFrontalBase64: foto64);
+      if (!mounted) return;
 
       if (!analisis.pudoLeer) {
         // No se pudieron leer los ingredientes, pero si la IA vio el código de
         // barras, se busca el producto por código.
         final codigo = analisis.codigoBarras;
-        if (codigo != null && codigo.isNotEmpty && mounted) {
-          final encontrado = await _buscarProducto(codigo, detenerCamara: true, silencioso: true);
+        if (codigo != null && codigo.isNotEmpty) {
+          final encontrado = await _buscarProducto(codigo, silencioso: true);
           if (encontrado) return;
         }
         if (mounted) {
@@ -902,84 +888,38 @@ class _LectorEanTabState extends State<_LectorEanTab> {
         return;
       }
 
-      if (mounted) {
-        showModalBottomSheet(
-          context: context,
-          isScrollControlled: true,
-          shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
-          builder: (_) => DraggableScrollableSheet(
-            initialChildSize: 0.65,
-            minChildSize: 0.35,
-            maxChildSize: 0.9,
-            expand: false,
-            builder: (_, scrollController) => SingleChildScrollView(
-              controller: scrollController,
-              child: _AnalisisPaqueteCard(analisis: analisis, fotoBase64: foto64),
-            ),
+      showModalBottomSheet(
+        context: context,
+        isScrollControlled: true,
+        shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+        builder: (_) => DraggableScrollableSheet(
+          initialChildSize: 0.65,
+          minChildSize: 0.35,
+          maxChildSize: 0.9,
+          expand: false,
+          builder: (_, scrollController) => SingleChildScrollView(
+            controller: scrollController,
+            child: _AnalisisPaqueteCard(analisis: analisis, fotoBase64: foto64),
           ),
-        );
-      }
+        ),
+      );
     } catch (e) {
       if (mounted) mostrarError(context, e);
     } finally {
-      if (mounted) {
-        setState(() => _escaneandoPaquete = false);
-        // Si no quedó un producto en pantalla, se vuelve a encender el lector.
-        if (_resultado == null) await _encenderLector(conEspera: true);
-      }
+      if (mounted) setState(() => _escaneandoPaquete = false);
     }
-  }
-
-  Future<void> _detenerLector() async {
-    try {
-      await _controller.stop();
-    } catch (_) {}
-  }
-
-  /// Vuelve a encender la cámara del lector. Después de sacar una foto con la
-  /// cámara del sistema, el navegador puede negar la cámara unos instantes
-  /// (la app todavía no recuperó el foco) y el lector mostraba "No hay
-  /// permiso". Por eso espera un momento y reintenta algunas veces.
-  Future<void> _encenderLector({bool conEspera = false}) async {
-    for (var intento = 0; intento < 4; intento++) {
-      if (!mounted) return;
-      if (conEspera || intento > 0) {
-        await Future.delayed(Duration(milliseconds: 600 * (intento + 1)));
-        if (!mounted) return;
-      }
-      try {
-        // stop() borra el error anterior; sin eso start() no vuelve a intentar.
-        if (_controller.value.error != null) await _controller.stop();
-        await _controller.start();
-      } catch (_) {
-        // Se reintenta abajo.
-      }
-      if (_controller.value.error == null) return;
-    }
-  }
-
-  Future<void> _onDetect(BarcodeCapture capture) async {
-    if (_procesando) return;
-    final codigo = capture.barcodes.firstOrNull?.rawValue;
-    if (codigo == null || codigo.isEmpty) return;
-    // Si ese mismo código ya dio error (no está en la base), no se vuelve a
-    // consultar en cada cuadro de la cámara.
-    if (codigo == _ultimoCodigoBuscado && _error != null) return;
-
-    await _buscarProducto(codigo, detenerCamara: true);
   }
 
   Future<void> _buscarConCodigoManual() async {
     final codigo = _codigoManualCtrl.text.trim();
     if (codigo.isEmpty) return;
     FocusScope.of(context).unfocus();
-    await _buscarProducto(codigo, detenerCamara: false);
+    await _buscarProducto(codigo);
   }
 
   /// Busca el producto por código. Devuelve true si lo encontró.
-  /// Con [silencioso] no muestra el error en pantalla (se usa cuando el
-  /// código lo leyó la IA y, si no está, se muestra el análisis de la foto).
-  Future<bool> _buscarProducto(String codigo, {required bool detenerCamara, bool silencioso = false}) async {
+  /// Con [silencioso] no muestra el error en pantalla.
+  Future<bool> _buscarProducto(String codigo, {bool silencioso = false}) async {
     if (_procesando) return false;
     setState(() {
       _procesando = true;
@@ -992,10 +932,9 @@ class _LectorEanTabState extends State<_LectorEanTab> {
           .escanearPorEan(codigo, intolerancias: context.read<FiltroEscanerProvider>().filtro);
       if (!mounted) return true;
       setState(() => _resultado = resultado);
-      if (detenerCamara) await _detenerLector();
       return true;
     } catch (e) {
-      if (mounted && !silencioso) setState(() => _error = 'Código leído: $codigo\n$e');
+      if (mounted && !silencioso) setState(() => _error = 'Código: $codigo\n$e');
       return false;
     } finally {
       if (mounted) setState(() => _procesando = false);
@@ -1009,7 +948,6 @@ class _LectorEanTabState extends State<_LectorEanTab> {
       _ultimoCodigoBuscado = null;
     });
     _codigoManualCtrl.clear();
-    _encenderLector();
   }
 
   Future<void> _irACargarProducto() async {
@@ -1018,52 +956,62 @@ class _LectorEanTabState extends State<_LectorEanTab> {
     final cargado = await Navigator.of(context).push<bool>(
       MaterialPageRoute(builder: (_) => CargarProductoScreen(codigoEan: codigo)),
     );
-    if (cargado == true) {
-      _reiniciar();
-    }
+    if (cargado == true) _reiniciar();
   }
 
   @override
   void dispose() {
-    _controller.dispose();
     _codigoManualCtrl.dispose();
     super.dispose();
+  }
+
+  Widget _botonPrincipal({
+    required IconData icono,
+    required String texto,
+    required String textoCargando,
+    required bool cargando,
+    required VoidCallback onPressed,
+  }) {
+    return SizedBox(
+      width: double.infinity,
+      child: ElevatedButton.icon(
+        onPressed: _ocupado ? null : onPressed,
+        style: ElevatedButton.styleFrom(padding: const EdgeInsets.symmetric(vertical: 14)),
+        icon: cargando
+            ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2))
+            : Icon(icono),
+        label: Text(cargando ? textoCargando : texto),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        ClipRRect(
-          child: SizedBox(
-            height: 220,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                MobileScanner(
-                  controller: _controller,
-                  onDetect: _onDetect,
-                  errorBuilder: (context, error, child) => _ErrorCamara(
-                    error: error,
-                    onReintentar: () async {
-                      await _detenerLector();
-                      await _encenderLector();
-                    },
-                  ),
-                ),
-                Center(
-                  child: Container(
-                    width: 220,
-                    height: 120,
-                    decoration: BoxDecoration(border: Border.all(color: AppColors.accent, width: 3), borderRadius: BorderRadius.circular(12)),
-                  ),
-                ),
-                if (_procesando) const Center(child: CircularProgressIndicator(color: Colors.white)),
-              ],
-            ),
+        Padding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+          child: Column(
+            children: [
+              _botonPrincipal(
+                icono: Icons.barcode_reader,
+                texto: 'Escanear código de barras',
+                textoCargando: 'Leyendo el código...',
+                cargando: _leyendoFotoCodigo,
+                onPressed: _escanearCodigoDeBarras,
+              ),
+              const SizedBox(height: 10),
+              _botonPrincipal(
+                icono: Icons.inventory_2_outlined,
+                texto: 'Escanear ingredientes del paquete',
+                textoCargando: 'Analizando con IA...',
+                cargando: _escaneandoPaquete,
+                onPressed: _escanearIngredientes,
+              ),
+            ],
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 12),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Row(
@@ -1082,80 +1030,63 @@ class _LectorEanTabState extends State<_LectorEanTab> {
               const SizedBox(width: 8),
               IconButton(
                 icon: const Icon(Icons.search, color: AppColors.primary),
-                onPressed: _procesando ? null : _buscarConCodigoManual,
+                onPressed: _ocupado ? null : _buscarConCodigoManual,
               ),
             ],
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-          child: Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: (_leyendoFotoCodigo || _escaneandoPaquete) ? null : _leerCodigoConFoto,
-                  icon: _leyendoFotoCodigo
-                      ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                      : const Icon(Icons.photo_camera_outlined),
-                  label: Text(_leyendoFotoCodigo ? 'Leyendo...' : 'Foto del código'),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: (_escaneandoPaquete || _leyendoFotoCodigo) ? null : _escanearPaquete,
-                  icon: _escaneandoPaquete
-                      ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
-                      : const Icon(Icons.inventory_2_outlined),
-                  label: Text(_escaneandoPaquete ? 'Analizando...' : 'Escanear paquete'),
-                ),
-              ),
-            ],
-          ),
-        ),
+        const SizedBox(height: 6),
         _FiltroEscanerBarra(onCambio: () {
           // Si ya hay un producto en pantalla, se vuelve a evaluar con el filtro nuevo.
           final codigo = _ultimoCodigoBuscado;
-          if (_resultado != null && codigo != null) _buscarProducto(codigo, detenerCamara: false);
+          if (_resultado != null && codigo != null) _buscarProducto(codigo);
         }),
         const SizedBox(height: 4),
         Expanded(
-          child: _resultado != null
-              ? SingleChildScrollView(child: Column(children: [
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: TextButton.icon(
-                      onPressed: _reiniciar,
-                      icon: const Icon(Icons.qr_code_scanner),
-                      label: const Text('Escanear otro producto'),
-                    ),
-                  ),
-                  ResultadoEscaneoCard(resultado: _resultado!),
-                ]))
-              : _error != null
+          child: _procesando
+              ? const Center(child: CircularProgressIndicator())
+              : _resultado != null
                   ? SingleChildScrollView(
-                      child: Column(
-                        children: [
-                          ErrorView(mensaje: _error!, onReintentar: _reiniciar),
-                          if (_ultimoCodigoBuscado != null)
-                            Padding(
-                              padding: const EdgeInsets.only(bottom: 16),
-                              child: ElevatedButton.icon(
-                                onPressed: _irACargarProducto,
-                                icon: const Icon(Icons.add_box_outlined),
-                                label: const Text('Cargar este producto'),
-                              ),
-                            ),
-                        ],
-                      ),
+                      child: Column(children: [
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: TextButton.icon(
+                            onPressed: _reiniciar,
+                            icon: const Icon(Icons.barcode_reader),
+                            label: const Text('Escanear otro producto'),
+                          ),
+                        ),
+                        ResultadoEscaneoCard(resultado: _resultado!),
+                      ]),
                     )
-                  : const SingleChildScrollView(
-                      child: Padding(
-                        padding: EdgeInsets.all(24),
-                        child: Text('Apuntá la cámara al código de barras del producto', textAlign: TextAlign.center,
-                            style: TextStyle(color: AppColors.textSecondary)),
-                      ),
-                    ),
+                  : _error != null
+                      ? SingleChildScrollView(
+                          child: Column(
+                            children: [
+                              ErrorView(mensaje: _error!, onReintentar: _reiniciar),
+                              if (_ultimoCodigoBuscado != null)
+                                Padding(
+                                  padding: const EdgeInsets.only(bottom: 16),
+                                  child: ElevatedButton.icon(
+                                    onPressed: _irACargarProducto,
+                                    icon: const Icon(Icons.add_box_outlined),
+                                    label: const Text('Cargar este producto'),
+                                  ),
+                                ),
+                            ],
+                          ),
+                        )
+                      : const SingleChildScrollView(
+                          child: Padding(
+                            padding: EdgeInsets.all(24),
+                            child: Text(
+                              'Sacá una foto del código de barras para ver el producto, '
+                              'o una foto de la lista de ingredientes para que la IA la analice.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(color: AppColors.textSecondary),
+                            ),
+                          ),
+                        ),
         ),
       ],
     );
@@ -1212,52 +1143,3 @@ class _FiltroEscanerBarra extends StatelessWidget {
   }
 }
 
-extension _FirstOrNull<T> on List<T> {
-  T? get firstOrNull => isEmpty ? null : first;
-}
-
-
-/// Se muestra en lugar de la cámara cuando el lector no puede arrancar,
-/// con el motivo, para que el usuario sepa qué hacer.
-class _ErrorCamara extends StatelessWidget {
-  final MobileScannerException error;
-  final VoidCallback onReintentar;
-  const _ErrorCamara({required this.error, required this.onReintentar});
-
-  String get _mensaje {
-    switch (error.errorCode) {
-      case MobileScannerErrorCode.permissionDenied:
-        return 'No hay permiso para usar la cámara. Habilitalo en la configuración del navegador o del teléfono.';
-      case MobileScannerErrorCode.unsupported:
-        return 'Este dispositivo o navegador no permite leer códigos con la cámara. Ingresá el código a mano o usá "Escanear paquete".';
-      default:
-        final detalle = error.errorDetails?.message;
-        return 'No se pudo iniciar la cámara.${detalle != null ? ' ($detalle)' : ''}';
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      color: Colors.black87,
-      padding: const EdgeInsets.all(12),
-      alignment: Alignment.center,
-      child: SingleChildScrollView(
-        child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.no_photography_outlined, color: Colors.white70, size: 36),
-          const SizedBox(height: 8),
-          Text(_mensaje, textAlign: TextAlign.center, style: const TextStyle(color: Colors.white, fontSize: 12)),
-          const SizedBox(height: 8),
-          OutlinedButton(
-            onPressed: onReintentar,
-            style: OutlinedButton.styleFrom(foregroundColor: Colors.white, side: const BorderSide(color: Colors.white54)),
-            child: const Text('Reintentar'),
-          ),
-        ],
-        ),
-      ),
-    );
-  }
-}
