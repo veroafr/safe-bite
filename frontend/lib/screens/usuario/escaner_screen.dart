@@ -843,7 +843,9 @@ class _LectorEanTabState extends State<_LectorEanTab> {
   /// (instantáneo y gratis); si no se puede, la IA lee los números.
   Future<void> _leerCodigoConFoto() async {
     setState(() => _leyendoFotoCodigo = true);
-    await _detenerLector();
+    // Sin await: si apagar la cámara tardara, no debe demorar el selector
+    // de fotos (el navegador solo lo abre durante el toque del usuario).
+    _detenerLector();
     try {
       final bytes = await elegirFotoCamaraOGaleria(context);
       if (bytes == null || !mounted) return;
@@ -875,7 +877,9 @@ class _LectorEanTabState extends State<_LectorEanTab> {
     setState(() => _escaneandoPaquete = true);
     // En el celular la cámara no se puede compartir: se libera el lector de
     // códigos mientras se saca la foto y se vuelve a encender al terminar.
-    await _detenerLector();
+    // Sin await: si apagar la cámara tardara, no debe demorar el selector
+    // de fotos (el navegador solo lo abre durante el toque del usuario).
+    _detenerLector();
     try {
       final bytes = await elegirFotoCamaraOGaleria(context);
       if (bytes == null) return;

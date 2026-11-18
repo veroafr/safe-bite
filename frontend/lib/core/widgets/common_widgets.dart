@@ -104,7 +104,14 @@ class Chip1 extends StatelessWidget {
 /// elegir una existente de la galería. Devuelve los bytes de la imagen ya
 /// leídos (o null si canceló), listos para pasar a base64Encode().
 Future<List<int>?> elegirFotoCamaraOGaleria(BuildContext context) async {
-  final origen = await showModalBottomSheet<ImageSource>(
+  // En el navegador, la cámara o la galería solo se abren si el pedido se hace
+  // en el mismo toque del usuario. Por eso el selector se llama directamente
+  // dentro de onTap (sin esperar a que se cierre la hoja) y la hoja devuelve
+  // la operación en curso.
+  Future<XFile?> abrir(ImageSource origen) =>
+      ImagePicker().pickImage(source: origen, imageQuality: 70, maxWidth: 1400);
+
+  final pedido = await showModalBottomSheet<Future<XFile?>>(
     context: context,
     shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(16))),
     builder: (ctx) => SafeArea(
@@ -118,12 +125,12 @@ Future<List<int>?> elegirFotoCamaraOGaleria(BuildContext context) async {
           ListTile(
             leading: const Icon(Icons.camera_alt_outlined, color: AppColors.primary),
             title: const Text('Tomar foto con la cámara'),
-            onTap: () => Navigator.pop(ctx, ImageSource.camera),
+            onTap: () => Navigator.pop(ctx, abrir(ImageSource.camera)),
           ),
           ListTile(
             leading: const Icon(Icons.photo_library_outlined, color: AppColors.primary),
             title: const Text('Elegir de la galería'),
-            onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+            onTap: () => Navigator.pop(ctx, abrir(ImageSource.gallery)),
           ),
           const SizedBox(height: 8),
         ],
@@ -131,14 +138,10 @@ Future<List<int>?> elegirFotoCamaraOGaleria(BuildContext context) async {
     ),
   );
 
-  if (origen == null) return null;
-
-  final picker = ImagePicker();
-  final archivo = await picker.pickImage(source: origen, imageQuality: 70, maxWidth: 1400);
+  if (pedido == null) return null;
+  final archivo = await pedido;
   if (archivo == null) return null;
-
-  final bytes = await archivo.readAsBytes();
-  return bytes;
+  return archivo.readAsBytes();
 }
 
 /// Widget de selección de foto con miniatura, para usar en formularios.
