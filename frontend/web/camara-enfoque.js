@@ -12,6 +12,8 @@
   if (!md || typeof md.getUserMedia !== 'function') return;
 
   var original = md.getUserMedia.bind(md);
+  // La camara propia (camara-app.js) lo usa para reintentar sin estos ajustes.
+  md.__safebiteGetUserMediaOriginal = original;
 
   md.getUserMedia = function (constraints) {
     var c = constraints;
