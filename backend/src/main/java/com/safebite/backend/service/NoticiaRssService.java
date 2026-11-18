@@ -130,7 +130,7 @@ public class NoticiaRssService {
     private static final long PAUSA_ENTRE_CANALES_MS = 1200;
 
     /** codigoBuscado: la restricción de la búsqueda (null en las generales). */
-    private record Canal(String pais, String url, String codigoBuscado) {}
+    private record Canal(String pais, String url, String codigoBuscado, String consulta) {}
 
     /** Palabras de una restricción, ya normalizadas, para reconocerla en un texto. */
     private record Reconocedor(String codigo, Pattern patron) {}
@@ -217,21 +217,21 @@ public class NoticiaRssService {
         if (feedsConfigurados != null && !feedsConfigurados.isBlank()) {
             for (String parte : feedsConfigurados.split(";")) {
                 String[] p = parte.trim().split("\\|", 2);
-                if (p.length == 2 && !p[1].isBlank()) canales.add(new Canal(p[0].trim().toUpperCase(), p[1].trim(), null));
+                if (p.length == 2 && !p[1].isBlank()) canales.add(new Canal(p[0].trim().toUpperCase(), p[1].trim(), null, null));
             }
             if (!canales.isEmpty()) return canales;
         }
         for (String[] b : BUSQUEDAS) {
-            canales.add(new Canal(b[0], urlGoogleNoticias(b[0], b[1]), null));
+            canales.add(new Canal(b[0], urlGoogleNoticias(b[0], b[1]), null, b[1]));
         }
         // Una búsqueda por restricción y por país.
         for (Intolerancia i : catalogo()) {
             String es = i.getNombre().toLowerCase(Locale.ROOT);
             String pt = NOMBRES_PT.getOrDefault(i.getCodigo(), es);
-            canales.add(new Canal("UY", urlGoogleNoticias("UY",
-                    "(alergia OR alérgicos OR intolerancia) \"" + es + "\" Uruguay"), i.getCodigo()));
-            canales.add(new Canal("BR", urlGoogleNoticias("BR",
-                    "(alergia OR alérgicos OR intolerância) \"" + pt + "\""), i.getCodigo()));
+            String qUy = "(alergia OR alérgicos OR intolerancia) \"" + es + "\" Uruguay";
+            String qBr = "(alergia OR alérgicos OR intolerância) \"" + pt + "\"";
+            canales.add(new Canal("UY", urlGoogleNoticias("UY", qUy), i.getCodigo(), qUy));
+            canales.add(new Canal("BR", urlGoogleNoticias("BR", qBr), i.getCodigo(), qBr));
         }
         return canales;
     }
@@ -241,6 +241,14 @@ public class NoticiaRssService {
         return "BR".equals(pais)
                 ? "https://news.google.com/rss/search?q=" + q + "&hl=pt-BR&gl=BR&ceid=BR:pt-419"
                 : "https://news.google.com/rss/search?q=" + q + "&hl=es-419&gl=UY&ceid=UY:es-419";
+    }
+
+    /** Respaldo: Bing Noticias, por si Google no responde al servidor. */
+    private static String urlBingNoticias(String pais, String consulta) {
+        String q = URLEncoder.encode(consulta, StandardCharsets.UTF_8);
+        return "BR".equals(pais)
+                ? "https://www.bing.com/news/search?q=" + q + "&format=rss&setlang=pt-BR&cc=BR&qft=sortbydate%3d%221%22"
+                : "https://www.bing.com/news/search?q=" + q + "&format=rss&setlang=es&cc=UY&qft=sortbydate%3d%221%22";
     }
 
     private List<Intolerancia> catalogo() {
@@ -282,7 +290,22 @@ public class NoticiaRssService {
     }
 
     private List<Noticia> leerCanal(Canal canal, List<Reconocedor> reconocedores) throws Exception {
-        HttpRequest pedido = HttpRequest.newBuilder(URI.create(canal.url()))
+        try {
+            return leerUrl(canal, canal.url(), reconocedores);
+        } catch (Exception e) {
+            if (canal.consulta() == null) throw e;
+            // Google a veces rechaza pedidos de servidores: se prueba con Bing.
+            log.info("Google Noticias falló ({}), se usa Bing para: {}", e.getMessage(), canal.consulta());
+            try {
+                return leerUrl(canal, urlBingNoticias(canal.pais(), canal.consulta()), reconocedores);
+            } catch (Exception e2) {
+                throw new IllegalStateException("Google: " + e.getMessage() + " / Bing: " + e2.getMessage());
+            }
+        }
+    }
+
+    private List<Noticia> leerUrl(Canal canal, String url, List<Reconocedor> reconocedores) throws Exception {
+        HttpRequest pedido = HttpRequest.newBuilder(URI.create(url))
                 .timeout(Duration.ofSeconds(25))
                 .header("User-Agent", "Mozilla/5.0 (compatible; SafeBite/1.0; +https://safebiteapp.netlify.app)")
                 .header("Accept", "application/rss+xml, application/xml, text/xml")
@@ -305,6 +328,8 @@ public class NoticiaRssService {
             if (titulo == null || enlace == null) continue;
 
             String fuente = texto(item, "source");
+            if (fuente == null) fuente = texto(item, "News:Source"); // Bing
+            enlace = enlaceDirecto(enlace);
             if (fuente != null && titulo.endsWith(" - " + fuente)) {
                 titulo = titulo.substring(0, titulo.length() - fuente.length() - 3).trim();
             }
@@ -402,6 +427,21 @@ public class NoticiaRssService {
         f.setExpandEntityReferences(false);
         f.setNamespaceAware(false);
         return f.newDocumentBuilder();
+    }
+
+    /** Los enlaces de Bing pasan por un redireccionador: se toma la URL real. */
+    static String enlaceDirecto(String enlace) {
+        if (enlace == null || !enlace.contains("bing.com/news/apiclick")) return enlace;
+        int i = enlace.indexOf("url=");
+        if (i < 0) return enlace;
+        String resto = enlace.substring(i + 4);
+        int fin = resto.indexOf('&');
+        if (fin >= 0) resto = resto.substring(0, fin);
+        try {
+            return java.net.URLDecoder.decode(resto, StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            return enlace;
+        }
     }
 
     private static String texto(Element padre, String etiqueta) {

@@ -124,7 +124,7 @@ class _AdminNoticiasScreenState extends State<AdminNoticiasScreen> {
     try {
       final r = await context.read<NoticiaService>().importarRss();
       if (!mounted) return;
-      mostrarMensaje(context, (r['mensaje'] ?? 'Importación iniciada').toString());
+      _mostrarEstadoImportacion(r);
       // La importación sigue en el servidor: se recarga la lista en un rato.
       Future.delayed(const Duration(seconds: 90), () {
         if (mounted) _recargar();
@@ -135,6 +135,46 @@ class _AdminNoticiasScreenState extends State<AdminNoticiasScreen> {
     } finally {
       if (mounted) setState(() => _importando = false);
     }
+  }
+
+  /// Muestra que la importación empezó y cómo salió la anterior, con sus
+  /// errores, para saber si los canales RSS responden.
+  void _mostrarEstadoImportacion(Map<String, dynamic> r) {
+    final ultimo = r['ultimoResultado'] is Map ? Map<String, dynamic>.from(r['ultimoResultado']) : null;
+    final errores = ((ultimo?['errores'] as List?) ?? const []).map((e) => e.toString()).toList();
+    final fecha = r['ultimaImportacion']?.toString();
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Importar noticias'),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text((r['mensaje'] ?? 'Importación iniciada').toString()),
+              const SizedBox(height: 14),
+              const Text('Importación anterior', style: TextStyle(fontWeight: FontWeight.w700)),
+              const SizedBox(height: 4),
+              if (ultimo == null)
+                const Text('Todavía no hubo ninguna desde que arrancó el servidor.')
+              else ...[
+                if (fecha != null) Text('Fecha: ${fecha.replaceFirst('T', ' ').split('.').first}'),
+                Text('Canales revisados: ${ultimo['canales']}'),
+                Text('Noticias encontradas: ${ultimo['revisadas']}'),
+                Text('Noticias nuevas: ${ultimo['nuevas']}'),
+                if (errores.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Text('Canales con error: ${errores.length}', style: const TextStyle(color: AppColors.danger)),
+                  ...errores.take(5).map((e) => Text('• $e', style: const TextStyle(fontSize: 12))),
+                ],
+              ],
+            ],
+          ),
+        ),
+        actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cerrar'))],
+      ),
+    );
   }
 
   Future<void> _confirmarEliminar(Noticia n) async {
