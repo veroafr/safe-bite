@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import '../theme/app_theme.dart';
+import '../web/lector_codigo_foto.dart';
 
 class LoadingView extends StatelessWidget {
   const LoadingView({super.key});
@@ -115,6 +116,7 @@ typedef FotoDirecta = CapturaFoto? Function();
 Future<List<int>?> elegirFotoCamaraOGaleria(
   BuildContext context, {
   FotoDirecta? fotoDirecta,
+  String tituloCamara = 'Sacá la foto',
 }) async {
   // En el navegador, la cámara o la galería solo se abren si el pedido se hace
   // en el mismo toque del usuario. Por eso el pedido se inicia dentro de onTap
@@ -140,7 +142,17 @@ Future<List<int>?> elegirFotoCamaraOGaleria(
             title: const Text('Tomar foto con la cámara'),
             onTap: () {
               final directa = fotoDirecta?.call();
-              Navigator.pop(ctx, directa != null ? directa() : abrir(ImageSource.camera));
+              // En la web se usa la cámara propia de la app (web/camara-app.js):
+              // el selector de archivos del sistema no abre la cámara en
+              // algunos celulares.
+              Navigator.pop(
+                ctx,
+                directa != null
+                    ? directa()
+                    : camaraAppDisponible()
+                        ? sacarFotoConCamaraApp(tituloCamara)
+                        : abrir(ImageSource.camera),
+              );
             },
           ),
           ListTile(

@@ -833,13 +833,17 @@ class _LectorEanTabState extends State<_LectorEanTab> {
   Future<void> _escanearCodigoDeBarras() async {
     // La cámara se abre directamente, en el mismo toque (el navegador solo la
     // abre así). Resolución alta para que las barras se vean nítidas.
-    final pedido = ImagePicker().pickImage(source: ImageSource.camera, maxWidth: 2000, imageQuality: 90);
+    // En la web se usa la cámara propia de la app (web/camara-app.js); en el
+    // teléfono, la cámara del sistema.
+    final Future<Uint8List?> pedido = camaraAppDisponible()
+        ? sacarFotoConCamaraApp('Sacá una foto del código de barras')
+        : ImagePicker()
+            .pickImage(source: ImageSource.camera, maxWidth: 2000, imageQuality: 90)
+            .then((f) async => f == null ? null : await f.readAsBytes());
     setState(() => _leyendoFotoCodigo = true);
     try {
-      final foto = await pedido;
-      if (foto == null || !mounted) return;
-      final datos = await foto.readAsBytes();
-      if (!mounted) return;
+      final datos = await pedido;
+      if (datos == null || !mounted) return;
 
       String? codigo = await leerCodigoEnFoto(datos);
       if (codigo == null && mounted) {
@@ -867,7 +871,7 @@ class _LectorEanTabState extends State<_LectorEanTab> {
   Future<void> _escanearIngredientes() async {
     setState(() => _escaneandoPaquete = true);
     try {
-      final bytes = await elegirFotoCamaraOGaleria(context);
+      final bytes = await elegirFotoCamaraOGaleria(context, tituloCamara: 'Sacá una foto de la lista de ingredientes');
       if (bytes == null || !mounted) return;
 
       final foto64 = base64Encode(bytes);
