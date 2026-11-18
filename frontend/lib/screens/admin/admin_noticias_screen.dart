@@ -114,10 +114,61 @@ class _AdminNoticiasScreenState extends State<AdminNoticiasScreen> {
     }
   }
 
+  bool _importando = false;
+
+  /// Trae ya las noticias de Uruguay y Brasil (sin esperar la importación
+  /// automática, que corre cada 6 horas). El servidor revisa unos 50 canales
+  /// (búsquedas generales y una por cada restricción) en segundo plano.
+  Future<void> _importar() async {
+    setState(() => _importando = true);
+    try {
+      final r = await context.read<NoticiaService>().importarRss();
+      if (!mounted) return;
+      mostrarMensaje(context, (r['mensaje'] ?? 'Importación iniciada').toString());
+      // La importación sigue en el servidor: se recarga la lista en un rato.
+      Future.delayed(const Duration(seconds: 90), () {
+        if (mounted) _recargar();
+      });
+      _recargar();
+    } catch (e) {
+      if (mounted) mostrarError(context, e);
+    } finally {
+      if (mounted) setState(() => _importando = false);
+    }
+  }
+
+  Future<void> _confirmarEliminar(Noticia n) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(n.esImportada ? 'Ocultar noticia' : 'Eliminar noticia'),
+        content: Text(n.esImportada
+            ? 'La noticia deja de mostrarse y no se vuelve a importar.'
+            : 'La noticia se elimina definitivamente.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text(n.esImportada ? 'Ocultar' : 'Eliminar')),
+        ],
+      ),
+    );
+    if (ok == true) await _eliminar(n);
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Gestión de Noticias')),
+      appBar: AppBar(
+        title: const Text('Gestión de Noticias'),
+        actions: [
+          IconButton(
+            tooltip: 'Importar noticias de Uruguay y Brasil',
+            onPressed: _importando ? null : _importar,
+            icon: _importando
+                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                : const Icon(Icons.rss_feed_rounded),
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton(onPressed: () => _abrirFormulario(), child: const Icon(Icons.add)),
       body: Column(
         children: [
@@ -148,12 +199,22 @@ class _AdminNoticiasScreenState extends State<AdminNoticiasScreen> {
                     return Card(
                       child: ListTile(
                         title: Text(n.titulo),
-                        subtitle: Text(n.resumen ?? '', maxLines: 1, overflow: TextOverflow.ellipsis),
+                        subtitle: Text(
+                          n.esImportada
+                              ? 'Importada · ${n.nombrePais ?? ''} · ${n.fuente ?? ''}'
+                              : (n.resumen ?? ''),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             IconButton(icon: const Icon(Icons.edit_outlined), onPressed: () => _abrirFormulario(existente: n)),
-                            IconButton(icon: const Icon(Icons.delete_outline, color: AppColors.danger), onPressed: () => _eliminar(n)),
+                            IconButton(
+                              tooltip: n.esImportada ? 'Ocultar' : 'Eliminar',
+                              icon: Icon(n.esImportada ? Icons.visibility_off_outlined : Icons.delete_outline, color: AppColors.danger),
+                              onPressed: () => _confirmarEliminar(n),
+                            ),
                           ],
                         ),
                       ),

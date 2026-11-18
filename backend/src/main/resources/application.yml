@@ -21,6 +21,16 @@ safebite:
     expiration-ms: ${JWT_EXPIRATION_MS:86400000}
   cors:
     allowed-origins: ${CORS_ORIGINS:http://localhost:3000,http://localhost:8081,http://10.0.2.2:8080}
+  noticias:
+    rss:
+      # Importa noticias de Uruguay y Brasil sobre restricciones alimentarias.
+      habilitado: ${NOTICIAS_RSS_HABILITADO:true}
+      # Vacío = búsquedas de Google Noticias por país. Formato: "UY|url;BR|url"
+      feeds: ${NOTICIAS_RSS_FEEDS:}
+      intervalo: ${NOTICIAS_RSS_INTERVALO:PT6H}
+      demora-inicial: PT2M
+      dias-maximos: 60
+      maximo-por-canal: 8
   gemini:
     api-key: ${GEMINI_API_KEY:}
     model: ${GEMINI_MODEL:gemini-3.6-flash}

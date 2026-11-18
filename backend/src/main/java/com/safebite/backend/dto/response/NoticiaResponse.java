@@ -22,6 +22,11 @@ public class NoticiaResponse {
     private Set<String> etiquetas;
     private Set<String> intolerancias;
     private LocalDateTime fechaPublicacion;
+    /** MANUAL o RSS. */
+    private String origen;
+    private String fuente;
+    private String urlOriginal;
+    private String pais;
 
     public static NoticiaResponse desde(Noticia n) {
         return NoticiaResponse.builder()
@@ -33,6 +38,10 @@ public class NoticiaResponse {
                 .etiquetas(n.getEtiquetas())
                 .intolerancias(n.getIntolerancias())
                 .fechaPublicacion(n.getFechaPublicacion())
+                .origen(n.getOrigen() == null ? "MANUAL" : n.getOrigen())
+                .fuente(n.getFuente())
+                .urlOriginal(n.getUrlOriginal())
+                .pais(n.getPais())
                 .build();
     }
 }

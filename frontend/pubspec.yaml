@@ -40,6 +40,9 @@ dependencies:
   # Guardar el PDF de reportes exportado por el admin
   path_provider: ^2.1.3
 
+  # Abrir en el navegador la noticia original (noticias importadas por RSS)
+  url_launcher: ^6.3.1
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

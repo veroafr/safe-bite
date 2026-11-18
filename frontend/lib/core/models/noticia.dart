@@ -10,6 +10,22 @@ class Noticia {
   final Set<String> intolerancias;
   final DateTime fechaPublicacion;
 
+  /// MANUAL (la cargó el administrador) o RSS (importada de un medio).
+  final String origen;
+
+  /// Medio que la publicó (solo las importadas).
+  final String? fuente;
+
+  /// Enlace a la noticia original (solo las importadas).
+  final String? urlOriginal;
+
+  /// UY o BR (solo las importadas).
+  final String? pais;
+
+  bool get esImportada => origen == 'RSS';
+
+  String? get nombrePais => pais == 'UY' ? 'Uruguay' : pais == 'BR' ? 'Brasil' : null;
+
   Noticia({
     required this.id,
     required this.titulo,
@@ -19,6 +35,10 @@ class Noticia {
     required this.etiquetas,
     this.intolerancias = const {},
     required this.fechaPublicacion,
+    this.origen = 'MANUAL',
+    this.fuente,
+    this.urlOriginal,
+    this.pais,
   });
 
   factory Noticia.fromJson(Map<String, dynamic> json) => Noticia(
@@ -31,6 +51,10 @@ class Noticia {
         intolerancias: ((json['intolerancias'] as List?) ?? []).map((e) => e.toString()).toSet(),
         fechaPublicacion:
             DateTime.tryParse(json['fechaPublicacion'] ?? '') ?? DateTime.now(),
+        origen: json['origen'] ?? 'MANUAL',
+        fuente: json['fuente'],
+        urlOriginal: json['urlOriginal'],
+        pais: json['pais'],
       );
 
   Map<String, dynamic> toJson() => {

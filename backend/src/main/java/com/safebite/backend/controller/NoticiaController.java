@@ -17,8 +17,9 @@ public class NoticiaController {
 
     @GetMapping
     public ResponseEntity<List<NoticiaResponse>> listar(@RequestParam(required = false) String etiqueta,
-                                                        @RequestParam(required = false) List<String> intolerancias) {
-        return ResponseEntity.ok(noticiaService.listar(etiqueta, intolerancias));
+                                                        @RequestParam(required = false) List<String> intolerancias,
+                                                        @RequestParam(required = false) String pais) {
+        return ResponseEntity.ok(noticiaService.listar(etiqueta, intolerancias, pais));
     }
 
     @GetMapping("/{id}")

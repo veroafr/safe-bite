@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../theme/app_theme.dart';
 import '../web/lector_codigo_foto.dart';
 
@@ -268,5 +269,22 @@ class _SelectorFotoState extends State<SelectorFoto> {
         ],
       ),
     );
+  }
+}
+
+
+/// Abre un enlace en el navegador (por ejemplo, la noticia original).
+Future<void> abrirEnlace(BuildContext context, String url) async {
+  final uri = Uri.tryParse(url);
+  var abierto = false;
+  if (uri != null) {
+    try {
+      abierto = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    } catch (_) {
+      abierto = false;
+    }
+  }
+  if (!abierto && context.mounted) {
+    mostrarError(context, 'No se pudo abrir el enlace.');
   }
 }

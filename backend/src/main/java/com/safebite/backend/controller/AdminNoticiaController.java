@@ -3,6 +3,7 @@ package com.safebite.backend.controller;
 import com.safebite.backend.dto.request.NoticiaRequest;
 import com.safebite.backend.dto.response.NoticiaResponse;
 import com.safebite.backend.model.Usuario;
+import com.safebite.backend.service.NoticiaRssService;
 import com.safebite.backend.service.NoticiaService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +18,16 @@ import org.springframework.web.bind.annotation.*;
 public class AdminNoticiaController {
 
     private final NoticiaService noticiaService;
+    private final NoticiaRssService noticiaRssService;
+
+    /**
+     * Importa ahora las noticias de los canales RSS (sin esperar a la
+     * importación automática). Corre en segundo plano y responde enseguida.
+     */
+    @PostMapping("/importar-rss")
+    public ResponseEntity<java.util.Map<String, Object>> importarRss() {
+        return ResponseEntity.ok(noticiaRssService.importarEnSegundoPlano());
+    }
 
     @PostMapping
     public ResponseEntity<NoticiaResponse> crear(@AuthenticationPrincipal Usuario admin, @Valid @RequestBody NoticiaRequest request) {
