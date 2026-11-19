@@ -384,7 +384,19 @@ class _TarjetaResena extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  const CircleAvatar(radius: 16, child: Icon(Icons.person, size: 18)),
+                  ClipOval(
+                    child: SizedBox(
+                      width: 36,
+                      height: 36,
+                      child: ImagenFlexible(
+                        fuente: resena.usuarioFoto,
+                        sinImagen: Container(
+                          color: AppColors.primarySoft,
+                          child: const Icon(Icons.person, size: 20, color: AppColors.primary),
+                        ),
+                      ),
+                    ),
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(resena.usuarioNombre, style: const TextStyle(fontWeight: FontWeight.bold)),

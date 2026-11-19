@@ -30,6 +30,16 @@ public class ProductoController {
     private final ProductoService productoService;
     private final VisionAnalysisService visionAnalysisService;
     private final RecomendacionService recomendacionService;
+    private final com.safebite.backend.service.OpenFoodFactsService openFoodFacts;
+
+    /** Foto de referencia para una recomendación (Open Food Facts). Devuelve {"url": "..."} o {"url": null}. */
+    @GetMapping("/imagen")
+    public ResponseEntity<java.util.Map<String, String>> imagen(@RequestParam String q) {
+        String texto = q.length() > 120 ? q.substring(0, 120) : q;
+        java.util.Map<String, String> r = new java.util.HashMap<>();
+        r.put("url", openFoodFacts.buscarImagen(texto).orElse(null));
+        return ResponseEntity.ok(r);
+    }
 
     @GetMapping("/buscar")
     public ResponseEntity<List<ProductoResponse>> buscar(@RequestParam(required = false, defaultValue = "") String nombre,

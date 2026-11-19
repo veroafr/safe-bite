@@ -18,6 +18,7 @@ import '../../core/widgets/intolerancias_widgets.dart';
 import 'cargar_producto_screen.dart';
 import '../../core/web/lector_codigo_foto.dart';
 import '../../core/i18n/i18n.dart';
+import '../../core/widgets/imagen_producto.dart';
 
 class EscanerScreen extends StatelessWidget {
   const EscanerScreen({super.key});
@@ -619,23 +620,14 @@ class _RecomendacionesIaState extends State<_RecomendacionesIa> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          ClipRRect(
-            borderRadius: BorderRadius.circular(6),
-            child: it.imagenUrl != null
-                ? Image.network(
-                    it.imagenUrl!,
-                    width: 48,
-                    height: 48,
-                    fit: BoxFit.cover,
-                    errorBuilder: (_, __, ___) => const SizedBox(width: 48, height: 48, child: Icon(Icons.fastfood_outlined)),
-                  )
-                : SizedBox(
-                    width: 48,
-                    height: 48,
-                    child: Icon(it.origen == 'GENERICA'
-                        ? Icons.lightbulb_outline
-                        : (it.origen == 'MARCA_IA' ? Icons.storefront_outlined : Icons.fastfood_outlined)),
-                  ),
+          // Foto del producto; si no tiene, se busca una imagen de referencia.
+          ImagenProducto(
+            url: it.imagenUrl,
+            busqueda: [it.nombre, if (it.marca != null && it.marca!.isNotEmpty) it.marca!].join(' '),
+            lado: 64,
+            icono: it.origen == 'GENERICA'
+                ? Icons.lightbulb_outline
+                : (it.origen == 'MARCA_IA' ? Icons.storefront_outlined : Icons.fastfood_outlined),
           ),
           const SizedBox(width: 10),
           Expanded(
@@ -714,8 +706,17 @@ class _AlternativasSeguras extends StatelessWidget {
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.check_circle, color: AppColors.primary, size: 18),
-                    const SizedBox(width: 8),
+                    ImagenProducto(
+                      url: a.imagenUrl ??
+                          (a.fotoFrontalBase64 == null
+                              ? null
+                              : a.fotoFrontalBase64!.startsWith('data:')
+                                  ? a.fotoFrontalBase64
+                                  : 'data:image/jpeg;base64,${a.fotoFrontalBase64}'),
+                      busqueda: [a.nombre, if (a.marca != null) a.marca!].join(' '),
+                      lado: 52,
+                    ),
+                    const SizedBox(width: 10),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,

@@ -191,6 +191,74 @@ public class OpenFoodFactsService {
         }
     }
 
+    // ---------- Imagen de referencia para una recomendación ----------
+
+    private static final String SEARCH_RAPIDA = "https://search.openfoodfacts.org/search";
+    private record ImagenCache(long vence, String url) {}
+    private final Map<String, ImagenCache> cacheImagenes = new ConcurrentHashMap<>();
+
+    /**
+     * Busca en Open Food Facts una foto de un producto que coincida con el
+     * texto (ej: "Pan sin TACC" o "Galletitas de arroz Risitas"). Es una imagen
+     * de referencia: puede no ser exactamente la marca sugerida.
+     */
+    @SuppressWarnings("unchecked")
+    public Optional<String> buscarImagen(String termino) {
+        if (termino == null || termino.isBlank()) return Optional.empty();
+        String clave = termino.trim().toLowerCase();
+        ImagenCache c = cacheImagenes.get(clave);
+        if (c != null && c.vence() > System.currentTimeMillis()) return Optional.ofNullable(c.url());
+
+        String url = null;
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("User-Agent", "SafeBiteApp/1.0 (contacto@safebite.com)");
+        // 1) Buscador nuevo de Open Food Facts (rápido)
+        try {
+            String u = UriComponentsBuilder.fromHttpUrl(SEARCH_RAPIDA)
+                    .queryParam("q", termino.trim())
+                    .queryParam("page_size", 5)
+                    .queryParam("fields", "product_name,image_front_small_url,image_small_url,image_url")
+                    .build().encode().toUriString();
+            ResponseEntity<Map> r = restTemplate.exchange(u, HttpMethod.GET, new HttpEntity<>(headers), Map.class);
+            url = primeraImagen(r.getBody());
+        } catch (Exception e) {
+            log.debug("Búsqueda rápida de imagen falló ({}): {}", termino, e.getMessage());
+        }
+        // 2) Respaldo: buscador clásico (con la misma cola que las recomendaciones)
+        if (url == null) {
+            try {
+                String u = UriComponentsBuilder.fromHttpUrl(SEARCH_URL)
+                        .queryParam("search_terms", termino.trim())
+                        .queryParam("search_simple", 1)
+                        .queryParam("action", "process")
+                        .queryParam("json", 1)
+                        .queryParam("page_size", 5)
+                        .queryParam("fields", "product_name,image_front_small_url,image_small_url,image_url")
+                        .build().encode().toUriString();
+                url = primeraImagen(pedirBusqueda(u, headers).getBody());
+            } catch (Exception e) {
+                log.debug("Búsqueda de imagen falló ({}): {}", termino, e.getMessage());
+            }
+        }
+        cacheImagenes.put(clave, new ImagenCache(System.currentTimeMillis() + (url != null ? CACHE_MS : PAUSA_FALLO_MS), url));
+        return Optional.ofNullable(url);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static String primeraImagen(Map<String, Object> body) {
+        if (body == null) return null;
+        Object lista = body.containsKey("hits") ? body.get("hits") : body.get("products");
+        if (!(lista instanceof List<?> productos)) return null;
+        for (Object o : productos) {
+            if (!(o instanceof Map<?, ?> p)) continue;
+            for (String campo : List.of("image_front_small_url", "image_small_url", "image_url")) {
+                Object v = p.get(campo);
+                if (v != null && String.valueOf(v).startsWith("http")) return String.valueOf(v);
+            }
+        }
+        return null;
+    }
+
     /** Una consulta a la vez y con pausa entre consultas; ante un 503/429 espera y reintenta una vez. */
     @SuppressWarnings("rawtypes")
     private ResponseEntity<Map> pedirBusqueda(String url, HttpHeaders headers) {

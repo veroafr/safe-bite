@@ -16,6 +16,8 @@ public class EvaluacionResponse {
     private Long id;
     private Long restauranteId;
     private String usuarioNombre;
+    /** Foto de perfil del autor (si tiene). */
+    private String usuarioFoto;
     private Integer puntuacion;
     private String comentario;
     private LocalDateTime fecha;
@@ -28,6 +30,7 @@ public class EvaluacionResponse {
                 .id(e.getId())
                 .restauranteId(e.getRestaurante().getId())
                 .usuarioNombre(e.getUsuario().getNombre())
+                .usuarioFoto(e.getUsuario().fotoEfectiva())
                 .puntuacion(e.getPuntuacion())
                 .comentario(e.getComentario())
                 .fecha(e.getFecha())

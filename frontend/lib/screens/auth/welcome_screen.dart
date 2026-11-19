@@ -28,7 +28,7 @@ class WelcomeScreen extends StatelessWidget {
                   const LogoSafeBite(alto: 92, claro: true),
                   const SizedBox(height: 20),
                   Text(
-                    tr('Elegí mejor qué comer,\na tu medida'),
+                    tr('Elegí mejor qué comer,\na tu medida.'),
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.92),
                       fontSize: 18,

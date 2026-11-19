@@ -165,6 +165,13 @@ class ProductoService {
   /// Pide alternativas aptas para el usuario logueado a partir de un
   /// producto leido con "Escanear paquete" (base propia + Open Food Facts
   /// de Uruguay, Argentina y Brasil; la IA elige y explica).
+  /// Foto de referencia (Open Food Facts) para un producto recomendado, o null.
+  Future<String?> buscarImagen(String texto) async {
+    final data = await _client.get('/productos/imagen', query: {'q': texto});
+    final url = data is Map ? data['url'] : null;
+    return url is String && url.isNotEmpty ? url : null;
+  }
+
   Future<RecomendacionesIa> recomendar(AnalisisFotos a, {Set<String>? intolerancias}) async {
     final data = await _client.post('/productos/recomendar', body: {
       'nombre': a.nombreSugerido,

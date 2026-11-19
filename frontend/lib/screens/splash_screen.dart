@@ -54,7 +54,7 @@ class _SplashScreenState extends State<SplashScreen> {
             children: [
               const LogoSafeBite(alto: 80, claro: true),
               const SizedBox(height: 12),
-              Text(tr('Elegí mejor qué comer, a tu medida'),
+              Text(tr('Elegí mejor qué comer, a tu medida.'),
                   textAlign: TextAlign.center,
                   style: TextStyle(color: Colors.white.withValues(alpha: 0.85))),
               const SizedBox(height: 28),

@@ -80,6 +80,7 @@ class Evaluacion {
   final int id;
   final int restauranteId;
   final String usuarioNombre;
+  final String? usuarioFoto;
   final int puntuacion;
   final String? comentario;
   final DateTime fecha;
@@ -92,6 +93,7 @@ class Evaluacion {
     required this.id,
     required this.restauranteId,
     required this.usuarioNombre,
+    this.usuarioFoto,
     required this.puntuacion,
     this.comentario,
     required this.fecha,
@@ -107,6 +109,7 @@ class Evaluacion {
         id: json['id'],
         restauranteId: json['restauranteId'],
         usuarioNombre: json['usuarioNombre'] ?? '',
+        usuarioFoto: json['usuarioFoto'],
         puntuacion: json['puntuacion'] ?? 0,
         comentario: json['comentario'],
         fecha: DateTime.tryParse(json['fecha'] ?? '') ?? DateTime.now(),
