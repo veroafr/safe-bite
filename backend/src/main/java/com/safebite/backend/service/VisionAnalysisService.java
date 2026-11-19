@@ -227,6 +227,23 @@ public class VisionAnalysisService {
         return Optional.empty();
     }
 
+    /**
+     * Consulta de solo texto a Gemini (con sus modelos de respaldo), pidiendo
+     * la respuesta en JSON. La usan otros servicios (ej: traducción de recetas).
+     */
+    public Optional<String> consultarGeminiTexto(String prompt, String operacion) {
+        if (geminiKey == null || geminiKey.isBlank()) return Optional.empty();
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("contents", List.of(Map.of("parts", List.of(Map.of("text", prompt)))));
+        body.put("generationConfig", Map.of("responseMimeType", "application/json"));
+        for (String modelo : modelosGemini()) {
+            ResultadoGemini r = llamarGemini(modelo, body, operacion);
+            if (r.texto() != null) return Optional.of(r.texto());
+            if (r.status() != 404 && r.status() != 429 && r.status() < 500) break;
+        }
+        return Optional.empty();
+    }
+
     private record ResultadoGemini(String texto, int status, String error) {}
 
     private List<String> modelosGemini() {

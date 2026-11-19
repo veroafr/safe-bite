@@ -6,6 +6,9 @@ import '../../core/services/receta_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/common_widgets.dart';
 import '../../core/widgets/intolerancias_widgets.dart';
+import '../../core/widgets/receta_widgets.dart';
+import '../../core/widgets/recortar_imagen.dart';
+import 'enviar_receta_screen.dart';
 import 'receta_detail_screen.dart';
 
 class RecetasScreen extends StatefulWidget {
@@ -41,11 +44,32 @@ class _RecetasScreenState extends State<RecetasScreen> with SingleTickerProvider
     });
   }
 
+  Future<void> _compartir() async {
+    final ok = await Navigator.of(context).push<bool>(MaterialPageRoute(builder: (_) => const EnviarRecetaScreen()));
+    if (ok == true && mounted) {
+      mostrarMensaje(context, '¡Gracias! Tu receta se publicará cuando el equipo la apruebe.');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      floatingActionButton: _tabController.index == 0
+          ? FloatingActionButton.extended(
+              onPressed: _compartir,
+              icon: const Icon(Icons.add),
+              label: const Text('Compartir receta'),
+            )
+          : null,
       appBar: AppBar(
         title: const Text('Recetas y Tips'),
+        actions: [
+          IconButton(
+            tooltip: 'Mis recetas enviadas',
+            icon: const Icon(Icons.assignment_ind_outlined),
+            onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const MisRecetasScreen())),
+          ),
+        ],
         bottom: TabBar(
           controller: _tabController,
           labelColor: Colors.white,
@@ -83,9 +107,9 @@ class _RecetasScreenState extends State<RecetasScreen> with SingleTickerProvider
                       icono: Icons.menu_book_outlined);
                 }
                 return GridView.builder(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 90),
                   gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2, mainAxisSpacing: 12, crossAxisSpacing: 12, childAspectRatio: 0.78),
+                      crossAxisCount: 2, mainAxisSpacing: 12, crossAxisSpacing: 12, childAspectRatio: 0.70),
                   itemCount: recetas.length,
                   itemBuilder: (context, i) => _TarjetaReceta(receta: recetas[i]),
                 );
@@ -113,17 +137,28 @@ class _TarjetaReceta extends StatelessWidget {
           children: [
             AspectRatio(
               aspectRatio: 1.5,
-              child: receta.imagenUrl != null
-                  ? Image.network(receta.imagenUrl!, fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => Container(color: const Color(0xFFE0E0E0)))
-                  : Container(color: const Color(0xFFE0E0E0), child: const Icon(Icons.restaurant_menu)),
+              child: Stack(fit: StackFit.expand, children: [
+                ImagenFlexible(
+                  fuente: receta.imagenUrl,
+                  sinImagen: Container(color: AppColors.primarySoft, child: const Icon(Icons.restaurant_menu)),
+                ),
+                if (!receta.esTip)
+                  Positioned(
+                    left: 6,
+                    top: 6,
+                    child: Container(
+                      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
+                      child: EtiquetaOrigenReceta(receta: receta, compacta: true),
+                    ),
+                  ),
+              ]),
             ),
             Padding(
               padding: const EdgeInsets.all(8),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(receta.titulo, maxLines: 1, overflow: TextOverflow.ellipsis,
+                  Text(receta.titulo, maxLines: 2, overflow: TextOverflow.ellipsis,
                       style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                   const SizedBox(height: 2),
                   Text(

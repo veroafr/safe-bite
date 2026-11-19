@@ -20,6 +20,7 @@ import 'admin_intolerancias_screen.dart';
 import 'admin_ia_screen.dart';
 import 'admin_resenas_screen.dart';
 import '../../core/services/restaurante_service.dart';
+import '../../core/services/receta_service.dart';
 
 class AdminHomeScreen extends StatefulWidget {
   const AdminHomeScreen({super.key});
@@ -32,6 +33,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   int _productosPendientes = 0;
   int _alertasPendientes = 0;
   int _resenasPendientes = 0;
+  int _recetasPendientes = 0;
 
   bool _cargando = true;
   bool _error = false;
@@ -68,6 +70,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         ),
         // Si el backend todavía no tiene la moderación, no rompe el panel.
         _resenasPorAprobar(),
+        _recetasPorAprobar(),
       ]);
 
       final productos = resultados[0] as List;
@@ -79,6 +82,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         _productosPendientes = productos.length;
         _alertasPendientes = alertas.length;
         _resenasPendientes = (resultados[2] as List).length;
+        _recetasPendientes = (resultados[3] as List).length;
         _cargando = false;
       });
     } catch (e) {
@@ -88,6 +92,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         _productosPendientes = 0;
         _alertasPendientes = 0;
         _resenasPendientes = 0;
+        _recetasPendientes = 0;
         _cargando = false;
         _error = true;
       });
@@ -102,8 +107,16 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     }
   }
 
+  Future<List<Object>> _recetasPorAprobar() async {
+    try {
+      return await context.read<RecetaService>().listarPorEstado('PENDIENTE');
+    } catch (_) {
+      return const [];
+    }
+  }
+
   int get _totalPendientes =>
-      _productosPendientes + _alertasPendientes + _resenasPendientes;
+      _productosPendientes + _alertasPendientes + _resenasPendientes + _recetasPendientes;
 
   // =========================================================
   // ABRIR PANTALLA Y ACTUALIZAR AL VOLVER
@@ -173,7 +186,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         subtitulo: 'Gestionar recetas',
         icono: Icons.menu_book_rounded,
         pantalla: const AdminRecetasScreen(),
-        notificaciones: 0,
+        notificaciones: _recetasPendientes,
         color: const Color(0xFF009688),
       ),
       _ModuloAdmin(
@@ -550,6 +563,22 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
           onTap: () {
             _abrirPantalla(
               const AdminProductosScreen(),
+            );
+          },
+        ),
+      );
+    }
+
+    if (_recetasPendientes > 0) {
+      tarjetas.add(
+        _PendingCard(
+          titulo: 'Recetas por aprobar',
+          valor: _recetasPendientes,
+          icono: Icons.menu_book_rounded,
+          color: const Color(0xFF009688),
+          onTap: () {
+            _abrirPantalla(
+              const AdminRecetasScreen(),
             );
           },
         ),

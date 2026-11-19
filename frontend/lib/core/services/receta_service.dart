@@ -31,4 +31,59 @@ class RecetaService {
   }
 
   Future<void> eliminar(int id) => _client.delete('/admin/recetas/$id');
+
+  // ---- Recetas enviadas por usuarios ----
+
+  /// Envía una receta propia: queda pendiente hasta que el admin la apruebe.
+  Future<Receta> proponer(Map<String, dynamic> body) async {
+    final data = await _client.post('/recetas/propuestas', body: body);
+    return Receta.fromJson(data);
+  }
+
+  Future<Receta> editarPropuesta(int id, Map<String, dynamic> body) async {
+    final data = await _client.put('/recetas/propuestas/$id', body: body);
+    return Receta.fromJson(data);
+  }
+
+  Future<List<Receta>> misPropuestas() async {
+    final data = await _client.get('/recetas/mis-propuestas');
+    return (data as List).map((e) => Receta.fromJson(e)).toList();
+  }
+
+  // ---- Moderación (admin) ----
+
+  Future<List<Receta>> listarPorEstado(String estado) async {
+    final data = await _client.get('/admin/recetas', query: {'estado': estado});
+    return (data as List).map((e) => Receta.fromJson(e)).toList();
+  }
+
+  Future<Receta> moderar(int id, {required bool aprobar, String? motivo}) async {
+    final data = await _client.put('/admin/recetas/$id/moderar', body: {'aprobar': aprobar, 'motivo': motivo});
+    return Receta.fromJson(data);
+  }
+
+  // ---- Spoonacular (admin) ----
+
+  Future<BusquedaExterna> buscarExternas({String? consulta, Set<String> intolerancias = const {}, int pagina = 0}) async {
+    final data = await _client.get('/admin/recetas/spoonacular/buscar', query: {
+      'consulta': consulta,
+      'intolerancias': intolerancias,
+      'pagina': pagina,
+    });
+    return BusquedaExterna.fromJson(data);
+  }
+
+  Future<Receta> vistaPreviaExterna(int externoId, Set<String> intolerancias) async {
+    final data = await _client.get('/admin/recetas/spoonacular/$externoId', query: {'intolerancias': intolerancias});
+    return Receta.fromJson(data);
+  }
+
+  Future<Receta> importarExterna(int externoId, {required String titulo, required Set<String> libreDe}) async {
+    final data = await _client.post('/admin/recetas/spoonacular', body: {
+      'externoId': externoId,
+      'titulo': titulo,
+      'libreDe': libreDe.toList(),
+    });
+    return Receta.fromJson(data);
+  }
 }

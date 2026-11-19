@@ -49,6 +49,9 @@ safebite:
     #   SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH=true, SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE=true
     # Sin SMTP, el codigo se escribe en el log del servidor (util para desarrollo).
     from: ${MAIL_FROM:no-reply@safebite.app}
+  spoonacular:
+    # Recetas externas filtradas por intolerancia (https://spoonacular.com/food-api).
+    api-key: ${SPOONACULAR_API_KEY:}
   ia:
     # Al llegar a este gasto estimado se deja de usar Claude y se usa solo el respaldo (Gemini).
     presupuesto-usd: ${IA_PRESUPUESTO_USD:4.5}

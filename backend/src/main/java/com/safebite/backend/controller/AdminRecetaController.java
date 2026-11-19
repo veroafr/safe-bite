@@ -33,4 +33,54 @@ public class AdminRecetaController {
         recetaService.eliminar(id);
         return ResponseEntity.noContent().build();
     }
+
+    // ---- Moderación ----
+
+    /** Recetas por estado: PENDIENTE (por defecto), APROBADA o RECHAZADA. */
+    @GetMapping
+    public ResponseEntity<java.util.List<RecetaResponse>> listar(@RequestParam(required = false) String estado) {
+        return ResponseEntity.ok(recetaService.listarPorEstado(estado));
+    }
+
+    /** Body: {"aprobar": true|false, "motivo": "opcional"} */
+    @PutMapping("/{id}/moderar")
+    public ResponseEntity<RecetaResponse> moderar(@PathVariable Long id, @RequestBody java.util.Map<String, Object> body) {
+        Object motivo = body.get("motivo");
+        return ResponseEntity.ok(recetaService.moderar(id, Boolean.TRUE.equals(body.get("aprobar")),
+                motivo == null ? null : motivo.toString()));
+    }
+
+    // ---- Spoonacular ----
+
+    @GetMapping("/spoonacular/buscar")
+    public ResponseEntity<java.util.Map<String, Object>> buscarSpoonacular(
+            @RequestParam(required = false) String consulta,
+            @RequestParam(required = false) java.util.List<String> intolerancias,
+            @RequestParam(defaultValue = "0") int pagina) {
+        return ResponseEntity.ok(recetaService.buscarEnSpoonacular(consulta, intolerancias, pagina));
+    }
+
+    @GetMapping("/spoonacular/estado")
+    public ResponseEntity<java.util.Map<String, Object>> estadoSpoonacular() {
+        return ResponseEntity.ok(recetaService.estadoSpoonacular());
+    }
+
+    @GetMapping("/spoonacular/{externoId}")
+    public ResponseEntity<RecetaResponse> vistaPrevia(@PathVariable long externoId,
+                                                      @RequestParam(required = false) java.util.List<String> intolerancias) {
+        return ResponseEntity.ok(recetaService.vistaPreviaSpoonacular(externoId, intolerancias));
+    }
+
+    /** Body: {"externoId": 123, "titulo": "en español", "libreDe": ["TRIGO", ...]} */
+    @PostMapping("/spoonacular")
+    public ResponseEntity<RecetaResponse> importar(@AuthenticationPrincipal Usuario admin,
+                                                   @RequestBody java.util.Map<String, Object> body) {
+        Object id = body.get("externoId");
+        if (!(id instanceof Number n)) throw new com.safebite.backend.exception.BadRequestException("Falta externoId");
+        Object titulo = body.get("titulo");
+        java.util.List<String> libreDe = new java.util.ArrayList<>();
+        if (body.get("libreDe") instanceof java.util.List<?> l) for (Object o : l) libreDe.add(String.valueOf(o));
+        return ResponseEntity.status(HttpStatus.CREATED).body(
+                recetaService.importarDeSpoonacular(n.longValue(), titulo == null ? null : titulo.toString(), libreDe, admin));
+    }
 }

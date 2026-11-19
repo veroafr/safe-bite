@@ -33,7 +33,26 @@ public class RecetaController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<RecetaResponse> obtener(@PathVariable Long id) {
-        return ResponseEntity.ok(recetaService.obtener(id));
+    public ResponseEntity<RecetaResponse> obtener(@PathVariable Long id, @AuthenticationPrincipal Usuario usuario) {
+        return ResponseEntity.ok(recetaService.obtener(id, usuario));
+    }
+
+    /** Una persona envía su receta: queda pendiente hasta que el admin la apruebe. */
+    @PostMapping("/propuestas")
+    public ResponseEntity<RecetaResponse> proponer(@AuthenticationPrincipal Usuario usuario,
+                                                   @RequestBody com.safebite.backend.dto.request.RecetaRequest request) {
+        return ResponseEntity.status(org.springframework.http.HttpStatus.CREATED).body(recetaService.proponer(request, usuario));
+    }
+
+    @PutMapping("/propuestas/{id}")
+    public ResponseEntity<RecetaResponse> editarPropuesta(@PathVariable Long id, @AuthenticationPrincipal Usuario usuario,
+                                                         @RequestBody com.safebite.backend.dto.request.RecetaRequest request) {
+        return ResponseEntity.ok(recetaService.editarPropuesta(id, request, usuario));
+    }
+
+    /** Recetas que envió la persona, con su estado (pendiente / aprobada / rechazada). */
+    @GetMapping("/mis-propuestas")
+    public ResponseEntity<List<RecetaResponse>> misPropuestas(@AuthenticationPrincipal Usuario usuario) {
+        return ResponseEntity.ok(recetaService.misPropuestas(usuario));
     }
 }

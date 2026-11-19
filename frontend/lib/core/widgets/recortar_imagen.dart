@@ -28,7 +28,12 @@ class ImagenFlexible extends StatelessWidget {
         return sinImagen;
       }
     }
-    return Image.network(f, fit: fit, errorBuilder: (_, __, ___) => sinImagen);
+    // En la web, si el servidor de la imagen no permite CORS (ej. fotos de
+    // recetas externas), se usa un <img> común en lugar de fallar.
+    return Image.network(f,
+        fit: fit,
+        webHtmlElementStrategy: WebHtmlElementStrategy.fallback,
+        errorBuilder: (_, __, ___) => sinImagen);
   }
 }
 

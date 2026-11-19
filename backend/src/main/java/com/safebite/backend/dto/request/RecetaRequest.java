@@ -20,4 +20,6 @@ public class RecetaRequest {
     private Set<String> libreDe;
     private List<String> ingredientes;
     private List<String> pasos;
+    /** Foto en base64 / data URL (opcional). "" = quitar la foto. */
+    private String imagenBase64;
 }

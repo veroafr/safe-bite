@@ -71,4 +71,45 @@ public class Receta {
 
     @Builder.Default
     private LocalDateTime fechaPublicacion = LocalDateTime.now();
+
+    // ---- Origen y moderación ----
+
+    /** ADMIN (cargada por el equipo), USUARIO (enviada por una persona) o SPOONACULAR. null = ADMIN. */
+    @Column(length = 15)
+    private String origen;
+
+    /** PENDIENTE, APROBADA o RECHAZADA. Solo las aprobadas son públicas. null = APROBADA. */
+    @Column(length = 12)
+    private String estado;
+
+    @Column(length = 500)
+    private String motivoRechazo;
+
+    private LocalDateTime fechaRevision;
+
+    /** Foto subida desde la app (data URL JPEG). imagenUrl queda para enlaces externos. */
+    @Column(columnDefinition = "TEXT")
+    private String imagenDatos;
+
+    /**
+     * Recetas de Spoonacular: según sus términos de uso solo se guardan el id,
+     * el título y la URL de la imagen. Ingredientes y pasos se piden en vivo
+     * cada vez que alguien abre la receta (y se traducen en ese momento).
+     */
+    private Long externoId;
+
+    @Column(length = 500)
+    private String tituloOriginal;
+
+    public static final String ORIGEN_ADMIN = "ADMIN";
+    public static final String ORIGEN_USUARIO = "USUARIO";
+    public static final String ORIGEN_SPOONACULAR = "SPOONACULAR";
+    public static final String PENDIENTE = "PENDIENTE";
+    public static final String APROBADA = "APROBADA";
+    public static final String RECHAZADA = "RECHAZADA";
+
+    public String origenEfectivo() { return origen == null ? ORIGEN_ADMIN : origen; }
+    public String estadoEfectivo() { return estado == null ? APROBADA : estado; }
+    public boolean estaPublicada() { return APROBADA.equals(estadoEfectivo()); }
+    public boolean esDeSpoonacular() { return ORIGEN_SPOONACULAR.equals(origen); }
 }
