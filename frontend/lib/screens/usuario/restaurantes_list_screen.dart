@@ -149,18 +149,27 @@ class _RestaurantesListScreenState extends State<RestaurantesListScreen> {
                   }
                   final restaurantes = snapshot.data ?? [];
                   if (restaurantes.isEmpty) {
-                    return EmptyView(
-                        mensaje: _filtroIntolerancias.isEmpty
-                            ? 'No se encontraron restaurantes'
-                            : 'No hay locales aptos para todas las intolerancias elegidas',
-                        icono: Icons.restaurant_outlined);
+                    return ListView(padding: const EdgeInsets.all(16), children: [
+                      SizedBox(
+                        height: 260,
+                        child: EmptyView(
+                            mensaje: _filtroIntolerancias.isEmpty
+                                ? 'No se encontraron restaurantes'
+                                : 'No hay locales aptos para todas las intolerancias elegidas',
+                            icono: Icons.restaurant_outlined),
+                      ),
+                      const AvisoInformacionLocales(),
+                    ]);
                   }
                   return RefreshIndicator(
                     onRefresh: () async => _recargar(),
                     child: ListView.builder(
                       padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                      itemCount: restaurantes.length,
-                      itemBuilder: (context, i) => _TarjetaRestaurante(restaurante: restaurantes[i]),
+                      // Al final de la lista, el aviso sobre el origen de la información.
+                      itemCount: restaurantes.length + 1,
+                      itemBuilder: (context, i) => i == restaurantes.length
+                          ? const AvisoInformacionLocales()
+                          : _TarjetaRestaurante(restaurante: restaurantes[i]),
                     ),
                   );
                 },

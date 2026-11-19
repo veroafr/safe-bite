@@ -288,3 +288,32 @@ Future<void> abrirEnlace(BuildContext context, String url) async {
     mostrarError(context, 'No se pudo abrir el enlace.');
   }
 }
+
+
+/// Aviso legal sobre el origen y la vigencia de la información de los locales.
+class AvisoInformacionLocales extends StatelessWidget {
+  const AvisoInformacionLocales({super.key});
+
+  @override
+  Widget build(BuildContext context) => Container(
+        margin: const EdgeInsets.only(top: 8, bottom: 8),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF4F6F5),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: const Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          Icon(Icons.info_outline, size: 18, color: AppColors.textSecondary),
+          SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              'La información inicial puede provenir de fuentes públicas, comercios y la comunidad. '
+              'SafeBite no garantiza que un local mantenga su oferta, horarios o protocolos para '
+              'restricciones alimentarias: confirmá directamente con el local antes de consumir.',
+              style: TextStyle(fontSize: 11.5, color: AppColors.textSecondary, height: 1.35),
+            ),
+          ),
+        ]),
+      );
+}

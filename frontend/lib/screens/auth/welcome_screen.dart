@@ -25,14 +25,13 @@ class WelcomeScreen extends StatelessWidget {
                   const LogoSafeBite(alto: 92, claro: true),
                   const SizedBox(height: 20),
                   Text(
-                    'Tu compañero alimentario seguro',
-                    style: TextStyle(color: Colors.white.withValues(alpha: 0.9), fontSize: 16),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Productos, restaurantes y recetas revisados\ncontra tus restricciones alimentarias.',
-                    style: TextStyle(color: Colors.white.withValues(alpha: 0.7), fontSize: 13, height: 1.4),
+                    'Elegí mejor qué comer,\na tu medida',
+                    style: TextStyle(
+                      color: Colors.white.withValues(alpha: 0.92),
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      height: 1.35,
+                    ),
                     textAlign: TextAlign.center,
                   ),
                   const Spacer(flex: 3),

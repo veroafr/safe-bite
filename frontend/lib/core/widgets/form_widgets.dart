@@ -100,9 +100,9 @@ class _RequisitosPassword extends StatelessWidget {
   }
 }
 
-/// Dos menus desplegables encadenados: primero el pais y despues la
-/// ciudad de ese pais. Si el usuario ya tenia guardado un valor que no
-/// esta en la lista (cuentas viejas), se muestra igual para no perderlo.
+/// País (desplegable) y ciudad (campo con búsqueda): Uruguay y Brasil tienen
+/// todas sus localidades, así que la ciudad se busca escribiendo. Si la
+/// ciudad no aparece, se puede escribir igual.
 class SelectorUbicacion extends StatelessWidget {
   final String? pais;
   final String? ciudad;
@@ -122,12 +122,6 @@ class SelectorUbicacion extends StatelessWidget {
     final paises = ciudadesPorPais.keys.toList();
     if (pais != null && pais!.isNotEmpty && !paises.contains(pais)) paises.add(pais!);
 
-    final ciudades = <String>[...(ciudadesPorPais[pais] ?? const <String>[])];
-    if (pais != null) {
-      if (ciudad != null && ciudad!.isNotEmpty && !ciudades.contains(ciudad)) ciudades.add(ciudad!);
-      if (!ciudades.contains(otraCiudad)) ciudades.add(otraCiudad);
-    }
-
     return Column(
       children: [
         DropdownButtonFormField<String>(
@@ -139,21 +133,99 @@ class SelectorUbicacion extends StatelessWidget {
           validator: obligatorio ? (v) => Validadores.requerido(v, 'Elegí tu país') : null,
         ),
         const SizedBox(height: 14),
-        DropdownButtonFormField<String>(
-          // La key cambia con el pais para que el desplegable se reinicie.
+        _CampoCiudad(
+          // La key cambia con el país para que el campo se reinicie.
           key: ValueKey('ciudad-$pais'),
-          value: (ciudad == null || ciudad!.isEmpty) ? null : ciudad,
-          isExpanded: true,
+          pais: pais,
+          ciudad: ciudad,
+          obligatorio: obligatorio,
+          onChanged: (c) => onChanged(pais, c),
+        ),
+      ],
+    );
+  }
+}
+
+String _sinAcentos(String s) {
+  const de = 'áàâãäéèêëíìîïóòôõöúùûüçñÁÀÂÃÄÉÈÊËÍÌÎÏÓÒÔÕÖÚÙÛÜÇÑ';
+  const a = 'aaaaaeeeeiiiiooooouuuucnAAAAAEEEEIIIIOOOOOUUUUCN';
+  final b = StringBuffer();
+  for (final ch in s.split('')) {
+    final i = de.indexOf(ch);
+    b.write(i >= 0 ? a[i] : ch);
+  }
+  return b.toString().toLowerCase();
+}
+
+class _CampoCiudad extends StatelessWidget {
+  final String? pais;
+  final String? ciudad;
+  final bool obligatorio;
+  final ValueChanged<String?> onChanged;
+
+  const _CampoCiudad({super.key, required this.pais, required this.ciudad, required this.obligatorio, required this.onChanged});
+
+  @override
+  Widget build(BuildContext context) {
+    final ciudades = ciudadesPorPais[pais] ?? const <String>[];
+    // Índice sin acentos para buscar rápido entre miles de ciudades.
+    final indice = [for (final c in ciudades) (c, _sinAcentos(c))];
+
+    return LayoutBuilder(
+      builder: (context, constraints) => Autocomplete<String>(
+        initialValue: TextEditingValue(text: ciudad ?? ''),
+        optionsBuilder: (valor) {
+          final q = _sinAcentos(valor.text.trim());
+          if (q.isEmpty) return ciudades.length <= 60 ? ciudades : const <String>[];
+          final empiezan = <String>[];
+          final contienen = <String>[];
+          for (final (original, normal) in indice) {
+            if (normal.startsWith(q)) {
+              empiezan.add(original);
+            } else if (normal.contains(q)) {
+              contienen.add(original);
+            }
+            if (empiezan.length >= 40) break;
+          }
+          return [...empiezan, ...contienen].take(40);
+        },
+        onSelected: onChanged,
+        optionsViewBuilder: (context, onSelected, opciones) => Align(
+          alignment: Alignment.topLeft,
+          child: Material(
+            elevation: 4,
+            borderRadius: BorderRadius.circular(12),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(maxHeight: 260, maxWidth: constraints.maxWidth),
+              child: ListView.builder(
+                padding: EdgeInsets.zero,
+                shrinkWrap: true,
+                itemCount: opciones.length,
+                itemBuilder: (context, i) {
+                  final o = opciones.elementAt(i);
+                  return ListTile(dense: true, title: Text(o), onTap: () => onSelected(o));
+                },
+              ),
+            ),
+          ),
+        ),
+        fieldViewBuilder: (context, controller, focus, onSubmit) => TextFormField(
+          controller: controller,
+          focusNode: focus,
+          enabled: pais != null && pais!.isNotEmpty,
+          textCapitalization: TextCapitalization.words,
           decoration: InputDecoration(
             labelText: 'Ciudad',
             prefixIcon: const Icon(Icons.location_city_outlined),
-            hintText: pais == null ? 'Primero elegí el país' : null,
+            suffixIcon: const Icon(Icons.search),
+            hintText: pais == null ? 'Primero elegí el país' : 'Escribí para buscar',
+            helperText: pais != null && ciudades.length > 60 ? 'Si tu localidad no aparece, escribila igual' : null,
           ),
-          items: ciudades.map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
-          onChanged: pais == null ? null : (c) => onChanged(pais, c),
+          // Se acepta lo que escriba (por si su localidad no está en la lista).
+          onChanged: (v) => onChanged(v.trim().isEmpty ? null : v.trim()),
           validator: obligatorio ? (v) => Validadores.requerido(v, 'Elegí tu ciudad') : null,
         ),
-      ],
+      ),
     );
   }
 }

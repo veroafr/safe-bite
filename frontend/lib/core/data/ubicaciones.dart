@@ -1,12 +1,9 @@
-/// Paises y ciudades para los menus desplegables del registro y del perfil.
-/// Para agregar una ciudad o un pais, editar este mapa.
+import 'ciudades_uy_br.dart';
+
+/// Paises y ciudades para el registro y el perfil. Uruguay y Brasil tienen
+/// todas sus localidades (ver ciudades_uy_br.dart); el resto, las principales.
 const Map<String, List<String>> ciudadesPorPais = {
-  'Uruguay': [
-    'Montevideo', 'Artigas', 'Canelones', 'Ciudad de la Costa', 'Colonia del Sacramento', 'Durazno',
-    'Florida', 'Fray Bentos', 'Las Piedras', 'Maldonado', 'Melo', 'Mercedes', 'Minas', 'Pando',
-    'Paysandú', 'Punta del Este', 'Rivera', 'Rocha', 'Salto', 'San José de Mayo', 'Tacuarembó',
-    'Treinta y Tres', 'Trinidad',
-  ],
+  'Uruguay': ciudadesUruguay,
   'Argentina': [
     'Buenos Aires (CABA)', 'Bahía Blanca', 'Catamarca', 'Comodoro Rivadavia', 'Córdoba', 'Corrientes',
     'Formosa', 'La Plata', 'La Rioja', 'Mar del Plata', 'Mendoza', 'Neuquén', 'Paraná', 'Posadas',
@@ -14,11 +11,7 @@ const Map<String, List<String>> ciudadesPorPais = {
     'San Luis', 'San Miguel de Tucumán', 'San Salvador de Jujuy', 'Santa Fe', 'Santa Rosa',
     'Santiago del Estero', 'Ushuaia', 'Viedma',
   ],
-  'Brasil': [
-    'São Paulo', 'Belém', 'Belo Horizonte', 'Brasília', 'Campinas', 'Chuí', 'Curitiba', 'Florianópolis',
-    'Fortaleza', 'Goiânia', 'João Pessoa', 'Maceió', 'Manaus', 'Natal', 'Pelotas', 'Porto Alegre',
-    'Recife', 'Rio de Janeiro', 'Salvador', 'Santana do Livramento', 'Santos', 'Vitória',
-  ],
+  'Brasil': ciudadesBrasil,
   'Chile': [
     'Santiago', 'Antofagasta', 'Arica', 'Concepción', 'Iquique', 'La Serena', 'Puerto Montt',
     'Punta Arenas', 'Rancagua', 'Talca', 'Temuco', 'Valparaíso', 'Viña del Mar',
