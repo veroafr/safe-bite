@@ -11,7 +11,10 @@ import '../../core/widgets/recortar_imagen.dart';
 
 class RecetaDetailScreen extends StatefulWidget {
   final int recetaId;
-  const RecetaDetailScreen({super.key, required this.recetaId});
+  /// Receta de Spoonacular traída en vivo (no publicada en SafeBite).
+  final int? externoId;
+  final Set<String> intolerancias;
+  const RecetaDetailScreen({super.key, this.recetaId = 0, this.externoId, this.intolerancias = const {}});
 
   @override
   State<RecetaDetailScreen> createState() => _RecetaDetailScreenState();
@@ -33,7 +36,10 @@ class _RecetaDetailScreenState extends State<RecetaDetailScreen> {
       _receta = null;
     });
     try {
-      final r = await context.read<RecetaService>().obtener(widget.recetaId);
+      final service = context.read<RecetaService>();
+      final r = widget.externoId != null
+          ? await service.obtenerExterna(widget.externoId!, widget.intolerancias)
+          : await service.obtener(widget.recetaId);
       if (mounted) setState(() => _receta = r);
     } catch (e) {
       if (mounted) setState(() => _error = e.toString());

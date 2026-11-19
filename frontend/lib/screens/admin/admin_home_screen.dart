@@ -21,6 +21,7 @@ import 'admin_ia_screen.dart';
 import 'admin_resenas_screen.dart';
 import '../../core/services/restaurante_service.dart';
 import '../../core/services/receta_service.dart';
+import '../../core/services/usuario_service.dart';
 
 class AdminHomeScreen extends StatefulWidget {
   const AdminHomeScreen({super.key});
@@ -34,6 +35,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
   int _alertasPendientes = 0;
   int _resenasPendientes = 0;
   int _recetasPendientes = 0;
+  int _recuperacionesPendientes = 0;
 
   bool _cargando = true;
   bool _error = false;
@@ -71,6 +73,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         // Si el backend todavía no tiene la moderación, no rompe el panel.
         _resenasPorAprobar(),
         _recetasPorAprobar(),
+        _recuperacionesPorAtender(),
       ]);
 
       final productos = resultados[0] as List;
@@ -83,6 +86,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         _alertasPendientes = alertas.length;
         _resenasPendientes = (resultados[2] as List).length;
         _recetasPendientes = (resultados[3] as List).length;
+        _recuperacionesPendientes = (resultados[4] as List).length;
         _cargando = false;
       });
     } catch (e) {
@@ -93,6 +97,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         _alertasPendientes = 0;
         _resenasPendientes = 0;
         _recetasPendientes = 0;
+        _recuperacionesPendientes = 0;
         _cargando = false;
         _error = true;
       });
@@ -115,8 +120,16 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     }
   }
 
+  Future<List<Object>> _recuperacionesPorAtender() async {
+    try {
+      return await context.read<UsuarioService>().listarRecuperaciones();
+    } catch (_) {
+      return const [];
+    }
+  }
+
   int get _totalPendientes =>
-      _productosPendientes + _alertasPendientes + _resenasPendientes + _recetasPendientes;
+      _productosPendientes + _alertasPendientes + _resenasPendientes + _recetasPendientes + _recuperacionesPendientes;
 
   // =========================================================
   // ABRIR PANTALLA Y ACTUALIZAR AL VOLVER
@@ -199,10 +212,10 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       ),
       _ModuloAdmin(
         titulo: 'Usuarios',
-        subtitulo: 'Gestionar usuarios',
+        subtitulo: 'Perfiles y contraseñas',
         icono: Icons.groups_rounded,
-        pantalla: const AdminUsuariosScreen(),
-        notificaciones: 0,
+        pantalla: AdminUsuariosScreen(pestanaInicial: _recuperacionesPendientes > 0 ? 1 : 0),
+        notificaciones: _recuperacionesPendientes,
         color: const Color(0xFF00B8D4),
       ),
       _ModuloAdmin(
@@ -214,8 +227,8 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
         color: const Color(0xFF6D4C41),
       ),
       _ModuloAdmin(
-        titulo: 'Reportes',
-        subtitulo: 'Ver estadísticas',
+        titulo: 'Reportes y estadísticas',
+        subtitulo: 'Gráficos y exportar PDF',
         icono: Icons.analytics_rounded,
         pantalla: const AdminReportesScreen(),
         notificaciones: 0,
@@ -523,14 +536,6 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                             );
                           },
                         ),
-
-                        const SizedBox(height: 24),
-
-                        // =============================================
-                        // ACTIVIDAD
-                        // =============================================
-
-                        const _ActividadCard(),
                       ],
                     ),
                   ),
@@ -563,6 +568,22 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
           onTap: () {
             _abrirPantalla(
               const AdminProductosScreen(),
+            );
+          },
+        ),
+      );
+    }
+
+    if (_recuperacionesPendientes > 0) {
+      tarjetas.add(
+        _PendingCard(
+          titulo: 'Pedidos de contraseña',
+          valor: _recuperacionesPendientes,
+          icono: Icons.lock_reset_rounded,
+          color: const Color(0xFF00B8D4),
+          onTap: () {
+            _abrirPantalla(
+              const AdminUsuariosScreen(pestanaInicial: 1),
             );
           },
         ),
@@ -1012,71 +1033,6 @@ class _ModuloCard extends StatelessWidget {
             ],
           ),
         ),
-      ),
-    );
-  }
-}
-
-// =============================================================
-// ACTIVIDAD
-// =============================================================
-
-class _ActividadCard extends StatelessWidget {
-  const _ActividadCard();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(15),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(17),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 39,
-            height: 39,
-            decoration: BoxDecoration(
-              color:
-                  AppColors.primary.withOpacity(.10),
-              borderRadius:
-                  BorderRadius.circular(11),
-            ),
-            child: const Icon(
-              Icons.analytics_rounded,
-              color: AppColors.primary,
-              size: 21,
-            ),
-          ),
-
-          const SizedBox(width: 11),
-
-          const Expanded(
-            child: Column(
-              crossAxisAlignment:
-                  CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Reportes y estadísticas',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    fontSize: 13,
-                  ),
-                ),
-                SizedBox(height: 2),
-                Text(
-                  'Consulta la información general de SafeBite.',
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: Colors.grey,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }

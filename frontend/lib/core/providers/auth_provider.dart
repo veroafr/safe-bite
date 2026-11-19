@@ -44,8 +44,10 @@ class AuthProvider extends ChangeNotifier {
     String idioma = 'es',
     Set<String> intolerancias = const {},
     bool buscaAlimentacionSaludable = false,
+    String? fotoBase64,
   }) async {
     final data = await _client.post('/auth/registro', body: {
+      if (fotoBase64 != null) 'fotoBase64': fotoBase64,
       'nombre': nombre,
       'email': email,
       'password': password,
@@ -58,22 +60,22 @@ class AuthProvider extends ChangeNotifier {
     await _persistirSesion(data);
   }
 
-  /// Paso 1 de "Olvidaste tu contraseña": el backend envia un codigo de 6 digitos al email.
-  Future<void> recuperarPassword(String email) async {
-    await _client.post('/auth/recuperar-password', body: {'email': email}, withAuth: false);
+  /// Pedido de "olvidé mi contraseña": llega al panel de administración.
+  Future<void> recuperarPassword(String email, {String? telefono, String? mensaje}) async {
+    await _client.post('/auth/recuperar-password',
+        body: {
+          'email': email,
+          if (telefono != null && telefono.isNotEmpty) 'telefono': telefono,
+          if (mensaje != null && mensaje.isNotEmpty) 'mensaje': mensaje,
+        },
+        withAuth: false);
   }
 
-  /// Paso 2: codigo recibido + nueva contraseña.
-  Future<void> restablecerPassword({
-    required String email,
-    required String codigo,
-    required String passwordNueva,
-  }) async {
-    await _client.post('/auth/restablecer-password', body: {
-      'email': email,
-      'codigo': codigo,
-      'passwordNueva': passwordNueva,
-    }, withAuth: false);
+  /// Cambia la contraseña temporal asignada por el administrador.
+  Future<void> cambiarPasswordTemporal(String actual, String nueva) async {
+    await _client.put('/usuarios/me/password', body: {'passwordActual': actual, 'passwordNueva': nueva});
+    final data = await _client.get('/usuarios/me');
+    await actualizarUsuario(Usuario.fromJson(data));
   }
 
   Future<void> _persistirSesion(dynamic data) async {

@@ -34,6 +34,13 @@ public class GlobalExceptionHandler {
                 .body(ApiError.builder().status(401).mensaje("Credenciales invalidas").build());
     }
 
+    @ExceptionHandler(org.springframework.security.authentication.DisabledException.class)
+    public ResponseEntity<ApiError> handleDisabled(org.springframework.security.authentication.DisabledException ex) {
+        return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                .body(ApiError.builder().status(403)
+                        .mensaje("Tu cuenta está desactivada. Comunicate con el equipo de SafeBite.").build());
+    }
+
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<ApiError> handleAccessDenied(AccessDeniedException ex) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN)

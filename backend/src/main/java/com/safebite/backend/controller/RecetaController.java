@@ -37,6 +37,21 @@ public class RecetaController {
         return ResponseEntity.ok(recetaService.obtener(id, usuario));
     }
 
+    /** Recetas de Spoonacular en vivo, filtradas por intolerancias. */
+    @GetMapping("/externas")
+    public ResponseEntity<List<RecetaResponse>> externas(
+            @RequestParam(required = false) String consulta,
+            @RequestParam(required = false) List<String> intolerancias,
+            @RequestParam(defaultValue = "0") int pagina) {
+        return ResponseEntity.ok(recetaService.externas(consulta, intolerancias, pagina));
+    }
+
+    @GetMapping("/externas/{externoId}")
+    public ResponseEntity<RecetaResponse> externa(@PathVariable long externoId,
+                                                 @RequestParam(required = false) List<String> intolerancias) {
+        return ResponseEntity.ok(recetaService.externa(externoId, intolerancias));
+    }
+
     /** Una persona envía su receta: queda pendiente hasta que el admin la apruebe. */
     @PostMapping("/propuestas")
     public ResponseEntity<RecetaResponse> proponer(@AuthenticationPrincipal Usuario usuario,

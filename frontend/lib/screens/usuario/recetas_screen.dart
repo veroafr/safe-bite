@@ -11,37 +11,68 @@ import '../../core/widgets/recortar_imagen.dart';
 import 'enviar_receta_screen.dart';
 import 'receta_detail_screen.dart';
 
+const _grilla = SliverGridDelegateWithFixedCrossAxisCount(
+    crossAxisCount: 2, mainAxisSpacing: 12, crossAxisSpacing: 12, childAspectRatio: 0.70);
+
+/// Recetas: primero las de SafeBite (equipo y comunidad), después las que se
+/// traen en vivo de Spoonacular con el mismo filtro de intolerancias.
 class RecetasScreen extends StatefulWidget {
   const RecetasScreen({super.key});
   @override
   State<RecetasScreen> createState() => _RecetasScreenState();
 }
 
-class _RecetasScreenState extends State<RecetasScreen> with SingleTickerProviderStateMixin {
-  late TabController _tabController;
+class _RecetasScreenState extends State<RecetasScreen> {
   /// Intolerancias elegidas: solo recetas libres de todas ellas.
   Set<String> _filtro = {};
   late Future<List<Receta>> _future;
 
+  final List<Receta> _externas = [];
+  int _paginaExternas = 0;
+  bool _cargandoExternas = false;
+  bool _hayMasExternas = true;
+  String? _errorExternas;
+  int _consulta = 0; // descarta respuestas viejas si el filtro cambió
+
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 2, vsync: this);
-    _tabController.addListener(() {
-      if (!_tabController.indexIsChanging) _recargar();
-    });
     _future = _cargar();
+    _cargarExternas(reiniciar: true);
   }
 
-  Future<List<Receta>> _cargar() {
-    final service = context.read<RecetaService>();
-    return service.listar(esTip: _tabController.index == 1, intolerancias: _filtro);
+  Future<List<Receta>> _cargar() =>
+      context.read<RecetaService>().listar(esTip: false, intolerancias: _filtro);
+
+  Future<void> _cargarExternas({bool reiniciar = false}) async {
+    final consulta = reiniciar ? ++_consulta : _consulta;
+    setState(() {
+      _cargandoExternas = true;
+      _errorExternas = null;
+      if (reiniciar) {
+        _externas.clear();
+        _paginaExternas = 0;
+        _hayMasExternas = true;
+      }
+    });
+    try {
+      final lista = await context.read<RecetaService>().externas(intolerancias: _filtro, pagina: _paginaExternas);
+      if (!mounted || consulta != _consulta) return;
+      setState(() {
+        _externas.addAll(lista);
+        _paginaExternas++;
+        _hayMasExternas = lista.isNotEmpty;
+      });
+    } catch (e) {
+      if (mounted && consulta == _consulta) setState(() => _errorExternas = e.toString());
+    } finally {
+      if (mounted && consulta == _consulta) setState(() => _cargandoExternas = false);
+    }
   }
 
   void _recargar() {
-    setState(() {
-      _future = _cargar();
-    });
+    setState(() => _future = _cargar());
+    _cargarExternas(reiniciar: true);
   }
 
   Future<void> _compartir() async {
@@ -54,15 +85,13 @@ class _RecetasScreenState extends State<RecetasScreen> with SingleTickerProvider
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      floatingActionButton: _tabController.index == 0
-          ? FloatingActionButton.extended(
-              onPressed: _compartir,
-              icon: const Icon(Icons.add),
-              label: const Text('Compartir receta'),
-            )
-          : null,
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _compartir,
+        icon: const Icon(Icons.add),
+        label: const Text('Compartir receta'),
+      ),
       appBar: AppBar(
-        title: const Text('Recetas y Tips'),
+        title: const Text('Recetas'),
         actions: [
           IconButton(
             tooltip: 'Mis recetas enviadas',
@@ -70,15 +99,6 @@ class _RecetasScreenState extends State<RecetasScreen> with SingleTickerProvider
             onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const MisRecetasScreen())),
           ),
         ],
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white70,
-          indicatorColor: AppColors.lime,
-          indicatorWeight: 3,
-          dividerColor: Colors.transparent,
-          tabs: const [Tab(text: 'Recetas'), Tab(text: 'Tips de Salud')],
-        ),
       ),
       body: Column(
         children: [
@@ -95,28 +115,101 @@ class _RecetasScreenState extends State<RecetasScreen> with SingleTickerProvider
           ),
           const SizedBox(height: 4),
           Expanded(
-            child: FutureBuilder<List<Receta>>(
-              future: _future,
-              builder: (context, snapshot) {
-                if (snapshot.connectionState == ConnectionState.waiting) return const LoadingView();
-                if (snapshot.hasError) return ErrorView(mensaje: snapshot.error.toString(), onReintentar: _recargar);
-                final recetas = snapshot.data ?? [];
-                if (recetas.isEmpty) {
-                  return EmptyView(
-                      mensaje: _filtro.isEmpty ? 'No hay recetas disponibles' : 'No hay recetas libres de todo lo que elegiste',
-                      icono: Icons.menu_book_outlined);
-                }
-                return GridView.builder(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 90),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2, mainAxisSpacing: 12, crossAxisSpacing: 12, childAspectRatio: 0.70),
-                  itemCount: recetas.length,
-                  itemBuilder: (context, i) => _TarjetaReceta(receta: recetas[i]),
-                );
-              },
+            child: RefreshIndicator(
+              onRefresh: () async => _recargar(),
+              child: FutureBuilder<List<Receta>>(
+                future: _future,
+                builder: (context, snapshot) {
+                  final cargandoPropias = snapshot.connectionState == ConnectionState.waiting;
+                  final propias = snapshot.data ?? [];
+                  return CustomScrollView(
+                    physics: const AlwaysScrollableScrollPhysics(),
+                    slivers: [
+                      if (cargandoPropias)
+                        const SliverToBoxAdapter(child: Padding(padding: EdgeInsets.all(32), child: LoadingView()))
+                      else if (snapshot.hasError)
+                        SliverToBoxAdapter(
+                            child: SizedBox(
+                                height: 220, child: ErrorView(mensaje: snapshot.error.toString(), onReintentar: _recargar)))
+                      else if (propias.isNotEmpty)
+                        SliverPadding(
+                          padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+                          sliver: SliverGrid.builder(
+                            gridDelegate: _grilla,
+                            itemCount: propias.length,
+                            itemBuilder: (context, i) => _TarjetaReceta(receta: propias[i]),
+                          ),
+                        ),
+                      SliverToBoxAdapter(child: _tituloExternas()),
+                      SliverPadding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        sliver: SliverGrid.builder(
+                          gridDelegate: _grilla,
+                          itemCount: _externas.length,
+                          itemBuilder: (context, i) => _TarjetaReceta(receta: _externas[i], filtro: _filtro),
+                        ),
+                      ),
+                      SliverToBoxAdapter(child: _pieExternas(sinPropias: !cargandoPropias && propias.isEmpty)),
+                      const SliverToBoxAdapter(child: SizedBox(height: 90)),
+                    ],
+                  );
+                },
+              ),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _tituloExternas() => Padding(
+        padding: const EdgeInsets.fromLTRB(16, 18, 16, 10),
+        child: Row(children: [
+          const Icon(Icons.public_rounded, size: 20, color: Color(0xFFE65100)),
+          const SizedBox(width: 6),
+          const Expanded(
+            child: Text('Más recetas de spoonacular', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          ),
+          if (_filtro.isNotEmpty)
+            Flexible(
+              child: Text('sin ${_filtro.map(etiquetaIntolerancia).join(', ')}',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+            ),
+        ]),
+      );
+
+  Widget _pieExternas({required bool sinPropias}) {
+    if (_cargandoExternas) {
+      return const Padding(padding: EdgeInsets.all(20), child: Center(child: CircularProgressIndicator()));
+    }
+    if (_errorExternas != null) {
+      return Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(children: [
+          Text('No se pudieron traer recetas de Spoonacular: $_errorExternas',
+              textAlign: TextAlign.center, style: const TextStyle(color: AppColors.textSecondary)),
+          TextButton(onPressed: () => _cargarExternas(), child: const Text('Reintentar')),
+        ]),
+      );
+    }
+    if (_externas.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.all(16),
+        child: Text(
+          sinPropias ? 'No hay recetas libres de todo lo que elegiste.' : 'No hay más recetas externas para este filtro.',
+          textAlign: TextAlign.center,
+          style: const TextStyle(color: AppColors.textSecondary),
+        ),
+      );
+    }
+    if (!_hayMasExternas) return const SizedBox.shrink();
+    return Center(
+      child: TextButton.icon(
+        onPressed: () => _cargarExternas(),
+        icon: const Icon(Icons.expand_more),
+        label: const Text('Cargar más recetas'),
       ),
     );
   }
@@ -124,14 +217,21 @@ class _RecetasScreenState extends State<RecetasScreen> with SingleTickerProvider
 
 class _TarjetaReceta extends StatelessWidget {
   final Receta receta;
-  const _TarjetaReceta({required this.receta});
+  /// Para recetas de Spoonacular traídas en vivo: el filtro con que se buscaron.
+  final Set<String> filtro;
+  const _TarjetaReceta({required this.receta, this.filtro = const {}});
 
   @override
   Widget build(BuildContext context) {
+    final enVivo = receta.esSpoonacular && receta.id == 0;
     return Card(
       clipBehavior: Clip.antiAlias,
       child: InkWell(
-        onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => RecetaDetailScreen(recetaId: receta.id))),
+        onTap: () => Navigator.of(context).push(MaterialPageRoute(
+          builder: (_) => enVivo
+              ? RecetaDetailScreen(externoId: receta.externoId, intolerancias: filtro)
+              : RecetaDetailScreen(recetaId: receta.id),
+        )),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -142,15 +242,14 @@ class _TarjetaReceta extends StatelessWidget {
                   fuente: receta.imagenUrl,
                   sinImagen: Container(color: AppColors.primarySoft, child: const Icon(Icons.restaurant_menu)),
                 ),
-                if (!receta.esTip)
-                  Positioned(
-                    left: 6,
-                    top: 6,
-                    child: Container(
-                      decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
-                      child: EtiquetaOrigenReceta(receta: receta, compacta: true),
-                    ),
+                Positioned(
+                  left: 6,
+                  top: 6,
+                  child: Container(
+                    decoration: BoxDecoration(color: Colors.white, borderRadius: BorderRadius.circular(20)),
+                    child: EtiquetaOrigenReceta(receta: receta, compacta: true),
                   ),
+                ),
               ]),
             ),
             Padding(
@@ -158,8 +257,8 @@ class _TarjetaReceta extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(receta.titulo, maxLines: 2, overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  Text(receta.titulo,
+                      maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                   const SizedBox(height: 2),
                   Text(
                     [

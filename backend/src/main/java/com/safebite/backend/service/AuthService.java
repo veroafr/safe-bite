@@ -28,6 +28,8 @@ import java.util.Set;
 @RequiredArgsConstructor
 public class AuthService {
 
+    private final RecuperacionService recuperacionService;
+
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
@@ -62,6 +64,9 @@ public class AuthService {
                 .buscaAlimentacionSaludable(comerMejor)
                 .rol(Rol.USUARIO)
                 .build();
+        if (request.getFotoBase64() != null && !request.getFotoBase64().isBlank()) {
+            usuario.setFotoPerfilDatos(ImagenRestauranteUtil.preparar(request.getFotoBase64(), 400, 400));
+        }
 
         usuario = usuarioRepository.save(usuario);
 
@@ -96,19 +101,8 @@ public class AuthService {
      */
     @Transactional
     public void recuperarPassword(RecuperarPasswordRequest request) {
-        usuarioRepository.findByEmail(emailExistente(request.getEmail())).ifPresent(usuario -> {
-            String codigo = String.format("%06d", RANDOM.nextInt(1_000_000));
-            usuario.setCodigoRecuperacionHash(passwordEncoder.encode(codigo));
-            usuario.setCodigoRecuperacionExpira(LocalDateTime.now().plusMinutes(MINUTOS_VALIDEZ_CODIGO));
-            usuario.setIntentosRecuperacion(0);
-            usuarioRepository.save(usuario);
-
-            emailService.enviar(usuario.getEmail(), "Safe-Bite: código para restablecer tu contraseña",
-                    "Hola " + usuario.getNombre() + ",\n\n"
-                            + "Tu código para restablecer la contraseña es: " + codigo + "\n\n"
-                            + "Vence en " + MINUTOS_VALIDEZ_CODIGO + " minutos. Si no lo pediste, ignorá este mensaje.\n\n"
-                            + "Equipo Safe-Bite");
-        });
+        // Por ahora sin emails automáticos: el pedido llega al panel de administración.
+        recuperacionService.solicitar(request);
     }
 
     /** Paso 2: valida el codigo y guarda la nueva contraseña. */

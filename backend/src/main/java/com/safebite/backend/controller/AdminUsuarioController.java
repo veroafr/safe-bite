@@ -36,9 +36,25 @@ public class AdminUsuarioController {
         return ResponseEntity.status(HttpStatus.CREATED).body(usuarioService.crearUsuarioAdmin(datos, password, rol));
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<UsuarioResponse> obtener(@PathVariable Long id) {
+        return ResponseEntity.ok(usuarioService.obtenerAdmin(id));
+    }
+
+    /** Edita todo el perfil: nombre, email, ubicación, teléfono, foto, intolerancias, rol, activo... */
     @PutMapping("/{id}")
-    public ResponseEntity<UsuarioResponse> editar(@PathVariable Long id, @RequestBody ActualizarPerfilRequest request) {
-        return ResponseEntity.ok(usuarioService.editarUsuarioAdmin(id, request));
+    public ResponseEntity<UsuarioResponse> editar(@PathVariable Long id,
+                                                  @org.springframework.security.core.annotation.AuthenticationPrincipal com.safebite.backend.model.Usuario admin,
+                                                  @jakarta.validation.Valid @RequestBody ActualizarPerfilRequest request) {
+        return ResponseEntity.ok(usuarioService.editarUsuarioAdmin(id, request, admin));
+    }
+
+    /** Body: {"password": "Nueva#123", "temporal": true} */
+    @PutMapping("/{id}/password")
+    public ResponseEntity<UsuarioResponse> asignarPassword(@PathVariable Long id, @RequestBody Map<String, Object> body) {
+        Object p = body.get("password");
+        boolean temporal = !Boolean.FALSE.equals(body.get("temporal"));
+        return ResponseEntity.ok(usuarioService.asignarPassword(id, p == null ? null : p.toString(), temporal));
     }
 
     @DeleteMapping("/{id}")

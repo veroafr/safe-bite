@@ -100,6 +100,53 @@ public class RecetaService {
                 .stream().map(this::resumen).toList();
     }
 
+    // ---------- Recetas de Spoonacular en vivo (para todos) ----------
+
+    /**
+     * Recetas de Spoonacular que cumplen el filtro, pedidas en vivo (no se
+     * guardan). Se omiten las que el admin ya publicó, porque esas aparecen
+     * en la lista principal.
+     */
+    public List<RecetaResponse> externas(String consulta, Collection<String> filtro, int pagina) {
+        // Sin clave, SpoonacularClient avisa "Falta configurar SPOONACULAR_API_KEY".
+        Set<String> codigos = intoleranciaService.normalizar(filtro);
+        String enIngles = consulta == null || consulta.isBlank() ? null : traduccion.traducirConsulta(consulta);
+        int cantidad = 10;
+        List<SpoonacularClient.Resultado> resultados =
+                spoonacular.buscar(enIngles, codigos, cantidad, Math.max(0, pagina) * cantidad);
+
+        Set<Long> publicadas = new HashSet<>();
+        for (Receta r : recetaRepository.findByOrigen(Receta.ORIGEN_SPOONACULAR)) publicadas.add(r.getExternoId());
+        List<SpoonacularClient.Resultado> nuevas = resultados.stream().filter(r -> !publicadas.contains(r.id())).toList();
+
+        List<String> titulos = traduccion.traducirTitulos(nuevas.stream().map(SpoonacularClient.Resultado::titulo).toList());
+        List<RecetaResponse> lista = new ArrayList<>();
+        for (int i = 0; i < nuevas.size(); i++) {
+            SpoonacularClient.Resultado r = nuevas.get(i);
+            lista.add(RecetaResponse.builder()
+                    .externoId(r.id())
+                    .titulo(titulos.get(i))
+                    .tituloOriginal(r.titulo())
+                    .imagenUrl(r.imagen())
+                    .origen(Receta.ORIGEN_SPOONACULAR)
+                    .estado(Receta.APROBADA)
+                    .fuenteNombre("spoonacular")
+                    .libreDe(codigos)
+                    .etiquetas(Set.of())
+                    .ingredientes(List.of())
+                    .pasos(List.of())
+                    .build());
+        }
+        return lista;
+    }
+
+    /** Detalle en vivo de una receta de Spoonacular (traducida y analizada). */
+    public RecetaResponse externa(long externoId, Collection<String> filtro) {
+        RecetaResponse r = vistaPreviaSpoonacular(externoId, filtro);
+        r.setEstado(Receta.APROBADA);
+        return r;
+    }
+
     // ================= Administración =================
 
     public List<RecetaResponse> listarPorEstado(String estado) {

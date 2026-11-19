@@ -19,7 +19,7 @@ const dificultades = ['Fácil', 'Media', 'Difícil'];
 /// se edita una receta propia (vuelve a revisión).
 class EnviarRecetaScreen extends StatefulWidget {
   final Receta? existente;
-  /// Administrador: se publica directamente (sin revisión) y puede marcar "Tip".
+  /// Administrador: se publica directamente, sin revisión.
   final bool modoAdmin;
   const EnviarRecetaScreen({super.key, this.existente, this.modoAdmin = false});
 
@@ -37,7 +37,6 @@ class _EnviarRecetaScreenState extends State<EnviarRecetaScreen> {
   late String? _dificultad =
       dificultades.contains(widget.existente?.dificultad) ? widget.existente!.dificultad : null;
   late Set<String> _libreDe = {...?widget.existente?.libreDe};
-  late bool _esTip = widget.existente?.esTip ?? false;
   late final _etiquetas = TextEditingController(text: widget.existente?.etiquetas.join(', ') ?? '');
   Uint8List? _foto;
   bool _quitarFoto = false;
@@ -77,7 +76,7 @@ class _EnviarRecetaScreenState extends State<EnviarRecetaScreen> {
       if (_foto != null) 'imagenBase64': base64Encode(_foto!),
       if (_quitarFoto) 'imagenBase64': '',
       if (_quitarFoto) 'imagenUrl': '',
-      if (widget.modoAdmin) 'esTip': _esTip,
+      if (widget.modoAdmin) 'esTip': false,
       if (widget.modoAdmin)
         'etiquetas': _etiquetas.text.split(',').map((e) => e.trim()).where((e) => e.isNotEmpty).toList(),
     };
@@ -109,21 +108,14 @@ class _EnviarRecetaScreenState extends State<EnviarRecetaScreen> {
     return Scaffold(
       appBar: AppBar(
           title: Text(widget.modoAdmin
-              ? (widget.existente == null ? 'Nueva receta / tip' : 'Editar receta')
+              ? (widget.existente == null ? 'Nueva receta' : 'Editar receta')
               : (widget.existente == null ? 'Compartir una receta' : 'Editar mi receta'))),
       body: Form(
         key: _form,
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            if (widget.modoAdmin)
-              SwitchListTile(
-                contentPadding: EdgeInsets.zero,
-                title: const Text('Es un Tip de Salud (no receta)'),
-                value: _esTip,
-                onChanged: (v) => setState(() => _esTip = v),
-              )
-            else
+            if (!widget.modoAdmin)
             const AvisoReceta(
               icono: Icons.verified_user_outlined,
               titulo: 'Tu receta será revisada',
@@ -221,7 +213,7 @@ class _EnviarRecetaScreenState extends State<EnviarRecetaScreen> {
                 hintText: '2 tazas de fécula de mandioca\n1 huevo\n100 g de queso rallado',
                 alignLabelWithHint: true,
               ),
-              validator: (v) => !_esTip && _lineas(v ?? '').isEmpty ? 'Agregá al menos un ingrediente' : null,
+              validator: (v) => _lineas(v ?? '').isEmpty ? 'Agregá al menos un ingrediente' : null,
             ),
             const SizedBox(height: 12),
             TextFormField(
@@ -233,7 +225,7 @@ class _EnviarRecetaScreenState extends State<EnviarRecetaScreen> {
                 hintText: 'Precalentar el horno a 180 °C\nMezclar los ingredientes secos\n...',
                 alignLabelWithHint: true,
               ),
-              validator: (v) => !_esTip && _lineas(v ?? '').isEmpty ? 'Agregá al menos un paso' : null,
+              validator: (v) => _lineas(v ?? '').isEmpty ? 'Agregá al menos un paso' : null,
             ),
             if (widget.modoAdmin) ...[
               const SizedBox(height: 12),

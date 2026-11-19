@@ -13,4 +13,15 @@ public class ActualizarPerfilRequest {
     private String pais;
     private String fotoPerfilUrl;
     private String idioma;
+    private String telefono;
+    /** Foto nueva en base64 / data URL. "" = quitar la foto. */
+    private String fotoBase64;
+
+    // ---- Solo los usa el administrador (se ignoran en el perfil propio) ----
+    private java.util.Set<String> intolerancias;
+    private Boolean buscaAlimentacionSaludable;
+    private com.safebite.backend.model.NivelAlerta nivelAlerta;
+    private java.util.Set<String> tiposCocinaPreferidos;
+    private Boolean activo;
+    private com.safebite.backend.model.Rol rol;
 }

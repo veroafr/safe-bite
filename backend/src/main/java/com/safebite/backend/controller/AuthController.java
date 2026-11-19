@@ -34,7 +34,7 @@ public class AuthController {
     @PostMapping("/recuperar-password")
     public ResponseEntity<Map<String, String>> recuperarPassword(@Valid @RequestBody RecuperarPasswordRequest request) {
         authService.recuperarPassword(request);
-        return ResponseEntity.ok(Map.of("mensaje", "Si el email está registrado, te enviamos un código para restablecer la contraseña"));
+        return ResponseEntity.ok(Map.of("mensaje", "Recibimos tu pedido. El equipo de SafeBite lo revisará y se comunicará con vos con una contraseña nueva."));
     }
 
     @PostMapping("/restablecer-password")

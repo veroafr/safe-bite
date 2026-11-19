@@ -1,4 +1,8 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
+import '../../core/widgets/foto_perfil_widget.dart';
 import 'package:provider/provider.dart';
 import '../../core/providers/auth_provider.dart';
 import '../../core/theme/app_theme.dart';
@@ -25,6 +29,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   String? _ciudad;
   Set<String> _intolerancias = {};
   bool _comerMejor = false;
+  Uint8List? _foto;
   bool _cargando = false;
   bool _intentoEnviar = false;
   String? _error;
@@ -59,6 +64,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         idioma: widget.idiomaInicial,
         intolerancias: _intolerancias,
         buscaAlimentacionSaludable: _comerMejor,
+        fotoBase64: _foto != null ? base64Encode(_foto!) : null,
       );
       if (!mounted) return;
       Navigator.of(context).pushAndRemoveUntil(
@@ -84,6 +90,17 @@ class _RegisterScreenState extends State<RegisterScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                Center(
+                  child: FotoPerfilEditable(
+                    bytes: _foto,
+                    onCambiar: () async {
+                      final f = await elegirFotoDePerfil(context);
+                      if (f != null && mounted) setState(() => _foto = f);
+                    },
+                    onQuitar: () => setState(() => _foto = null),
+                  ),
+                ),
+                const SizedBox(height: 8),
                 TextFormField(
                   controller: _nombreCtrl,
                   textCapitalization: TextCapitalization.words,

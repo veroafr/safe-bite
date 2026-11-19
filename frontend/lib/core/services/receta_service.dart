@@ -15,6 +15,21 @@ class RecetaService {
     return (data as List).map((e) => Receta.fromJson(e)).toList();
   }
 
+  /// Recetas de Spoonacular en vivo, filtradas por [intolerancias].
+  Future<List<Receta>> externas({Set<String> intolerancias = const {}, String? consulta, int pagina = 0}) async {
+    final data = await _client.get('/recetas/externas', query: {
+      'intolerancias': intolerancias,
+      'consulta': consulta,
+      'pagina': pagina,
+    });
+    return (data as List).map((e) => Receta.fromJson(e)).toList();
+  }
+
+  Future<Receta> obtenerExterna(int externoId, Set<String> intolerancias) async {
+    final data = await _client.get('/recetas/externas/$externoId', query: {'intolerancias': intolerancias});
+    return Receta.fromJson(data);
+  }
+
   Future<Receta> obtener(int id) async {
     final data = await _client.get('/recetas/$id');
     return Receta.fromJson(data);

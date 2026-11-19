@@ -66,7 +66,8 @@ class Receta {
   });
 
   factory Receta.fromJson(Map<String, dynamic> json) => Receta(
-        id: json['id'],
+        // Las recetas de Spoonacular traídas en vivo no tienen id propio (usan externoId).
+        id: json['id'] ?? 0,
         titulo: json['titulo'] ?? '',
         descripcion: json['descripcion'],
         tiempoPreparacionMinutos: json['tiempoPreparacionMinutos'],

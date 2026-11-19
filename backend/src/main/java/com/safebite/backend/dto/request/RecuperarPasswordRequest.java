@@ -10,4 +10,11 @@ public class RecuperarPasswordRequest {
     @NotBlank(message = "El email es obligatorio")
     @Email(message = Validaciones.EMAIL_MENSAJE)
     private String email;
+
+    /** Teléfono / WhatsApp para que el equipo le avise la contraseña nueva (opcional). */
+    @jakarta.validation.constraints.Size(max = 40)
+    private String telefono;
+
+    @jakarta.validation.constraints.Size(max = 500)
+    private String mensaje;
 }

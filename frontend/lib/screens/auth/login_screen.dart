@@ -44,8 +44,14 @@ class _LoginScreenState extends State<LoginScreen> {
       await auth.login(_emailCtrl.text.trim(), _passwordCtrl.text);
       if (!mounted) return;
       final esAdmin = auth.usuario?.rol == Rol.ADMINISTRADOR;
+      final Widget destino = esAdmin ? const AdminHomeScreen() : const UsuarioHomeScreen();
       Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => esAdmin ? const AdminHomeScreen() : const UsuarioHomeScreen()),
+        MaterialPageRoute(
+          // Contraseña temporal asignada por el admin: primero tiene que elegir una nueva.
+          builder: (_) => auth.usuario?.debeCambiarPassword == true
+              ? CambiarPasswordTemporalScreen(passwordActual: _passwordCtrl.text, destino: destino)
+              : destino,
+        ),
         (route) => false,
       );
     } catch (e) {

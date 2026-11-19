@@ -31,13 +31,15 @@ public class UsuarioResponse {
     private Set<String> tiposCocinaPreferidos;
     private boolean activo;
     private LocalDateTime fechaRegistro;
+    private String telefono;
+    private boolean debeCambiarPassword;
 
     public static UsuarioResponse desde(Usuario u) {
         return UsuarioResponse.builder()
                 .id(u.getId())
                 .nombre(u.getNombre())
                 .email(u.getEmail())
-                .fotoPerfilUrl(u.getFotoPerfilUrl())
+                .fotoPerfilUrl(u.fotoEfectiva())
                 .ciudad(u.getCiudad())
                 .pais(u.getPais())
                 .idioma(u.getIdioma())
@@ -48,6 +50,8 @@ public class UsuarioResponse {
                 .tiposCocinaPreferidos(u.getTiposCocinaPreferidos())
                 .activo(u.isActivo())
                 .fechaRegistro(u.getFechaRegistro())
+                .telefono(u.getTelefono())
+                .debeCambiarPassword(Boolean.TRUE.equals(u.getDebeCambiarPassword()))
                 .build();
     }
 }

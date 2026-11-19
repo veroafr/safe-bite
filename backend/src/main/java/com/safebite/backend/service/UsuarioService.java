@@ -36,11 +36,18 @@ public class UsuarioService {
         if (request.getPais() != null) usuario.setPais(request.getPais());
         if (request.getFotoPerfilUrl() != null) usuario.setFotoPerfilUrl(request.getFotoPerfilUrl());
         if (request.getIdioma() != null) usuario.setIdioma(request.getIdioma());
-        if (request.getEmail() != null && !request.getEmail().equals(usuario.getEmail())) {
-            if (usuarioRepository.existsByEmail(request.getEmail())) {
+        if (request.getTelefono() != null) usuario.setTelefono(request.getTelefono().isBlank() ? null : request.getTelefono().trim());
+        if (request.getFotoBase64() != null) {
+            usuario.setFotoPerfilDatos(request.getFotoBase64().isBlank()
+                    ? null : ImagenRestauranteUtil.preparar(request.getFotoBase64(), 400, 400));
+            if (request.getFotoBase64().isBlank()) usuario.setFotoPerfilUrl(null);
+        }
+        if (request.getEmail() != null && !request.getEmail().trim().equalsIgnoreCase(usuario.getEmail())) {
+            String email = request.getEmail().trim().toLowerCase();
+            if (usuarioRepository.existsByEmail(email)) {
                 throw new BadRequestException("Ese email ya esta en uso");
             }
-            usuario.setEmail(request.getEmail());
+            usuario.setEmail(email);
         }
         return UsuarioResponse.desde(usuarioRepository.save(usuario));
     }
@@ -51,6 +58,7 @@ public class UsuarioService {
             throw new BadRequestException("La contraseña actual es incorrecta");
         }
         usuario.setPassword(passwordEncoder.encode(request.getPasswordNueva()));
+        usuario.setDebeCambiarPassword(false);
         usuarioRepository.save(usuario);
     }
 
@@ -85,11 +93,56 @@ public class UsuarioService {
         return UsuarioResponse.desde(usuarioRepository.save(usuario));
     }
 
+    /** El administrador edita todo el perfil (para ayudar a recuperar una cuenta). */
     @Transactional
-    public UsuarioResponse editarUsuarioAdmin(Long id, ActualizarPerfilRequest request) {
+    public UsuarioResponse editarUsuarioAdmin(Long id, ActualizarPerfilRequest request, Usuario admin) {
         Usuario usuario = usuarioRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
+        if (request.getNombre() != null && request.getNombre().isBlank()) {
+            throw new BadRequestException("El nombre no puede quedar vacío");
+        }
+        if (request.getIntolerancias() != null) usuario.setIntolerancias(intoleranciaService.normalizar(request.getIntolerancias()));
+        if (request.getBuscaAlimentacionSaludable() != null) usuario.setBuscaAlimentacionSaludable(request.getBuscaAlimentacionSaludable());
+        if (request.getNivelAlerta() != null) usuario.setNivelAlerta(request.getNivelAlerta());
+        if (request.getTiposCocinaPreferidos() != null) usuario.setTiposCocinaPreferidos(new java.util.HashSet<>(request.getTiposCocinaPreferidos()));
+        boolean esUnoMismo = admin != null && admin.getId().equals(usuario.getId());
+        if (request.getActivo() != null) {
+            if (esUnoMismo && !request.getActivo()) throw new BadRequestException("No podés desactivar tu propia cuenta");
+            usuario.setActivo(request.getActivo());
+        }
+        if (request.getRol() != null) {
+            if (esUnoMismo && request.getRol() != Rol.ADMINISTRADOR) throw new BadRequestException("No podés quitarte el rol de administrador");
+            usuario.setRol(request.getRol());
+        }
         return actualizarPerfil(usuario, request);
+    }
+
+    /**
+     * Contraseña asignada por el administrador. Con [temporal] = true, la app
+     * le pide a la persona que la cambie al entrar.
+     */
+    @Transactional
+    public UsuarioResponse asignarPassword(Long id, String nueva, boolean temporal) {
+        Usuario usuario = usuarioRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado"));
+        validarPasswordNueva(nueva);
+        usuario.setPassword(passwordEncoder.encode(nueva));
+        usuario.setDebeCambiarPassword(temporal);
+        usuario.setCodigoRecuperacionHash(null);
+        usuario.setCodigoRecuperacionExpira(null);
+        usuario.setIntentosRecuperacion(null);
+        return UsuarioResponse.desde(usuarioRepository.save(usuario));
+    }
+
+    public static void validarPasswordNueva(String p) {
+        if (p == null || !p.matches(com.safebite.backend.config.Validaciones.PASSWORD)) {
+            throw new BadRequestException(com.safebite.backend.config.Validaciones.PASSWORD_MENSAJE);
+        }
+    }
+
+    public UsuarioResponse obtenerAdmin(Long id) {
+        return UsuarioResponse.desde(usuarioRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado")));
     }
 
     @Transactional

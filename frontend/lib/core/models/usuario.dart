@@ -31,6 +31,11 @@ class Usuario {
   final bool buscaAlimentacionSaludable;
   final NivelAlerta nivelAlerta;
   final Set<String> tiposCocinaPreferidos;
+  final String? telefono;
+  final bool activo;
+  /// El admin le asignó una contraseña temporal: hay que pedirle que la cambie.
+  final bool debeCambiarPassword;
+  final DateTime? fechaRegistro;
 
   Usuario({
     required this.id,
@@ -45,6 +50,10 @@ class Usuario {
     this.buscaAlimentacionSaludable = false,
     required this.nivelAlerta,
     required this.tiposCocinaPreferidos,
+    this.telefono,
+    this.activo = true,
+    this.debeCambiarPassword = false,
+    this.fechaRegistro,
   });
 
   factory Usuario.fromJson(Map<String, dynamic> json) {
@@ -62,6 +71,10 @@ class Usuario {
       nivelAlerta: nivelAlertaDesde(json['nivelAlerta']),
       tiposCocinaPreferidos:
           ((json['tiposCocinaPreferidos'] as List?) ?? []).map((e) => e.toString()).toSet(),
+      telefono: json['telefono'],
+      activo: json['activo'] ?? true,
+      debeCambiarPassword: json['debeCambiarPassword'] ?? false,
+      fechaRegistro: DateTime.tryParse(json['fechaRegistro'] ?? ''),
     );
   }
 
@@ -78,5 +91,9 @@ class Usuario {
         'buscaAlimentacionSaludable': buscaAlimentacionSaludable,
         'nivelAlerta': nivelAlerta.name,
         'tiposCocinaPreferidos': tiposCocinaPreferidos.toList(),
+        'telefono': telefono,
+        'activo': activo,
+        'debeCambiarPassword': debeCambiarPassword,
+        'fechaRegistro': fechaRegistro?.toIso8601String(),
       };
 }

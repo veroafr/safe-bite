@@ -40,6 +40,21 @@ public class Usuario implements UserDetails {
 
     private String fotoPerfilUrl;
 
+    /** Foto subida desde la app (data URL JPEG); tiene prioridad sobre fotoPerfilUrl. */
+    @JsonIgnore
+    @Column(columnDefinition = "TEXT")
+    private String fotoPerfilDatos;
+
+    /** Teléfono de contacto (lo usa el equipo para ayudar a recuperar la cuenta). */
+    @Column(length = 40)
+    private String telefono;
+
+    /**
+     * true cuando el administrador asignó una contraseña temporal: al entrar,
+     * la app le pide a la persona que la cambie. Boolean para filas viejas (null).
+     */
+    private Boolean debeCambiarPassword;
+
     private String ciudad;
 
     private String pais;
@@ -92,6 +107,10 @@ public class Usuario implements UserDetails {
 
     @JsonIgnore
     private Integer intentosRecuperacion;
+
+    public String fotoEfectiva() {
+        return fotoPerfilDatos != null ? fotoPerfilDatos : fotoPerfilUrl;
+    }
 
     public boolean isBuscaAlimentacionSaludable() {
         return Boolean.TRUE.equals(buscaAlimentacionSaludable);

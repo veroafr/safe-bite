@@ -31,4 +31,7 @@ public class RegistroRequest {
 
     /** Opcion "Busco alimentarme mejor". Hay que elegir esto o al menos una intolerancia. */
     private Boolean buscaAlimentacionSaludable;
+
+    /** Foto de perfil opcional (base64 / data URL). */
+    private String fotoBase64;
 }

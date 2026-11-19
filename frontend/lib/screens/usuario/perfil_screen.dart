@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'dart:convert';
+import '../../core/widgets/foto_perfil_widget.dart';
 import 'package:provider/provider.dart';
 import '../../core/models/usuario.dart';
 import '../../core/providers/auth_provider.dart';
@@ -21,6 +23,27 @@ class _PerfilScreenState extends State<PerfilScreen> {
   late Set<String> _intolerancias;
   late bool _comerMejor;
   bool _guardando = false;
+  bool _subiendoFoto = false;
+
+  Future<void> _cambiarFoto() async {
+    final foto = await elegirFotoDePerfil(context);
+    if (foto != null) await _guardarFoto(base64Encode(foto));
+  }
+
+  /// [base64] vacío = quitar la foto.
+  Future<void> _guardarFoto(String base64) async {
+    setState(() => _subiendoFoto = true);
+    try {
+      final nuevo = await context.read<UsuarioService>().actualizarPerfil({'fotoBase64': base64});
+      if (!mounted) return;
+      await context.read<AuthProvider>().actualizarUsuario(nuevo);
+      if (mounted) mostrarMensaje(context, base64.isEmpty ? 'Foto quitada' : 'Foto de perfil actualizada');
+    } catch (e) {
+      if (mounted) mostrarError(context, e);
+    } finally {
+      if (mounted) setState(() => _subiendoFoto = false);
+    }
+  }
 
   @override
   void initState() {
@@ -207,11 +230,12 @@ class _PerfilScreenState extends State<PerfilScreen> {
           Center(
             child: Column(
               children: [
-                CircleAvatar(
-                  radius: 42,
-                  backgroundColor: AppColors.primary.withOpacity(0.15),
-                  backgroundImage: u.fotoPerfilUrl != null ? NetworkImage(u.fotoPerfilUrl!) : null,
-                  child: u.fotoPerfilUrl == null ? const Icon(Icons.person, size: 42, color: AppColors.primary) : null,
+                FotoPerfilEditable(
+                  fuente: u.fotoPerfilUrl,
+                  tamano: 96,
+                  cargando: _subiendoFoto,
+                  onCambiar: _cambiarFoto,
+                  onQuitar: () => _guardarFoto(''),
                 ),
                 const SizedBox(height: 10),
                 Text(u.nombre, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),

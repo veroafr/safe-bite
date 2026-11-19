@@ -28,6 +28,9 @@ class _SplashScreenState extends State<SplashScreen> {
     context.read<IntoleranciasProvider>().cargar();
     await auth.cargarSesionGuardada();
     if (!mounted) return;
+    // Quedó pendiente cambiar una contraseña temporal: se vuelve a pedir el login.
+    if (auth.usuario?.debeCambiarPassword == true) await auth.logout();
+    if (!mounted) return;
 
     if (auth.estado == EstadoAuth.autenticado) {
       final esAdmin = auth.usuario?.rol == Rol.ADMINISTRADOR;
