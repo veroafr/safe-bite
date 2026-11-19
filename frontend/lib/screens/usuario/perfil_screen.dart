@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import '../../core/widgets/foto_perfil_widget.dart';
+import '../../core/widgets/selector_idioma.dart';
 import 'package:provider/provider.dart';
 import '../../core/models/usuario.dart';
 import '../../core/providers/auth_provider.dart';
@@ -12,6 +13,7 @@ import '../../core/widgets/form_widgets.dart';
 import '../../core/widgets/intolerancias_widgets.dart';
 import '../auth/welcome_screen.dart';
 import 'mis_alertas_screen.dart';
+import '../../core/i18n/i18n.dart';
 
 class PerfilScreen extends StatefulWidget {
   const PerfilScreen({super.key});
@@ -37,7 +39,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
       final nuevo = await context.read<UsuarioService>().actualizarPerfil({'fotoBase64': base64});
       if (!mounted) return;
       await context.read<AuthProvider>().actualizarUsuario(nuevo);
-      if (mounted) mostrarMensaje(context, base64.isEmpty ? 'Foto quitada' : 'Foto de perfil actualizada');
+      if (mounted) mostrarMensaje(context, base64.isEmpty ? tr('Foto quitada') : tr('Foto de perfil actualizada'));
     } catch (e) {
       if (mounted) mostrarError(context, e);
     } finally {
@@ -67,7 +69,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
           );
       if (mounted) {
         await context.read<AuthProvider>().actualizarUsuario(nuevo);
-        mostrarMensaje(context, 'Preferencias actualizadas');
+        mostrarMensaje(context, tr('Preferencias actualizadas'));
       }
     } catch (e) {
       if (mounted) mostrarError(context, e);
@@ -99,18 +101,18 @@ class _PerfilScreenState extends State<PerfilScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Text('Editar datos', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  Text(tr('Editar datos'), style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: nombreCtrl,
-                    decoration: const InputDecoration(labelText: 'Nombre'),
-                    validator: (v) => Validadores.requerido(v, 'Ingresá tu nombre'),
+                    decoration: InputDecoration(labelText: tr('Nombre')),
+                    validator: (v) => Validadores.requerido(v, tr('Ingresá tu nombre')),
                   ),
                   const SizedBox(height: 10),
                   TextFormField(
                     controller: emailCtrl,
                     keyboardType: TextInputType.emailAddress,
-                    decoration: const InputDecoration(labelText: 'Email'),
+                    decoration: InputDecoration(labelText: tr('Email')),
                     validator: Validadores.email,
                   ),
                   const SizedBox(height: 10),
@@ -128,7 +130,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
                     onPressed: () {
                       if (formKey.currentState!.validate()) Navigator.pop(ctx, true);
                     },
-                    child: const Text('Guardar'),
+                    child: Text(tr('Guardar')),
                   ),
                 ],
               ),
@@ -148,7 +150,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
         });
         if (mounted) {
           await context.read<AuthProvider>().actualizarUsuario(nuevo);
-          mostrarMensaje(context, 'Datos actualizados');
+          mostrarMensaje(context, tr('Datos actualizados'));
         }
       } catch (e) {
         if (mounted) mostrarError(context, e);
@@ -164,7 +166,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
     final confirmar = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Cambiar contraseña'),
+        title: Text(tr('Cambiar contraseña')),
         content: Form(
           key: formKey,
           child: SingleChildScrollView(
@@ -173,13 +175,13 @@ class _PerfilScreenState extends State<PerfilScreen> {
               children: [
                 CampoPassword(
                   controller: actualCtrl,
-                  label: 'Contraseña actual',
-                  validator: (v) => (v == null || v.isEmpty) ? 'Requerido' : null,
+                  label: tr('Contraseña actual'),
+                  validator: (v) => (v == null || v.isEmpty) ? tr('Requerido') : null,
                 ),
                 const SizedBox(height: 10),
                 CampoPassword(
                   controller: nuevaCtrl,
-                  label: 'Nueva contraseña',
+                  label: tr('Nueva contraseña'),
                   mostrarRequisitos: true,
                   validator: Validadores.passwordSegura,
                 ),
@@ -188,12 +190,12 @@ class _PerfilScreenState extends State<PerfilScreen> {
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr('Cancelar'))),
           FilledButton(
             onPressed: () {
               if (formKey.currentState!.validate()) Navigator.pop(ctx, true);
             },
-            child: const Text('Cambiar'),
+            child: Text(tr('Cambiar')),
           ),
         ],
       ),
@@ -202,7 +204,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
     if (confirmar == true) {
       try {
         await context.read<UsuarioService>().cambiarPassword(actualCtrl.text, nuevaCtrl.text);
-        if (mounted) mostrarMensaje(context, 'Contraseña actualizada');
+        if (mounted) mostrarMensaje(context, tr('Contraseña actualizada'));
       } catch (e) {
         if (mounted) mostrarError(context, e);
       }
@@ -223,7 +225,7 @@ class _PerfilScreenState extends State<PerfilScreen> {
   Widget build(BuildContext context) {
     final u = context.watch<AuthProvider>().usuario!;
     return Scaffold(
-      appBar: AppBar(title: const Text('Perfil de Usuario')),
+      appBar: AppBar(title: Text(tr('Perfil de Usuario'))),
       body: ListView(
         padding: const EdgeInsets.all(16),
         children: [
@@ -247,20 +249,21 @@ class _PerfilScreenState extends State<PerfilScreen> {
           Card(
             child: Column(
               children: [
-                ListTile(leading: const Icon(Icons.badge_outlined), title: const Text('Datos Personales'), trailing: const Icon(Icons.chevron_right), onTap: _editarDatos),
+                ListTile(leading: const Icon(Icons.badge_outlined), title: Text(tr('Datos Personales')), trailing: const Icon(Icons.chevron_right), onTap: _editarDatos),
                 const Divider(height: 1),
-                ListTile(leading: const Icon(Icons.lock_outline), title: const Text('Cambiar contraseña'), trailing: const Icon(Icons.chevron_right), onTap: _cambiarContrasena),
+                ListTile(leading: const Icon(Icons.lock_outline), title: Text(tr('Cambiar contraseña')), trailing: const Icon(Icons.chevron_right), onTap: _cambiarContrasena),
+                const FilaIdioma(),
                 const Divider(height: 1),
                 ListTile(
                   leading: const Icon(Icons.notifications_outlined),
-                  title: const Text('Mis alertas reportadas'),
+                  title: Text(tr('Mis alertas reportadas')),
                   trailing: const Icon(Icons.chevron_right),
                   onTap: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const MisAlertasScreen())),
                 ),
               ],
             ),
           ),
-          const SeccionTitulo('Intolerancias y Restricciones'),
+          SeccionTitulo(tr('Intolerancias y Restricciones')),
           Card(
             child: Padding(
               padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
@@ -269,8 +272,8 @@ class _PerfilScreenState extends State<PerfilScreen> {
                 children: [
                   Text(
                     _intolerancias.isEmpty
-                        ? 'Tocá un alimento para marcarlo (o desmarcarlo).'
-                        : 'Marcadas: ${_intolerancias.length}. Tocá para marcar o desmarcar.',
+                        ? tr('Tocá un alimento para marcarlo (o desmarcarlo).')
+                        : tr('Marcadas: {0}. Tocá para marcar o desmarcar.', [_intolerancias.length]),
                     style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
                   ),
                   const SizedBox(height: 8),
@@ -282,8 +285,8 @@ class _PerfilScreenState extends State<PerfilScreen> {
                   const Divider(),
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
-                    title: const Text('Busco alimentarme mejor'),
-                    subtitle: const Text('Quiero comer más sano'),
+                    title: Text(tr('Busco alimentarme mejor')),
+                    subtitle: Text(tr('Quiero comer más sano')),
                     value: _comerMejor,
                     activeColor: AppColors.primary,
                     onChanged: (v) => setState(() => _comerMejor = v),
@@ -297,13 +300,13 @@ class _PerfilScreenState extends State<PerfilScreen> {
             onPressed: (_guardando || !_hayCambios(u)) ? null : _guardarPreferencias,
             child: _guardando
                 ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                : const Text('Actualizar Preferencias'),
+                : Text(tr('Actualizar Preferencias')),
           ),
           const SizedBox(height: 12),
           OutlinedButton.icon(
             onPressed: _cerrarSesion,
             icon: const Icon(Icons.logout, color: AppColors.danger),
-            label: const Text('Cerrar sesión', style: TextStyle(color: AppColors.danger)),
+            label: Text(tr('Cerrar sesión'), style: TextStyle(color: AppColors.danger)),
             style: OutlinedButton.styleFrom(side: const BorderSide(color: AppColors.danger)),
           ),
           const SizedBox(height: 24),

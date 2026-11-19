@@ -1,3 +1,4 @@
+import '../../core/i18n/i18n.dart';
 class Noticia {
   final int id;
   final String titulo;
@@ -24,7 +25,7 @@ class Noticia {
 
   bool get esImportada => origen == 'RSS';
 
-  String? get nombrePais => pais == 'UY' ? 'Uruguay' : pais == 'BR' ? 'Brasil' : null;
+  String? get nombrePais => pais == 'UY' ? tr('Uruguay') : pais == 'BR' ? tr('Brasil') : null;
 
   Noticia({
     required this.id,

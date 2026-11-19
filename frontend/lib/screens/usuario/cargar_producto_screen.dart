@@ -5,6 +5,7 @@ import '../../core/services/producto_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/common_widgets.dart';
 import '../../core/widgets/intolerancias_widgets.dart';
+import '../../core/i18n/i18n.dart';
 
 /// Pantalla para que el usuario cargue o complete un producto.
 /// Dos modos:
@@ -56,7 +57,7 @@ class _CargarProductoScreenState extends State<CargarProductoScreen> {
 
   Future<void> _analizarConIA() async {
     if (_fotoFrontalBase64 == null && _fotoComposicionBase64 == null && _fotoNutricionalBase64 == null) {
-      mostrarMensaje(context, 'Agregá al menos una foto para poder analizarla');
+      mostrarMensaje(context, tr('Agregá al menos una foto para poder analizarla'));
       return;
     }
 
@@ -72,7 +73,7 @@ class _CargarProductoScreenState extends State<CargarProductoScreen> {
           );
 
       if (!analisis.pudoLeer) {
-        setState(() => _observacionIA = analisis.observacion ?? 'No se pudo leer la foto, completá los datos a mano.');
+        setState(() => _observacionIA = analisis.observacion ?? tr('No se pudo leer la foto, completá los datos a mano.'));
         return;
       }
 
@@ -93,7 +94,7 @@ class _CargarProductoScreenState extends State<CargarProductoScreen> {
         _observacionIA = analisis.observacion;
       });
 
-      if (mounted) mostrarMensaje(context, 'Listo — revisá los datos antes de enviar, la IA puede equivocarse');
+      if (mounted) mostrarMensaje(context, tr('Listo — revisá los datos antes de enviar, la IA puede equivocarse'));
     } catch (e) {
       if (mounted) mostrarError(context, e);
     } finally {
@@ -103,7 +104,7 @@ class _CargarProductoScreenState extends State<CargarProductoScreen> {
 
   Future<void> _enviar() async {
     if (!_esCompletar && _nombreCtrl.text.trim().isEmpty) {
-      mostrarMensaje(context, 'Ingresá al menos el nombre del producto');
+      mostrarMensaje(context, tr('Ingresá al menos el nombre del producto'));
       return;
     }
 
@@ -133,7 +134,7 @@ class _CargarProductoScreenState extends State<CargarProductoScreen> {
       }
 
       if (mounted) {
-        mostrarMensaje(context, 'Gracias, tu aporte quedó guardado. Un admin lo va a revisar antes de mostrarlo como verificado.');
+        mostrarMensaje(context, tr('Gracias, tu aporte quedó guardado. Un admin lo va a revisar antes de mostrarlo como verificado.'));
         Navigator.of(context).pop(true);
       }
     } catch (e) {
@@ -146,7 +147,7 @@ class _CargarProductoScreenState extends State<CargarProductoScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(_esCompletar ? 'Completar producto' : 'Cargar producto')),
+      appBar: AppBar(title: Text(_esCompletar ? tr('Completar producto') : tr('Cargar producto'))),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
@@ -168,8 +169,8 @@ class _CargarProductoScreenState extends State<CargarProductoScreen> {
                   Expanded(
                     child: Text(
                       _esCompletar
-                          ? 'Este producto existe pero le faltan datos de ingredientes o alérgenos. Completalo con lo que tengas — sacale foto a la etiqueta si podés, es lo más rápido.'
-                          : 'No encontramos este código en nuestra base ni en Open Food Facts. Completá los datos que tengas — va a quedar visible para otros recién cuando un administrador lo revise.',
+                          ? tr('Este producto existe pero le faltan datos de ingredientes o alérgenos. Completalo con lo que tengas — sacale foto a la etiqueta si podés, es lo más rápido.')
+                          : tr('No encontramos este código en nuestra base ni en Open Food Facts. Completá los datos que tengas — va a quedar visible para otros recién cuando un administrador lo revise.'),
                       style: const TextStyle(color: Color(0xFF8A5A00), fontWeight: FontWeight.w600),
                     ),
                   ),
@@ -177,28 +178,28 @@ class _CargarProductoScreenState extends State<CargarProductoScreen> {
               ),
             ),
             const SizedBox(height: 16),
-            Text('Código escaneado: ${widget.codigoEan}',
+            Text(tr('Código escaneado: {0}', [widget.codigoEan]),
                 style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.textSecondary)),
             const SizedBox(height: 16),
 
-            const Text('Fotos del envase', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+            Text(tr('Fotos del envase'), style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
             const SizedBox(height: 4),
-            const Text('Sacá cada foto por separado (con la cámara o desde tu galería), así queda más claro qué mirar en cada una.',
+            Text(tr('Sacá cada foto por separado (con la cámara o desde tu galería), así queda más claro qué mirar en cada una.'),
                 style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
             const SizedBox(height: 12),
             SelectorFoto(
-              titulo: '1. Frente del producto',
-              ayuda: 'Que se vea el nombre y la marca',
+              titulo: tr('1. Frente del producto'),
+              ayuda: tr('Que se vea el nombre y la marca'),
               onCambio: (b64) => _fotoFrontalBase64 = b64,
             ),
             SelectorFoto(
-              titulo: '2. Tabla de composición / ingredientes',
-              ayuda: 'La lista de ingredientes del envase',
+              titulo: tr('2. Tabla de composición / ingredientes'),
+              ayuda: tr('La lista de ingredientes del envase'),
               onCambio: (b64) => _fotoComposicionBase64 = b64,
             ),
             SelectorFoto(
-              titulo: '3. Tabla nutricional',
-              ayuda: 'Los valores nutricionales por porción',
+              titulo: tr('3. Tabla nutricional'),
+              ayuda: tr('Los valores nutricionales por porción'),
               onCambio: (b64) => _fotoNutricionalBase64 = b64,
             ),
             const SizedBox(height: 8),
@@ -209,7 +210,7 @@ class _CargarProductoScreenState extends State<CargarProductoScreen> {
                 icon: _analizandoIA
                     ? const SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2))
                     : const Icon(Icons.auto_awesome),
-                label: Text(_analizandoIA ? 'Analizando con IA...' : 'Analizar con IA y completar automáticamente'),
+                label: Text(_analizandoIA ? tr('Analizando con IA...') : tr('Analizar con IA y completar automáticamente')),
               ),
             ),
             if (_observacionIA != null) ...[
@@ -226,7 +227,7 @@ class _CargarProductoScreenState extends State<CargarProductoScreen> {
                   children: [
                     const Icon(Icons.smart_toy_outlined, size: 18, color: AppColors.primary),
                     const SizedBox(width: 8),
-                    Expanded(child: Text(_observacionIA!, style: const TextStyle(fontSize: 12))),
+                    Expanded(child: TextoT(_observacionIA!, style: const TextStyle(fontSize: 12))),
                   ],
                 ),
               ),
@@ -235,33 +236,33 @@ class _CargarProductoScreenState extends State<CargarProductoScreen> {
             const SizedBox(height: 12),
             const Divider(),
             const SizedBox(height: 8),
-            const Text('Datos del producto', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+            Text(tr('Datos del producto'), style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
             const SizedBox(height: 12),
             TextField(
               controller: _nombreCtrl,
-              decoration: InputDecoration(labelText: _esCompletar ? 'Nombre (opcional, ya lo tenemos)' : 'Nombre del producto *'),
+              decoration: InputDecoration(labelText: _esCompletar ? tr('Nombre (opcional, ya lo tenemos)') : tr('Nombre del producto *')),
             ),
             const SizedBox(height: 10),
-            TextField(controller: _marcaCtrl, decoration: const InputDecoration(labelText: 'Marca')),
+            TextField(controller: _marcaCtrl, decoration: InputDecoration(labelText: tr('Marca'))),
             const SizedBox(height: 10),
             TextField(
               controller: _categoriaCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Categoría',
-                hintText: 'Ej: Panificados, Lácteos, Snacks, Bebidas',
+              decoration: InputDecoration(
+                labelText: tr('Categoría'),
+                hintText: tr('Ej: Panificados, Lácteos, Snacks, Bebidas'),
               ),
             ),
             const SizedBox(height: 10),
             TextField(
               controller: _ingredientesCtrl,
-              decoration: const InputDecoration(
-                labelText: 'Ingredientes',
-                hintText: 'Separados por coma, ej: harina de trigo, sal, levadura',
+              decoration: InputDecoration(
+                labelText: tr('Ingredientes'),
+                hintText: tr('Separados por coma, ej: harina de trigo, sal, levadura'),
               ),
               maxLines: 3,
             ),
             const SizedBox(height: 16),
-            const Text('¿Contiene alguno de estos alérgenos?', style: TextStyle(fontWeight: FontWeight.bold)),
+            Text(tr('¿Contiene alguno de estos alérgenos?'), style: TextStyle(fontWeight: FontWeight.bold)),
             const SizedBox(height: 6),
             SelectorIntolerancias(
               seleccionadas: _alergenosSeleccionados,
@@ -275,7 +276,7 @@ class _CargarProductoScreenState extends State<CargarProductoScreen> {
                 onPressed: _enviando ? null : _enviar,
                 child: _enviando
                     ? const SizedBox(height: 18, width: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                    : const Text('Enviar producto'),
+                    : Text(tr('Enviar producto')),
               ),
             ),
           ],

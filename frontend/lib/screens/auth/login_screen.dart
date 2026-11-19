@@ -10,6 +10,7 @@ import '../usuario/usuario_home_screen.dart';
 import '../admin/admin_home_screen.dart';
 import 'register_screen.dart';
 import 'recuperar_password_screen.dart';
+import '../../core/i18n/i18n.dart';
 
 class LoginScreen extends StatefulWidget {
   final String idiomaInicial;
@@ -64,7 +65,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Iniciar Sesión')),
+      appBar: AppBar(title: Text(tr('Iniciar Sesión'))),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
@@ -78,7 +79,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 TextFormField(
                   controller: _emailCtrl,
                   keyboardType: TextInputType.emailAddress,
-                  decoration: const InputDecoration(labelText: 'Email', prefixIcon: Icon(Icons.email_outlined)),
+                  decoration: InputDecoration(labelText: tr('Email'), prefixIcon: Icon(Icons.email_outlined)),
                   textInputAction: TextInputAction.next,
                   validator: Validadores.email,
                 ),
@@ -87,36 +88,36 @@ class _LoginScreenState extends State<LoginScreen> {
                   controller: _passwordCtrl,
                   textInputAction: TextInputAction.done,
                   onFieldSubmitted: (_) => _cargando ? null : _iniciarSesion(),
-                  validator: (v) => (v == null || v.isEmpty) ? 'Ingresá tu contraseña' : null,
+                  validator: (v) => (v == null || v.isEmpty) ? tr('Ingresá tu contraseña') : null,
                 ),
                 Align(
                   alignment: Alignment.centerRight,
                   child: TextButton(
                     onPressed: () => Navigator.of(context).push(MaterialPageRoute(
                         builder: (_) => RecuperarPasswordScreen(emailInicial: _emailCtrl.text.trim()))),
-                    child: const Text('¿Olvidaste tu contraseña?'),
+                    child: Text(tr('¿Olvidaste tu contraseña?')),
                   ),
                 ),
                 if (_error != null) ...[
                   const SizedBox(height: 8),
-                  Text(_error!, style: const TextStyle(color: AppColors.danger), textAlign: TextAlign.center),
+                  TextoT(_error!, style: const TextStyle(color: AppColors.danger), textAlign: TextAlign.center),
                 ],
                 const SizedBox(height: 8),
                 ElevatedButton(
                   onPressed: _cargando ? null : _iniciarSesion,
                   child: _cargando
                       ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                      : const Text('Iniciar Sesión'),
+                      : Text(tr('Iniciar Sesión')),
                 ),
                 const SizedBox(height: 16),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Text('¿No tenés cuenta?'),
+                    Text(tr('¿No tenés cuenta?')),
                     TextButton(
                       onPressed: () => Navigator.of(context).pushReplacement(
                           MaterialPageRoute(builder: (_) => RegisterScreen(idiomaInicial: widget.idiomaInicial))),
-                      child: const Text('Crear Usuario'),
+                      child: Text(tr('Crear Usuario')),
                     ),
                   ],
                 ),

@@ -7,6 +7,7 @@ import '../../core/services/noticia_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/common_widgets.dart';
 import '../../core/widgets/intolerancias_widgets.dart';
+import '../../core/i18n/i18n.dart';
 
 /// Noticias: las que publica el administrador y las que se importan
 /// automáticamente de medios de Uruguay y Brasil (RSS).
@@ -58,25 +59,25 @@ class _NoticiasScreenState extends State<NoticiasScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Noticias')),
+      appBar: AppBar(title: Text(tr('Noticias'))),
       body: Column(
         children: [
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
             child: Row(
               children: [
-                _chipPais(null, 'Todas'),
+                _chipPais(null, tr('Todas')),
                 const SizedBox(width: 8),
-                _chipPais('UY', 'Uruguay'),
+                _chipPais('UY', tr('Uruguay')),
                 const SizedBox(width: 8),
-                _chipPais('BR', 'Brasil'),
+                _chipPais('BR', tr('Brasil')),
               ],
             ),
           ),
           BarraFiltroIntolerancias(
             seleccion: _filtro,
-            titulo: 'Noticias sobre...',
-            ayuda: 'Se muestran las noticias relacionadas con ALGUNA de las intolerancias que marques.',
+            titulo: tr('Noticias sobre...'),
+            ayuda: tr('Se muestran las noticias relacionadas con ALGUNA de las intolerancias que marques.'),
             onChanged: (s) {
               _filtro = s;
               _recargar();
@@ -99,8 +100,8 @@ class _NoticiasScreenState extends State<NoticiasScreen> {
         if (noticias.isEmpty) {
           return EmptyView(
               mensaje: _filtro.isEmpty && _pais == null
-                  ? 'No hay noticias por el momento'
-                  : 'No hay noticias con ese filtro',
+                  ? tr('No hay noticias por el momento')
+                  : tr('No hay noticias con ese filtro'),
               icono: Icons.newspaper_outlined);
         }
         return RefreshIndicator(
@@ -148,7 +149,7 @@ class _MetaNoticia extends StatelessWidget {
         Text(
           [
             if (n.fuente != null) n.fuente!,
-            if (!n.esImportada) 'SafeBite',
+            if (!n.esImportada) tr('SafeBite'),
             DateFormat('dd/MM/yyyy').format(n.fechaPublicacion),
           ].join(' · '),
           style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
@@ -182,10 +183,10 @@ class TarjetaNoticia extends StatelessWidget {
                 children: [
                   _MetaNoticia(noticia: n),
                   const SizedBox(height: 8),
-                  Text(n.titulo, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16, height: 1.3)),
+                  TextoT(n.titulo, style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 16, height: 1.3)),
                   if (n.resumen != null && n.resumen!.isNotEmpty) ...[
                     const SizedBox(height: 6),
-                    Text(n.resumen!, maxLines: 3, overflow: TextOverflow.ellipsis,
+                    TextoT(n.resumen!, maxLines: 3, overflow: TextOverflow.ellipsis,
                         style: const TextStyle(color: AppColors.textSecondary, height: 1.4)),
                   ],
                   if (n.intolerancias.isNotEmpty || n.etiquetas.isNotEmpty) ...[
@@ -210,7 +211,7 @@ class TarjetaNoticia extends StatelessWidget {
                       child: TextButton.icon(
                         onPressed: () => abrirEnlace(context, n.urlOriginal!),
                         icon: const Icon(Icons.open_in_new_rounded, size: 18),
-                        label: Text('Leer en ${n.fuente ?? 'la fuente'}'),
+                        label: Text(tr('Leer en {0}', [n.fuente ?? tr('la fuente')])),
                       ),
                     ),
                   ],
@@ -232,7 +233,7 @@ class NoticiaDetailScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final n = noticia;
     return Scaffold(
-      appBar: AppBar(title: const Text('Noticia')),
+      appBar: AppBar(title: Text(tr('Noticia'))),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
@@ -247,7 +248,7 @@ class NoticiaDetailScreen extends StatelessWidget {
             ),
           _MetaNoticia(noticia: n),
           const SizedBox(height: 10),
-          Text(n.titulo, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, height: 1.25)),
+          TextoT(n.titulo, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w800, height: 1.25)),
           if (n.intolerancias.isNotEmpty) ...[
             const SizedBox(height: 12),
             Wrap(
@@ -258,9 +259,9 @@ class NoticiaDetailScreen extends StatelessWidget {
           ],
           const SizedBox(height: 16),
           if (n.resumen != null && n.resumen!.isNotEmpty && (n.contenido == null || n.contenido!.isEmpty))
-            Text(n.resumen!, style: const TextStyle(height: 1.5, fontSize: 15)),
+            TextoT(n.resumen!, style: const TextStyle(height: 1.5, fontSize: 15)),
           if (n.contenido != null && n.contenido!.isNotEmpty)
-            Text(n.contenido!, style: const TextStyle(height: 1.5, fontSize: 15)),
+            TextoT(n.contenido!, style: const TextStyle(height: 1.5, fontSize: 15)),
           if (n.esImportada && n.urlOriginal != null) ...[
             const SizedBox(height: 20),
             Container(
@@ -270,8 +271,7 @@ class NoticiaDetailScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Text(
-                'Esta noticia fue publicada por ${n.fuente ?? 'un medio externo'}. '
-                'SafeBite la encontró automáticamente; el contenido completo está en el sitio original.',
+                tr('Esta noticia fue publicada por {0}. SafeBite la encontró automáticamente; el contenido completo está en el sitio original.', [n.fuente ?? tr('un medio externo')]),
                 style: const TextStyle(color: AppColors.textPrimary, height: 1.4),
               ),
             ),
@@ -279,7 +279,7 @@ class NoticiaDetailScreen extends StatelessWidget {
             ElevatedButton.icon(
               onPressed: () => abrirEnlace(context, n.urlOriginal!),
               icon: const Icon(Icons.open_in_new_rounded),
-              label: const Text('Leer la noticia completa'),
+              label: Text(tr('Leer la noticia completa')),
             ),
           ],
         ],

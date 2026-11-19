@@ -5,6 +5,7 @@ import '../../core/models/alerta.dart';
 import '../../core/services/alerta_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/common_widgets.dart';
+import '../../core/i18n/i18n.dart';
 
 class MisAlertasScreen extends StatefulWidget {
   const MisAlertasScreen({super.key});
@@ -41,14 +42,14 @@ class _MisAlertasScreenState extends State<MisAlertasScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Mis Alertas Reportadas')),
+      appBar: AppBar(title: Text(tr('Mis Alertas Reportadas'))),
       body: FutureBuilder<List<Alerta>>(
         future: _future,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) return const LoadingView();
           if (snapshot.hasError) return ErrorView(mensaje: snapshot.error.toString(), onReintentar: _recargar);
           final alertas = snapshot.data ?? [];
-          if (alertas.isEmpty) return const EmptyView(mensaje: 'No reportaste ninguna alerta todavía', icono: Icons.notifications_none);
+          if (alertas.isEmpty) return EmptyView(mensaje: tr('No reportaste ninguna alerta todavía'), icono: Icons.notifications_none);
           return ListView.builder(
             padding: const EdgeInsets.all(16),
             itemCount: alertas.length,
@@ -56,10 +57,10 @@ class _MisAlertasScreenState extends State<MisAlertasScreen> {
               final a = alertas[i];
               return Card(
                 child: ListTile(
-                  title: Text(a.restauranteNombre ?? a.productoNombre ?? 'Reporte'),
+                  title: Text(a.restauranteNombre ?? a.productoNombre ?? tr('Reporte')),
                   subtitle: Text('${a.descripcion}\n${DateFormat('dd/MM/yyyy HH:mm').format(a.fecha)}'),
                   isThreeLine: true,
-                  trailing: Chip1(a.estado.name, color: _colorEstado(a.estado)),
+                  trailing: Chip1(nombreEstadoAlerta(a.estado), color: _colorEstado(a.estado)),
                 ),
               );
             },

@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
 
@@ -17,8 +18,10 @@ import 'core/services/reporte_service.dart';
 import 'core/services/intolerancia_service.dart';
 import 'core/theme/app_theme.dart';
 import 'screens/splash_screen.dart';
+import 'core/i18n/i18n.dart';
 
-void main() {
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   // En la versión web el lector de códigos usa la librería ZXing. Se sirve
   // desde la propia app (web/zxing) en lugar de descargarla de unpkg.com en
   // cada uso: si ese sitio falla o cambia, el lector deja de reconocer códigos.
@@ -28,6 +31,10 @@ void main() {
 
   final apiClient = ApiClient();
   final intoleranciaService = IntoleranciaService(apiClient);
+
+  // Idioma (español / portugués) y traductor de contenido.
+  await Idioma.instancia.cargar();
+  await TraductorContenido.instancia.configurar(apiClient, Idioma.instancia.codigo);
 
   runApp(
     MultiProvider(
@@ -57,11 +64,24 @@ class SafeBiteApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'SafeBite',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.light(),
-      home: const SplashScreen(),
+    // Al cambiar de idioma se vuelve a armar toda la app (vuelve al inicio).
+    return ListenableBuilder(
+      listenable: Idioma.instancia,
+      builder: (context, _) => MaterialApp(
+        key: ValueKey(Idioma.instancia.codigo),
+        title: 'SafeBite',
+        debugShowCheckedModeBanner: false,
+        theme: AppTheme.light(),
+        locale: Idioma.instancia.locale,
+        supportedLocales: const [Locale('es'), Locale('pt')],
+        localizationsDelegates: const [
+          GlobalMaterialLocalizations.delegate,
+          GlobalWidgetsLocalizations.delegate,
+          GlobalCupertinoLocalizations.delegate,
+        ],
+        builder: (context, child) => AmbitoTraduccion(child: child ?? const SizedBox()),
+        home: const SplashScreen(),
+      ),
     );
   }
 }

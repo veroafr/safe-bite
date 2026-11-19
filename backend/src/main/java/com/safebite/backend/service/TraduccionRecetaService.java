@@ -24,6 +24,16 @@ public class TraduccionRecetaService {
 
     public record Traduccion(String titulo, String resumen, List<String> ingredientes, List<String> pasos) {}
 
+    /** Idioma de quien hace el pedido (encabezado Accept-Language que manda la app). */
+    static boolean pidePortugues() {
+        java.util.Locale l = org.springframework.context.i18n.LocaleContextHolder.getLocale();
+        return l != null && "pt".equalsIgnoreCase(l.getLanguage());
+    }
+
+    private static String destino() {
+        return pidePortugues() ? "portugués de Brasil" : "español (neutro, entendible en Uruguay)";
+    }
+
     public Optional<Traduccion> traducir(SpoonacularClient.Detalle d) {
         Map<String, Object> entrada = new LinkedHashMap<>();
         entrada.put("titulo", d.titulo());
@@ -32,18 +42,18 @@ public class TraduccionRecetaService {
         entrada.put("pasos", d.pasos());
 
         String prompt = """
-                Traducí esta receta del inglés al español (neutro, entendible en Uruguay).
+                Traducí esta receta del inglés al %s.
                 Reglas:
                 - Devolvé SOLO un objeto JSON con las claves "titulo", "resumen", "ingredientes" y "pasos".
                 - "ingredientes" y "pasos" deben tener exactamente la misma cantidad de elementos y el mismo orden que la entrada.
-                - Traducí las unidades (cup = taza, tablespoon/tbsp = cucharada, teaspoon/tsp = cucharadita,
-                  ounce/oz = onza, pound/lb = libra). Si hay onzas, libras o grados Fahrenheit, agregá entre
+                - Traducí también las unidades al idioma de destino (cup, tablespoon/tbsp, teaspoon/tsp,
+                  ounce/oz, pound/lb). Si hay onzas, libras o grados Fahrenheit, agregá entre
                   paréntesis el equivalente aproximado en gramos o grados Celsius.
                 - No agregues ni quites ingredientes ni pasos, no des consejos ni comentarios.
                 - En "resumen" escribí como máximo 2 oraciones, sin publicidad ni puntajes.
 
                 Receta:
-                """ + json(entrada);
+                """.formatted(destino()) + json(entrada);
 
         Optional<String> respuesta = claude.enviar("TRADUCCION_RECETA",
                 List.of(Map.of("type", "text", "text", prompt)), 4000);
@@ -72,9 +82,9 @@ public class TraduccionRecetaService {
     public List<String> traducirTitulos(List<String> titulos) {
         if (titulos.isEmpty()) return titulos;
         String prompt = """
-                Traducí al español estos títulos de recetas. Devolvé SOLO un JSON con la clave "titulos":
+                Traducí al %s estos títulos de recetas. Devolvé SOLO un JSON con la clave "titulos":
                 una lista con la misma cantidad de elementos y en el mismo orden.
-                """ + json(Map.of("titulos", titulos));
+                """.formatted(destino()) + json(Map.of("titulos", titulos));
         Optional<String> respuesta = claude.enviar("TRADUCCION_TITULOS",
                 List.of(Map.of("type", "text", "text", prompt)), 2000);
         if (respuesta.isEmpty()) respuesta = gemini.consultarGeminiTexto(prompt, "TRADUCCION_TITULOS");

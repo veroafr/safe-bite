@@ -5,6 +5,7 @@ import '../../core/services/noticia_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/common_widgets.dart';
 import '../../core/widgets/intolerancias_widgets.dart';
+import '../../core/i18n/i18n.dart';
 
 class AdminNoticiasScreen extends StatefulWidget {
   const AdminNoticiasScreen({super.key});
@@ -47,31 +48,31 @@ class _AdminNoticiasScreenState extends State<AdminNoticiasScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(existente == null ? 'Publicar noticia' : 'Editar noticia', style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              Text(existente == null ? tr('Publicar noticia') : tr('Editar noticia'), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 16),
-              TextField(controller: tituloCtrl, decoration: const InputDecoration(labelText: 'Título')),
+              TextField(controller: tituloCtrl, decoration: InputDecoration(labelText: tr('Título'))),
               const SizedBox(height: 10),
-              TextField(controller: resumenCtrl, decoration: const InputDecoration(labelText: 'Resumen'), maxLines: 2),
+              TextField(controller: resumenCtrl, decoration: InputDecoration(labelText: tr('Resumen')), maxLines: 2),
               const SizedBox(height: 10),
-              TextField(controller: contenidoCtrl, decoration: const InputDecoration(labelText: 'Contenido'), maxLines: 5),
+              TextField(controller: contenidoCtrl, decoration: InputDecoration(labelText: tr('Contenido')), maxLines: 5),
               const SizedBox(height: 10),
-              TextField(controller: imagenCtrl, decoration: const InputDecoration(labelText: 'URL de imagen')),
+              TextField(controller: imagenCtrl, decoration: InputDecoration(labelText: tr('URL de imagen'))),
               const SizedBox(height: 10),
-              const Text('Intolerancias relacionadas:', style: TextStyle(fontWeight: FontWeight.w600)),
+              Text(tr('Intolerancias relacionadas:'), style: TextStyle(fontWeight: FontWeight.w600)),
               const SizedBox(height: 6),
               SelectorIntolerancias(
                 seleccionadas: intolerancias,
                 onChanged: (s) => setModalState(() => intolerancias = s),
               ),
               const SizedBox(height: 10),
-              TextField(controller: etiquetasCtrl, decoration: const InputDecoration(labelText: 'Otras etiquetas (separadas por coma)')),
+              TextField(controller: etiquetasCtrl, decoration: InputDecoration(labelText: tr('Otras etiquetas (separadas por coma)'))),
               const SizedBox(height: 20),
               ElevatedButton(
                 onPressed: () {
                   if (tituloCtrl.text.trim().isEmpty) return;
                   Navigator.pop(ctx, true);
                 },
-                child: const Text('Guardar'),
+                child: Text(tr('Guardar')),
               ),
             ],
           ),
@@ -96,7 +97,7 @@ class _AdminNoticiasScreenState extends State<AdminNoticiasScreen> {
           await service.editar(existente.id, body);
         }
         if (mounted) {
-          mostrarMensaje(context, 'Noticia guardada');
+          mostrarMensaje(context, tr('Noticia guardada'));
           _recargar();
         }
       } catch (e) {
@@ -146,33 +147,33 @@ class _AdminNoticiasScreenState extends State<AdminNoticiasScreen> {
     showDialog<void>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Importar noticias'),
+        title: Text(tr('Importar noticias')),
         content: SingleChildScrollView(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text((r['mensaje'] ?? 'Importación iniciada').toString()),
+              TextoT((r['mensaje'] ?? tr('Importación iniciada')).toString()),
               const SizedBox(height: 14),
-              const Text('Importación anterior', style: TextStyle(fontWeight: FontWeight.w700)),
+              Text(tr('Importación anterior'), style: TextStyle(fontWeight: FontWeight.w700)),
               const SizedBox(height: 4),
               if (ultimo == null)
-                const Text('Todavía no hubo ninguna desde que arrancó el servidor.')
+                Text(tr('Todavía no hubo ninguna desde que arrancó el servidor.'))
               else ...[
-                if (fecha != null) Text('Fecha: ${fecha.replaceFirst('T', ' ').split('.').first}'),
-                Text('Canales revisados: ${ultimo['canales']}'),
-                Text('Noticias encontradas: ${ultimo['revisadas']}'),
-                Text('Noticias nuevas: ${ultimo['nuevas']}'),
+                if (fecha != null) Text(tr('Fecha: {0}', [fecha.replaceFirst('T', ' ').split('.').first])),
+                Text(tr('Canales revisados: {0}', [ultimo['canales']])),
+                Text(tr('Noticias encontradas: {0}', [ultimo['revisadas']])),
+                Text(tr('Noticias nuevas: {0}', [ultimo['nuevas']])),
                 if (errores.isNotEmpty) ...[
                   const SizedBox(height: 8),
-                  Text('Canales con error: ${errores.length}', style: const TextStyle(color: AppColors.danger)),
+                  Text(tr('Canales con error: {0}', [errores.length]), style: const TextStyle(color: AppColors.danger)),
                   ...errores.take(5).map((e) => Text('• $e', style: const TextStyle(fontSize: 12))),
                 ],
               ],
             ],
           ),
         ),
-        actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cerrar'))],
+        actions: [TextButton(onPressed: () => Navigator.pop(ctx), child: Text(tr('Cerrar')))],
       ),
     );
   }
@@ -181,13 +182,13 @@ class _AdminNoticiasScreenState extends State<AdminNoticiasScreen> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: Text(n.esImportada ? 'Ocultar noticia' : 'Eliminar noticia'),
+        title: Text(n.esImportada ? tr('Ocultar noticia') : tr('Eliminar noticia')),
         content: Text(n.esImportada
-            ? 'La noticia deja de mostrarse y no se vuelve a importar.'
-            : 'La noticia se elimina definitivamente.'),
+            ? tr('La noticia deja de mostrarse y no se vuelve a importar.')
+            : tr('La noticia se elimina definitivamente.')),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
-          TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text(n.esImportada ? 'Ocultar' : 'Eliminar')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr('Cancelar'))),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: Text(n.esImportada ? tr('Ocultar') : tr('Eliminar'))),
         ],
       ),
     );
@@ -198,10 +199,10 @@ class _AdminNoticiasScreenState extends State<AdminNoticiasScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Gestión de Noticias'),
+        title: Text(tr('Gestión de Noticias')),
         actions: [
           IconButton(
-            tooltip: 'Importar noticias de Uruguay y Brasil',
+            tooltip: tr('Importar noticias de Uruguay y Brasil'),
             onPressed: _importando ? null : _importar,
             icon: _importando
                 ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
@@ -216,8 +217,8 @@ class _AdminNoticiasScreenState extends State<AdminNoticiasScreen> {
           BarraFiltroIntolerancias(
             seleccion: _filtro,
             prefijo: '',
-            titulo: 'Noticias sobre...',
-            ayuda: 'Muestra las noticias relacionadas con ALGUNA de las marcadas.',
+            titulo: tr('Noticias sobre...'),
+            ayuda: tr('Muestra las noticias relacionadas con ALGUNA de las marcadas.'),
             onChanged: (s) {
               _filtro = s;
               _recargar();
@@ -230,7 +231,7 @@ class _AdminNoticiasScreenState extends State<AdminNoticiasScreen> {
                 if (snapshot.connectionState == ConnectionState.waiting) return const LoadingView();
                 if (snapshot.hasError) return ErrorView(mensaje: snapshot.error.toString(), onReintentar: _recargar);
                 final noticias = snapshot.data ?? [];
-                if (noticias.isEmpty) return const EmptyView(mensaje: 'No hay noticias publicadas');
+                if (noticias.isEmpty) return EmptyView(mensaje: tr('No hay noticias publicadas'));
                 return ListView.builder(
                   padding: const EdgeInsets.all(16),
                   itemCount: noticias.length,
@@ -238,10 +239,10 @@ class _AdminNoticiasScreenState extends State<AdminNoticiasScreen> {
                     final n = noticias[i];
                     return Card(
                       child: ListTile(
-                        title: Text(n.titulo),
+                        title: TextoT(n.titulo),
                         subtitle: Text(
                           n.esImportada
-                              ? 'Importada · ${n.nombrePais ?? ''} · ${n.fuente ?? ''}'
+                              ? tr('Importada · {0} · {1}', [n.nombrePais ?? '', n.fuente ?? ''])
                               : (n.resumen ?? ''),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
@@ -251,7 +252,7 @@ class _AdminNoticiasScreenState extends State<AdminNoticiasScreen> {
                           children: [
                             IconButton(icon: const Icon(Icons.edit_outlined), onPressed: () => _abrirFormulario(existente: n)),
                             IconButton(
-                              tooltip: n.esImportada ? 'Ocultar' : 'Eliminar',
+                              tooltip: n.esImportada ? tr('Ocultar') : tr('Eliminar'),
                               icon: Icon(n.esImportada ? Icons.visibility_off_outlined : Icons.delete_outline, color: AppColors.danger),
                               onPressed: () => _confirmarEliminar(n),
                             ),

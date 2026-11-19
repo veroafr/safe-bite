@@ -8,6 +8,7 @@ import '../../core/services/producto_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/common_widgets.dart';
 import '../../core/widgets/intolerancias_widgets.dart';
+import '../../core/i18n/i18n.dart';
 
 class AdminProductosScreen extends StatefulWidget {
   const AdminProductosScreen({super.key});
@@ -39,7 +40,7 @@ class _AdminProductosScreenState extends State<AdminProductosScreen> {
     try {
       await context.read<ProductoService>().aprobar(p);
       if (mounted) {
-        mostrarMensaje(context, 'Producto aprobado y visible para todos');
+        mostrarMensaje(context, tr('Producto aprobado y visible para todos'));
         _recargar();
       }
     } catch (e) {
@@ -51,11 +52,11 @@ class _AdminProductosScreenState extends State<AdminProductosScreen> {
     final confirmado = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Descartar producto'),
-        content: Text('¿Eliminar "${p.nombre}"? Esta acción no se puede deshacer.'),
+        title: Text(tr('Descartar producto')),
+        content: Text(tr('¿Eliminar "{0}"? Esta acción no se puede deshacer.', [p.nombre])),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Eliminar')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr('Cancelar'))),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(tr('Eliminar'))),
         ],
       ),
     );
@@ -63,7 +64,7 @@ class _AdminProductosScreenState extends State<AdminProductosScreen> {
     try {
       await context.read<ProductoService>().eliminar(p.id);
       if (mounted) {
-        mostrarMensaje(context, 'Producto descartado');
+        mostrarMensaje(context, tr('Producto descartado'));
         _recargar();
       }
     } catch (e) {
@@ -95,35 +96,35 @@ class _AdminProductosScreenState extends State<AdminProductosScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(existente == null ? 'Cargar producto' : 'Editar producto',
+                Text(existente == null ? tr('Cargar producto') : tr('Editar producto'),
                     style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 16),
-                TextField(controller: nombreCtrl, decoration: const InputDecoration(labelText: 'Nombre')),
+                TextField(controller: nombreCtrl, decoration: InputDecoration(labelText: tr('Nombre'))),
                 const SizedBox(height: 10),
-                TextField(controller: marcaCtrl, decoration: const InputDecoration(labelText: 'Marca')),
+                TextField(controller: marcaCtrl, decoration: InputDecoration(labelText: tr('Marca'))),
                 const SizedBox(height: 10),
-                TextField(controller: codigoCtrl, decoration: const InputDecoration(labelText: 'Código de barras (EAN)')),
+                TextField(controller: codigoCtrl, decoration: InputDecoration(labelText: tr('Código de barras (EAN)'))),
                 const SizedBox(height: 16),
-                const Text('Fotos del envase', style: TextStyle(fontWeight: FontWeight.bold)),
+                Text(tr('Fotos del envase'), style: TextStyle(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 4),
-                const Text('Con la cámara o desde la galería, no hace falta buscar una URL.',
+                Text(tr('Con la cámara o desde la galería, no hace falta buscar una URL.'),
                     style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
                 const SizedBox(height: 10),
                 SelectorFoto(
-                  titulo: '1. Frente del producto',
-                  ayuda: 'Que se vea el nombre y la marca',
+                  titulo: tr('1. Frente del producto'),
+                  ayuda: tr('Que se vea el nombre y la marca'),
                   base64Inicial: fotoFrontal,
                   onCambio: (b64) => fotoFrontal = b64,
                 ),
                 SelectorFoto(
-                  titulo: '2. Tabla de composición / ingredientes',
-                  ayuda: 'La lista de ingredientes del envase',
+                  titulo: tr('2. Tabla de composición / ingredientes'),
+                  ayuda: tr('La lista de ingredientes del envase'),
                   base64Inicial: fotoComposicion,
                   onCambio: (b64) => fotoComposicion = b64,
                 ),
                 SelectorFoto(
-                  titulo: '3. Tabla nutricional',
-                  ayuda: 'Los valores nutricionales por porción',
+                  titulo: tr('3. Tabla nutricional'),
+                  ayuda: tr('Los valores nutricionales por porción'),
                   base64Inicial: fotoNutricional,
                   onCambio: (b64) => fotoNutricional = b64,
                 ),
@@ -133,7 +134,7 @@ class _AdminProductosScreenState extends State<AdminProductosScreen> {
                   child: OutlinedButton.icon(
                     onPressed: () async {
                       if (fotoFrontal == null && fotoComposicion == null && fotoNutricional == null) {
-                        mostrarMensaje(context, 'Agregá al menos una foto para poder analizarla');
+                        mostrarMensaje(context, tr('Agregá al menos una foto para poder analizarla'));
                         return;
                       }
                       try {
@@ -143,7 +144,7 @@ class _AdminProductosScreenState extends State<AdminProductosScreen> {
                               fotoNutricionalBase64: fotoNutricional,
                             );
                         if (!analisis.pudoLeer) {
-                          if (ctx.mounted) mostrarMensaje(ctx, analisis.observacion ?? 'No se pudo leer la foto');
+                          if (ctx.mounted) mostrarMensaje(ctx, analisis.observacion ?? tr('No se pudo leer la foto'));
                           return;
                         }
                         setModalState(() {
@@ -166,25 +167,25 @@ class _AdminProductosScreenState extends State<AdminProductosScreen> {
                       }
                     },
                     icon: const Icon(Icons.auto_awesome),
-                    label: const Text('Analizar con IA y completar automáticamente'),
+                    label: Text(tr('Analizar con IA y completar automáticamente')),
                   ),
                 ),
                 const SizedBox(height: 10),
                 TextField(
                   controller: categoriaCtrl,
-                  decoration: const InputDecoration(
-                    labelText: 'Categoría',
-                    hintText: 'Ej: Panificados, Lácteos, Snacks, Bebidas',
+                  decoration: InputDecoration(
+                    labelText: tr('Categoría'),
+                    hintText: tr('Ej: Panificados, Lácteos, Snacks, Bebidas'),
                   ),
                 ),
                 const SizedBox(height: 10),
                 TextField(
                   controller: ingredientesCtrl,
-                  decoration: const InputDecoration(labelText: 'Ingredientes (separados por coma)'),
+                  decoration: InputDecoration(labelText: tr('Ingredientes (separados por coma)')),
                   maxLines: 3,
                 ),
                 const SizedBox(height: 12),
-                const Text('Alérgenos que contiene', style: TextStyle(fontWeight: FontWeight.bold)),
+                Text(tr('Alérgenos que contiene'), style: TextStyle(fontWeight: FontWeight.bold)),
                 const SizedBox(height: 6),
                 SelectorIntolerancias(
                   seleccionadas: alergenosSeleccionados,
@@ -197,7 +198,7 @@ class _AdminProductosScreenState extends State<AdminProductosScreen> {
                     if (nombreCtrl.text.trim().isEmpty) return;
                     Navigator.pop(ctx, true);
                   },
-                  child: const Text('Guardar'),
+                  child: Text(tr('Guardar')),
                 ),
               ],
             ),
@@ -227,7 +228,7 @@ class _AdminProductosScreenState extends State<AdminProductosScreen> {
           await service.editar(existente.id, body);
         }
         if (mounted) {
-          mostrarMensaje(context, 'Producto guardado');
+          mostrarMensaje(context, tr('Producto guardado'));
           _recargar();
         }
       } catch (e) {
@@ -266,16 +267,16 @@ class _AdminProductosScreenState extends State<AdminProductosScreen> {
       length: 2,
       child: Scaffold(
         appBar: AppBar(
-          title: const Text('Gestión de Productos'),
-          bottom: const TabBar(
+          title: Text(tr('Gestión de Productos')),
+          bottom: TabBar(
               labelColor: Colors.white,
               unselectedLabelColor: Colors.white70,
               indicatorColor: AppColors.lime,
               indicatorWeight: 3,
               dividerColor: Colors.transparent,
               tabs: [
-            Tab(text: 'Pendientes de revisión'),
-            Tab(text: 'Catálogo completo'),
+            Tab(text: tr('Pendientes de revisión')),
+            Tab(text: tr('Catálogo completo')),
           ]),
         ),
         floatingActionButton: FloatingActionButton(onPressed: () => _abrirFormulario(), child: const Icon(Icons.add)),
@@ -288,7 +289,7 @@ class _AdminProductosScreenState extends State<AdminProductosScreen> {
                 if (snapshot.hasError) return ErrorView(mensaje: snapshot.error.toString(), onReintentar: _recargar);
                 final pendientes = snapshot.data ?? [];
                 if (pendientes.isEmpty) {
-                  return const EmptyView(mensaje: 'No hay productos pendientes de revisión', icono: Icons.check_circle_outline);
+                  return EmptyView(mensaje: tr('No hay productos pendientes de revisión'), icono: Icons.check_circle_outline);
                 }
                 return ListView.builder(
                   padding: const EdgeInsets.all(16),
@@ -310,12 +311,12 @@ class _AdminProductosScreenState extends State<AdminProductosScreen> {
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text(p.nombre, style: const TextStyle(fontWeight: FontWeight.bold)),
+                                      TextoT(p.nombre, style: const TextStyle(fontWeight: FontWeight.bold)),
                                       if (p.marca != null) Text(p.marca!, style: const TextStyle(color: AppColors.textSecondary)),
                                       if (p.codigoEan != null)
-                                        Text('Código: ${p.codigoEan}', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                                        Text(tr('Código: {0}', [p.codigoEan]), style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
                                       if (p.aportadoPorEmail != null)
-                                        Text('Aportado por: ${p.aportadoPorEmail}', style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                                        Text(tr('Aportado por: {0}', [p.aportadoPorEmail]), style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
                                     ],
                                   ),
                                 ),
@@ -323,7 +324,7 @@ class _AdminProductosScreenState extends State<AdminProductosScreen> {
                             ),
                             if (p.ingredientes.isNotEmpty) ...[
                               const SizedBox(height: 6),
-                              Text('Ingredientes: ${p.ingredientes.join(', ')}', style: const TextStyle(fontSize: 12)),
+                              Text(tr('Ingredientes: {0}', [context.tc(p.ingredientes.join(', '))]), style: const TextStyle(fontSize: 12)),
                             ],
                             if (p.alergenos.isNotEmpty) ...[
                               const SizedBox(height: 6),
@@ -342,7 +343,7 @@ class _AdminProductosScreenState extends State<AdminProductosScreen> {
                                   child: OutlinedButton.icon(
                                     onPressed: () => _abrirFormulario(existente: p),
                                     icon: const Icon(Icons.edit_outlined, size: 18),
-                                    label: const Text('Editar datos'),
+                                    label: Text(tr('Editar datos')),
                                   ),
                                 ),
                                 const SizedBox(width: 8),
@@ -350,7 +351,7 @@ class _AdminProductosScreenState extends State<AdminProductosScreen> {
                                   child: OutlinedButton.icon(
                                     onPressed: () => _descartar(p),
                                     icon: const Icon(Icons.close, size: 18, color: AppColors.danger),
-                                    label: const Text('Descartar', style: TextStyle(color: AppColors.danger)),
+                                    label: Text(tr('Descartar'), style: TextStyle(color: AppColors.danger)),
                                   ),
                                 ),
                                 const SizedBox(width: 8),
@@ -358,7 +359,7 @@ class _AdminProductosScreenState extends State<AdminProductosScreen> {
                                   child: ElevatedButton.icon(
                                     onPressed: () => _aprobar(p),
                                     icon: const Icon(Icons.check, size: 18),
-                                    label: const Text('Aprobar'),
+                                    label: Text(tr('Aprobar')),
                                   ),
                                 ),
                               ],
@@ -376,9 +377,9 @@ class _AdminProductosScreenState extends State<AdminProductosScreen> {
                 const SizedBox(height: 8),
                 BarraFiltroIntolerancias(
                   seleccion: _filtroSin,
-                  prefijo: 'Sin ',
-                  titulo: 'Productos sin...',
-                  ayuda: 'Oculta los productos que contienen ALGUNA de las marcadas.',
+                  prefijo: tr('Sin '),
+                  titulo: tr('Productos sin...'),
+                  ayuda: tr('Oculta los productos que contienen ALGUNA de las marcadas.'),
                   onChanged: (s) => setState(() => _filtroSin = s),
                 ),
                 Expanded(
@@ -392,7 +393,7 @@ class _AdminProductosScreenState extends State<AdminProductosScreen> {
                     .toList();
                 if (productos.isEmpty) {
                   return EmptyView(
-                      mensaje: _filtroSin.isEmpty ? 'No hay productos cargados' : 'Ningún producto cumple el filtro');
+                      mensaje: _filtroSin.isEmpty ? tr('No hay productos cargados') : tr('Ningún producto cumple el filtro'));
                 }
                 return ListView.builder(
                   padding: const EdgeInsets.all(16),
@@ -402,12 +403,12 @@ class _AdminProductosScreenState extends State<AdminProductosScreen> {
                     return Card(
                       child: ListTile(
                         leading: _miniatura(p),
-                        title: Text(p.nombre),
+                        title: TextoT(p.nombre),
                         subtitle: Text([
                           if (p.marca != null) p.marca!,
-                          if (p.codigoEan != null) 'Código: ${p.codigoEan}',
-                          p.verificado ? 'Verificado' : 'Sin verificar',
-                          if (p.alergenos.isNotEmpty) 'Contiene: ${p.alergenos.map(etiquetaIntolerancia).join(', ')}',
+                          if (p.codigoEan != null) tr('Código: {0}', [p.codigoEan]),
+                          p.verificado ? tr('Verificado') : tr('Sin verificar'),
+                          if (p.alergenos.isNotEmpty) tr('Contiene: {0}', [p.alergenos.map(etiquetaIntolerancia).join(', ')]),
                         ].join(' · ')),
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
@@ -465,7 +466,7 @@ class _RevisionFotosState extends State<_RevisionFotos> {
     try {
       await context.read<ProductoService>().actualizarFoto(widget.producto.id, tipo, base64);
       if (mounted) {
-        mostrarMensaje(context, base64 == null ? 'Foto eliminada' : 'Foto actualizada');
+        mostrarMensaje(context, base64 == null ? tr('Foto eliminada') : tr('Foto actualizada'));
         widget.onCambio();
       }
     } catch (e) {
@@ -491,7 +492,7 @@ class _RevisionFotosState extends State<_RevisionFotos> {
       imagen = Container(
         height: 90,
         color: AppColors.textSecondary.withOpacity(0.08),
-        child: const Center(child: Text('Sin foto', style: TextStyle(fontSize: 11, color: AppColors.textSecondary))),
+        child: Center(child: Text(tr('Sin foto'), style: TextStyle(fontSize: 11, color: AppColors.textSecondary))),
       );
     }
 
@@ -508,14 +509,14 @@ class _RevisionFotosState extends State<_RevisionFotos> {
             children: [
               IconButton(
                 iconSize: 18,
-                tooltip: 'Reemplazar',
+                tooltip: tr('Reemplazar'),
                 onPressed: _procesando ? null : () => _reemplazar(tipo),
                 icon: const Icon(Icons.camera_alt_outlined, color: AppColors.primary),
               ),
               if (base64 != null)
                 IconButton(
                   iconSize: 18,
-                  tooltip: 'Eliminar',
+                  tooltip: tr('Eliminar'),
                   onPressed: _procesando ? null : () => _eliminar(tipo),
                   icon: const Icon(Icons.delete_outline, color: AppColors.danger),
                 ),
@@ -532,17 +533,17 @@ class _RevisionFotosState extends State<_RevisionFotos> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text('Fotos enviadas — aceptalas, reemplazalas o eliminalas',
+        Text(tr('Fotos enviadas — aceptalas, reemplazalas o eliminalas'),
             style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textSecondary)),
         const SizedBox(height: 6),
         Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _slot('Frente', 'frontal', p.fotoFrontalBase64),
+            _slot(tr('Frente'), 'frontal', p.fotoFrontalBase64),
             const SizedBox(width: 8),
-            _slot('Composición', 'composicion', p.fotoComposicionBase64),
+            _slot(tr('Composición'), 'composicion', p.fotoComposicionBase64),
             const SizedBox(width: 8),
-            _slot('Nutricional', 'nutricional', p.fotoNutricionalBase64),
+            _slot(tr('Nutricional'), 'nutricional', p.fotoNutricionalBase64),
           ],
         ),
       ],

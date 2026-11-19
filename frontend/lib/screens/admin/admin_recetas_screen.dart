@@ -11,6 +11,7 @@ import '../../core/widgets/receta_widgets.dart';
 import '../../core/widgets/recortar_imagen.dart';
 import '../usuario/enviar_receta_screen.dart';
 import '../usuario/receta_detail_screen.dart';
+import '../../core/i18n/i18n.dart';
 
 /// Gestión de recetas: aprobar las que envían los usuarios, administrar las
 /// publicadas e importar recetas de Spoonacular.
@@ -34,7 +35,7 @@ class _AdminRecetasScreenState extends State<AdminRecetasScreen> with SingleTick
     final ok = await Navigator.of(context)
         .push<bool>(MaterialPageRoute(builder: (_) => const EnviarRecetaScreen(modoAdmin: true)));
     if (ok == true && mounted) {
-      mostrarMensaje(context, 'Receta publicada');
+      mostrarMensaje(context, tr('Receta publicada'));
       _publicadasKey.currentState?.recargar();
     }
   }
@@ -43,7 +44,7 @@ class _AdminRecetasScreenState extends State<AdminRecetasScreen> with SingleTick
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Gestión de Recetas'),
+        title: Text(tr('Gestión de Recetas')),
         bottom: TabBar(
           controller: _tabs,
           labelColor: Colors.white,
@@ -51,11 +52,11 @@ class _AdminRecetasScreenState extends State<AdminRecetasScreen> with SingleTick
           indicatorColor: AppColors.lime,
           indicatorWeight: 3,
           dividerColor: Colors.transparent,
-          tabs: const [Tab(text: 'Por aprobar'), Tab(text: 'Publicadas'), Tab(text: 'Spoonacular')],
+          tabs: [Tab(text: tr('Por aprobar')), Tab(text: tr('Publicadas')), Tab(text: tr('Spoonacular'))],
         ),
       ),
       floatingActionButton: _tabs.index == 1
-          ? FloatingActionButton.extended(onPressed: _nueva, icon: const Icon(Icons.add), label: const Text('Nueva'))
+          ? FloatingActionButton.extended(onPressed: _nueva, icon: const Icon(Icons.add), label: Text(tr('Nueva')))
           : null,
       body: TabBarView(
         controller: _tabs,
@@ -101,7 +102,7 @@ class _PorAprobarTabState extends State<_PorAprobarTab> with AutomaticKeepAliveC
       Padding(
         padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
         child: Wrap(spacing: 8, children: [
-          for (final (valor, texto) in const [('PENDIENTE', 'Pendientes'), ('RECHAZADA', 'Rechazadas')])
+          for (final (valor, texto) in [('PENDIENTE', tr('Pendientes')), ('RECHAZADA', tr('Rechazadas'))])
             ChoiceChip(
               label: Text(texto),
               selected: _estado == valor,
@@ -121,7 +122,7 @@ class _PorAprobarTabState extends State<_PorAprobarTab> with AutomaticKeepAliveC
             final lista = snap.data ?? [];
             if (lista.isEmpty) {
               return EmptyView(
-                  mensaje: _estado == 'PENDIENTE' ? 'No hay recetas esperando aprobación' : 'No hay recetas rechazadas');
+                  mensaje: _estado == 'PENDIENTE' ? tr('No hay recetas esperando aprobación') : tr('No hay recetas rechazadas'));
             }
             return RefreshIndicator(
               onRefresh: () async => _recargar(),
@@ -150,23 +151,22 @@ class _PorAprobarTabState extends State<_PorAprobarTab> with AutomaticKeepAliveC
                           const SizedBox(width: 12),
                           Expanded(
                             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                              Text(r.titulo, style: const TextStyle(fontWeight: FontWeight.bold)),
+                              TextoT(r.titulo, style: const TextStyle(fontWeight: FontWeight.bold)),
                               const SizedBox(height: 2),
                               Text(
-                                'Por ${r.autorNombre ?? '-'}'
-                                '${r.fecha != null ? ' · ${DateFormat('dd/MM/yyyy').format(r.fecha!)}' : ''}',
+                                tr('Por {0}{1}', [r.autorNombre ?? '-', r.fecha != null ? ' · ${DateFormat('dd/MM/yyyy').format(r.fecha!)}' : '']),
                                 style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
                               ),
                               if (r.conflictos.isNotEmpty)
                                 Padding(
                                   padding: const EdgeInsets.only(top: 4),
                                   child: Text(
-                                    '⚠ Dice "sin ${r.conflictos.map(etiquetaIntolerancia).join(', ')}" pero los ingredientes lo mencionan',
+                                    tr('⚠ Dice "sin {0}" pero los ingredientes lo mencionan', [r.conflictos.map(etiquetaIntolerancia).join(', ')]),
                                     style: const TextStyle(color: AppColors.danger, fontSize: 12, fontWeight: FontWeight.w600),
                                   ),
                                 ),
                               if (r.rechazada && r.motivoRechazo != null)
-                                Text('Motivo: ${r.motivoRechazo}', style: const TextStyle(fontSize: 12)),
+                                Text(tr('Motivo: {0}', [context.tc(r.motivoRechazo)]), style: const TextStyle(fontSize: 12)),
                             ]),
                           ),
                           const Icon(Icons.chevron_right),
@@ -203,21 +203,21 @@ class _RevisionRecetaScreenState extends State<_RevisionRecetaScreen> {
       final ok = await showDialog<bool>(
         context: context,
         builder: (ctx) => AlertDialog(
-          title: const Text('Rechazar receta'),
+          title: Text(tr('Rechazar receta')),
           content: TextField(
             controller: ctrl,
             maxLines: 3,
-            decoration: const InputDecoration(
-              labelText: 'Motivo (lo verá quien la envió)',
-              hintText: 'Ej: la harina que usa no está certificada sin gluten',
+            decoration: InputDecoration(
+              labelText: tr('Motivo (lo verá quien la envió)'),
+              hintText: tr('Ej: la harina que usa no está certificada sin gluten'),
             ),
           ),
           actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+            TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr('Cancelar'))),
             FilledButton(
               style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
               onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Rechazar'),
+              child: Text(tr('Rechazar')),
             ),
           ],
         ),
@@ -229,7 +229,7 @@ class _RevisionRecetaScreenState extends State<_RevisionRecetaScreen> {
     try {
       await context.read<RecetaService>().moderar(_receta.id, aprobar: aprobar, motivo: motivo);
       if (!mounted) return;
-      mostrarMensaje(context, aprobar ? 'Receta publicada' : 'Receta rechazada');
+      mostrarMensaje(context, aprobar ? tr('Receta publicada') : tr('Receta rechazada'));
       Navigator.pop(context, true);
     } catch (e) {
       if (mounted) {
@@ -252,8 +252,8 @@ class _RevisionRecetaScreenState extends State<_RevisionRecetaScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Revisar receta'),
-        actions: [IconButton(tooltip: 'Corregir antes de aprobar', onPressed: _editar, icon: const Icon(Icons.edit_outlined))],
+        title: Text(tr('Revisar receta')),
+        actions: [IconButton(tooltip: tr('Corregir antes de aprobar'), onPressed: _editar, icon: const Icon(Icons.edit_outlined))],
       ),
       body: ContenidoReceta(
         receta: _receta,
@@ -261,15 +261,14 @@ class _RevisionRecetaScreenState extends State<_RevisionRecetaScreen> {
           if (_receta.conflictos.isNotEmpty)
             AvisoReceta(
               icono: Icons.report_problem_outlined,
-              titulo: 'Revisá lo declarado',
-              texto: 'La receta dice ser libre de ${_receta.conflictos.map(etiquetaIntolerancia).join(', ')}, '
-                  'pero SafeBite lo encontró en los ingredientes. Corregila o rechazala.',
+              titulo: tr('Revisá lo declarado'),
+              texto: tr('La receta dice ser libre de {0}, pero SafeBite lo encontró en los ingredientes. Corregila o rechazala.', [_receta.conflictos.map(etiquetaIntolerancia).join(', ')]),
               color: AppColors.danger,
             ),
           if (_receta.detectados.isNotEmpty)
             AvisoReceta(
               icono: Icons.search,
-              titulo: 'Detectado en los ingredientes',
+              titulo: tr('Detectado en los ingredientes'),
               texto: _receta.detectados.map(etiquetaIntolerancia).join(', '),
               color: const Color(0xFF546E7A),
             ),
@@ -287,7 +286,7 @@ class _RevisionRecetaScreenState extends State<_RevisionRecetaScreen> {
                   side: const BorderSide(color: AppColors.danger),
                   minimumSize: const Size.fromHeight(48),
                 ),
-                child: const Text('Rechazar'),
+                child: Text(tr('Rechazar')),
               ),
             ),
             const SizedBox(width: 12),
@@ -295,7 +294,7 @@ class _RevisionRecetaScreenState extends State<_RevisionRecetaScreen> {
               child: FilledButton(
                 onPressed: _trabajando ? null : () => _moderar(true),
                 style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
-                child: const Text('Aprobar y publicar'),
+                child: Text(tr('Aprobar y publicar')),
               ),
             ),
           ]),
@@ -336,7 +335,7 @@ class _PublicadasTabState extends State<_PublicadasTab> with AutomaticKeepAliveC
       final ok = await Navigator.of(context)
           .push<bool>(MaterialPageRoute(builder: (_) => EnviarRecetaScreen(existente: completa, modoAdmin: true)));
       if (ok == true && mounted) {
-        mostrarMensaje(context, 'Receta guardada');
+        mostrarMensaje(context, tr('Receta guardada'));
         recargar();
       }
     } catch (e) {
@@ -357,15 +356,15 @@ class _PublicadasTabState extends State<_PublicadasTab> with AutomaticKeepAliveC
           padding: EdgeInsets.fromLTRB(20, 20, 20, MediaQuery.of(ctx).viewInsets.bottom + 20),
           child: SingleChildScrollView(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, mainAxisSize: MainAxisSize.min, children: [
-              const Text('Editar receta de Spoonacular', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+              Text(tr('Editar receta de Spoonacular'), style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
               const SizedBox(height: 12),
-              TextField(controller: titulo, decoration: const InputDecoration(labelText: 'Título en español')),
+              TextField(controller: titulo, decoration: InputDecoration(labelText: tr('Título en español'))),
               const SizedBox(height: 12),
-              const Text('Libre de:', style: TextStyle(fontWeight: FontWeight.w600)),
+              Text(tr('Libre de:'), style: TextStyle(fontWeight: FontWeight.w600)),
               const SizedBox(height: 6),
-              SelectorIntolerancias(seleccionadas: libreDe, prefijo: 'Sin ', onChanged: (s) => setModal(() => libreDe = s)),
+              SelectorIntolerancias(seleccionadas: libreDe, prefijo: tr('Sin '), onChanged: (s) => setModal(() => libreDe = s)),
               const SizedBox(height: 16),
-              FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Guardar')),
+              FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(tr('Guardar'))),
             ]),
           ),
         ),
@@ -384,14 +383,14 @@ class _PublicadasTabState extends State<_PublicadasTab> with AutomaticKeepAliveC
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Eliminar receta'),
-        content: Text('¿Eliminar "${r.titulo}"? No se puede deshacer.'),
+        title: Text(tr('Eliminar receta')),
+        content: Text(tr('¿Eliminar "{0}"? No se puede deshacer.', [r.titulo])),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr('Cancelar'))),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Eliminar'),
+            child: Text(tr('Eliminar')),
           ),
         ],
       ),
@@ -412,9 +411,9 @@ class _PublicadasTabState extends State<_PublicadasTab> with AutomaticKeepAliveC
       const SizedBox(height: 8),
       BarraFiltroIntolerancias(
         seleccion: _filtro,
-        prefijo: 'Sin ',
-        titulo: 'Recetas libres de...',
-        ayuda: 'Muestra las recetas aptas para TODAS las marcadas.',
+        prefijo: tr('Sin '),
+        titulo: tr('Recetas libres de...'),
+        ayuda: tr('Muestra las recetas aptas para TODAS las marcadas.'),
         onChanged: (s) {
           _filtro = s;
           recargar();
@@ -427,7 +426,7 @@ class _PublicadasTabState extends State<_PublicadasTab> with AutomaticKeepAliveC
             if (snapshot.connectionState == ConnectionState.waiting) return const LoadingView();
             if (snapshot.hasError) return ErrorView(mensaje: snapshot.error.toString(), onReintentar: recargar);
             final recetas = snapshot.data ?? [];
-            if (recetas.isEmpty) return const EmptyView(mensaje: 'No hay recetas ni tips publicados');
+            if (recetas.isEmpty) return EmptyView(mensaje: tr('No hay recetas ni tips publicados'));
             return ListView.builder(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 90),
               itemCount: recetas.length,
@@ -448,12 +447,12 @@ class _PublicadasTabState extends State<_PublicadasTab> with AutomaticKeepAliveC
                         ),
                       ),
                     ),
-                    title: Text(r.titulo),
+                    title: TextoT(r.titulo),
                     subtitle: Padding(
                       padding: const EdgeInsets.only(top: 4),
                       child: Row(children: [
                         if (r.esTip)
-                          const Text('Tip de Salud', style: TextStyle(fontSize: 12))
+                          Text(tr('Tip de Salud'), style: TextStyle(fontSize: 12))
                         else
                           EtiquetaOrigenReceta(receta: r, compacta: true),
                       ]),
@@ -556,9 +555,8 @@ class _SpoonacularTabState extends State<_SpoonacularTab> with AutomaticKeepAliv
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        const Text(
-          'Buscá recetas en Spoonacular filtradas por intolerancia. Revisá cada una y publicá solo las que estén bien. '
-          'Ingredientes y pasos se cargan en vivo y se traducen al abrir la receta.',
+        Text(
+          tr('Buscá recetas en Spoonacular filtradas por intolerancia. Revisá cada una y publicá solo las que estén bien. Ingredientes y pasos se cargan en vivo y se traducen al abrir la receta.'),
           style: TextStyle(color: AppColors.textSecondary, fontSize: 13),
         ),
         const SizedBox(height: 12),
@@ -566,47 +564,47 @@ class _SpoonacularTabState extends State<_SpoonacularTab> with AutomaticKeepAliv
           controller: _consulta,
           textInputAction: TextInputAction.search,
           onSubmitted: (_) => _buscar(),
-          decoration: const InputDecoration(
-            labelText: '¿Qué receta buscás? (opcional)',
-            hintText: 'Ej: pan, torta de chocolate, pollo',
+          decoration: InputDecoration(
+            labelText: tr('¿Qué receta buscás? (opcional)'),
+            hintText: tr('Ej: pan, torta de chocolate, pollo'),
             prefixIcon: Icon(Icons.search),
           ),
         ),
         const SizedBox(height: 12),
-        const Text('Libres de:', style: TextStyle(fontWeight: FontWeight.w600)),
+        Text(tr('Libres de:'), style: TextStyle(fontWeight: FontWeight.w600)),
         const SizedBox(height: 6),
         SelectorIntolerancias(
           seleccionadas: _intolerancias,
-          prefijo: 'Sin ',
+          prefijo: tr('Sin '),
           onChanged: (s) => setState(() => _intolerancias = s),
         ),
         const SizedBox(height: 12),
         FilledButton.icon(
           onPressed: _buscando ? null : () => _buscar(),
           icon: const Icon(Icons.travel_explore),
-          label: const Text('Buscar en Spoonacular'),
+          label: Text(tr('Buscar en Spoonacular')),
           style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
         ),
         if (ultima?.cuotaRestante != null)
           Padding(
             padding: const EdgeInsets.only(top: 6),
-            child: Text('Cuota diaria restante: ${ultima!.cuotaRestante!.toStringAsFixed(1)} puntos',
+            child: Text(tr('Cuota diaria restante: {0} puntos', [ultima!.cuotaRestante!.toStringAsFixed(1)]),
                 textAlign: TextAlign.center, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
           ),
         if (ultima != null && ultima.sinFiltroEnFuente.isNotEmpty)
           AvisoReceta(
             icono: Icons.info_outline,
-            titulo: 'Spoonacular no filtra: ${ultima.sinFiltroEnFuente.join(', ')}',
-            texto: 'Para esas, el único control es el analizador de SafeBite: revisá bien los ingredientes.',
+            titulo: tr('Spoonacular no filtra: {0}', [ultima.sinFiltroEnFuente.map(context.tc).join(', ')]),
+            texto: tr('Para esas, el único control es el analizador de SafeBite: revisá bien los ingredientes.'),
             color: const Color(0xFFB26A00),
           ),
-        if (_error != null) AvisoReceta(icono: Icons.error_outline, titulo: 'No se pudo buscar', texto: _error, color: AppColors.danger),
+        if (_error != null) AvisoReceta(icono: Icons.error_outline, titulo: tr('No se pudo buscar'), texto: _error, color: AppColors.danger),
         const SizedBox(height: 12),
         if (_buscando && _resultados.isEmpty) const Padding(padding: EdgeInsets.all(24), child: LoadingView()),
         if (!_buscando && ultima != null && _resultados.isEmpty)
-          const Padding(
+          Padding(
             padding: EdgeInsets.all(24),
-            child: Text('Sin resultados. Probá con otra búsqueda o menos filtros.', textAlign: TextAlign.center),
+            child: Text(tr('Sin resultados. Probá con otra búsqueda o menos filtros.'), textAlign: TextAlign.center),
           ),
         ..._resultados.map((e) => Card(
               child: ListTile(
@@ -619,10 +617,10 @@ class _SpoonacularTabState extends State<_SpoonacularTab> with AutomaticKeepAliv
                     child: ImagenFlexible(fuente: e.imagenUrl, sinImagen: Container(color: AppColors.primarySoft)),
                   ),
                 ),
-                title: Text(e.titulo, maxLines: 2, overflow: TextOverflow.ellipsis),
+                title: TextoT(e.titulo, maxLines: 2, overflow: TextOverflow.ellipsis),
                 subtitle: Text(e.tituloOriginal, maxLines: 1, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 11)),
                 trailing: e.yaImportada
-                    ? Chip1('Publicada', color: AppColors.primary)
+                    ? Chip1(tr('Publicada'), color: AppColors.primary)
                     : const Icon(Icons.chevron_right),
               ),
             )),
@@ -632,7 +630,7 @@ class _SpoonacularTabState extends State<_SpoonacularTab> with AutomaticKeepAliv
             icon: _buscando
                 ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2))
                 : const Icon(Icons.expand_more),
-            label: const Text('Cargar más'),
+            label: Text(tr('Cargar más')),
           ),
       ],
     );
@@ -676,7 +674,7 @@ class _VistaPreviaExternaScreenState extends State<_VistaPreviaExternaScreen> {
 
   Future<void> _publicar() async {
     if (_titulo.text.trim().isEmpty) {
-      mostrarMensaje(context, 'Escribí el título en español');
+      mostrarMensaje(context, tr('Escribí el título en español'));
       return;
     }
     setState(() => _publicando = true);
@@ -685,7 +683,7 @@ class _VistaPreviaExternaScreenState extends State<_VistaPreviaExternaScreen> {
           .read<RecetaService>()
           .importarExterna(widget.externa.externoId, titulo: _titulo.text.trim(), libreDe: _libreDe);
       if (!mounted) return;
-      mostrarMensaje(context, 'Receta publicada en SafeBite');
+      mostrarMensaje(context, tr('Receta publicada en SafeBite'));
       Navigator.pop(context, true);
     } catch (e) {
       if (mounted) {
@@ -699,7 +697,7 @@ class _VistaPreviaExternaScreenState extends State<_VistaPreviaExternaScreen> {
   Widget build(BuildContext context) {
     final r = _receta;
     return Scaffold(
-      appBar: AppBar(title: const Text('Vista previa')),
+      appBar: AppBar(title: Text(tr('Vista previa'))),
       body: _error != null
           ? ErrorView(mensaje: _error!, onReintentar: _cargar)
           : r == null
@@ -709,37 +707,36 @@ class _VistaPreviaExternaScreenState extends State<_VistaPreviaExternaScreen> {
                   pie: [
                     const SizedBox(height: 16),
                     const Divider(),
-                    const SeccionTitulo('Publicar en SafeBite'),
+                    SeccionTitulo(tr('Publicar en SafeBite')),
                     if (r.detectados.isNotEmpty)
                       AvisoReceta(
                         icono: Icons.search,
-                        titulo: 'SafeBite detectó en los ingredientes',
-                        texto: '${r.detectados.map(etiquetaIntolerancia).join(', ')}. No se marcan como "libre de".',
+                        titulo: tr('SafeBite detectó en los ingredientes'),
+                        texto: tr('{0}. No se marcan como "libre de".', [r.detectados.map(etiquetaIntolerancia).join(', ')]),
                         color: AppColors.danger,
                       ),
                     const SizedBox(height: 10),
-                    TextField(controller: _titulo, decoration: const InputDecoration(labelText: 'Título en español *')),
+                    TextField(controller: _titulo, decoration: InputDecoration(labelText: tr('Título en español *'))),
                     const SizedBox(height: 12),
-                    const Text('Libre de (revisá y ajustá):', style: TextStyle(fontWeight: FontWeight.w600)),
+                    Text(tr('Libre de (revisá y ajustá):'), style: TextStyle(fontWeight: FontWeight.w600)),
                     const SizedBox(height: 6),
                     SelectorIntolerancias(
                       seleccionadas: _libreDe,
-                      prefijo: 'Sin ',
+                      prefijo: tr('Sin '),
                       onChanged: (s) => setState(() => _libreDe = s),
                     ),
                     if (_libreDe.intersection(r.detectados).isNotEmpty)
                       AvisoReceta(
                         icono: Icons.warning_amber_rounded,
-                        titulo: 'Contradicción',
-                        texto: 'Marcaste "sin ${_libreDe.intersection(r.detectados).map(etiquetaIntolerancia).join(', ')}" '
-                            'pero aparece en los ingredientes.',
+                        titulo: tr('Contradicción'),
+                        texto: tr('Marcaste "sin {0}" pero aparece en los ingredientes.', [_libreDe.intersection(r.detectados).map(etiquetaIntolerancia).join(', ')]),
                         color: AppColors.danger,
                       ),
                     const SizedBox(height: 16),
                     FilledButton.icon(
                       onPressed: _publicando || widget.externa.yaImportada ? null : _publicar,
                       icon: const Icon(Icons.publish_rounded),
-                      label: Text(widget.externa.yaImportada ? 'Ya está publicada' : 'Aprobar y publicar'),
+                      label: Text(widget.externa.yaImportada ? tr('Ya está publicada') : tr('Aprobar y publicar')),
                       style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(50)),
                     ),
                   ],

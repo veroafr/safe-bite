@@ -12,6 +12,7 @@ import '../../core/widgets/intolerancias_widgets.dart';
 import '../../core/widgets/receta_widgets.dart';
 import '../../core/widgets/recortar_imagen.dart';
 import 'receta_detail_screen.dart';
+import '../../core/i18n/i18n.dart';
 
 const dificultades = ['Fácil', 'Media', 'Difícil'];
 
@@ -54,7 +55,7 @@ class _EnviarRecetaScreenState extends State<EnviarRecetaScreen> {
       t.split('\n').map((e) => e.replaceFirst(RegExp(r'^\s*(?:[-•*]|\d+[.)])\s*'), '').trim()).where((e) => e.isNotEmpty).toList();
 
   Future<void> _elegirFoto() async {
-    final bytes = await elegirFotoCamaraOGaleria(context, tituloCamara: 'Sacá una foto del plato');
+    final bytes = await elegirFotoCamaraOGaleria(context, tituloCamara: tr('Sacá una foto del plato'));
     if (bytes == null || !mounted) return;
     setState(() {
       _foto = Uint8List.fromList(bytes);
@@ -108,25 +109,24 @@ class _EnviarRecetaScreenState extends State<EnviarRecetaScreen> {
     return Scaffold(
       appBar: AppBar(
           title: Text(widget.modoAdmin
-              ? (widget.existente == null ? 'Nueva receta' : 'Editar receta')
-              : (widget.existente == null ? 'Compartir una receta' : 'Editar mi receta'))),
+              ? (widget.existente == null ? tr('Nueva receta') : tr('Editar receta'))
+              : (widget.existente == null ? tr('Compartir una receta') : tr('Editar mi receta')))),
       body: Form(
         key: _form,
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
             if (!widget.modoAdmin)
-            const AvisoReceta(
+            AvisoReceta(
               icono: Icons.verified_user_outlined,
-              titulo: 'Tu receta será revisada',
-              texto: 'El equipo de SafeBite la revisa antes de publicarla, para que la información sea confiable '
-                  'para personas con intolerancias.',
+              titulo: tr('Tu receta será revisada'),
+              texto: tr('El equipo de SafeBite la revisa antes de publicarla, para que la información sea confiable para personas con intolerancias.'),
               color: AppColors.primary,
             ),
             if (widget.existente?.rechazada == true && widget.existente?.motivoRechazo != null)
               AvisoReceta(
                 icono: Icons.info_outline,
-                titulo: 'Motivo por el que no se aprobó',
+                titulo: tr('Motivo por el que no se aprobó'),
                 texto: widget.existente!.motivoRechazo,
                 color: AppColors.danger,
               ),
@@ -156,22 +156,22 @@ class _EnviarRecetaScreenState extends State<EnviarRecetaScreen> {
                     _quitarFoto = true;
                   }),
                   icon: const Icon(Icons.delete_outline, size: 18),
-                  label: const Text('Quitar foto'),
+                  label: Text(tr('Quitar foto')),
                 ),
               ),
             const SizedBox(height: 12),
             TextFormField(
               controller: _titulo,
               textCapitalization: TextCapitalization.sentences,
-              decoration: const InputDecoration(labelText: 'Nombre de la receta *', hintText: 'Ej: Pan de mandioca sin gluten'),
-              validator: (v) => (v ?? '').trim().length < 3 ? 'Escribí un nombre' : null,
+              decoration: InputDecoration(labelText: tr('Nombre de la receta *'), hintText: tr('Ej: Pan de mandioca sin gluten')),
+              validator: (v) => (v ?? '').trim().length < 3 ? tr('Escribí un nombre') : null,
             ),
             const SizedBox(height: 12),
             TextFormField(
               controller: _descripcion,
               maxLines: 2,
               textCapitalization: TextCapitalization.sentences,
-              decoration: const InputDecoration(labelText: 'Descripción breve (opcional)'),
+              decoration: InputDecoration(labelText: tr('Descripción breve (opcional)')),
             ),
             const SizedBox(height: 12),
             Row(children: [
@@ -179,28 +179,28 @@ class _EnviarRecetaScreenState extends State<EnviarRecetaScreen> {
                 child: TextFormField(
                   controller: _tiempo,
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(labelText: 'Tiempo (min)'),
+                  decoration: InputDecoration(labelText: tr('Tiempo (min)')),
                 ),
               ),
               const SizedBox(width: 12),
               Expanded(
                 child: DropdownButtonFormField<String>(
                   value: _dificultad,
-                  decoration: const InputDecoration(labelText: 'Dificultad'),
-                  items: dificultades.map((d) => DropdownMenuItem(value: d, child: Text(d))).toList(),
+                  decoration: InputDecoration(labelText: tr('Dificultad')),
+                  items: dificultades.map((d) => DropdownMenuItem(value: d, child: Text(tr(d)))).toList(),
                   onChanged: (v) => setState(() => _dificultad = v),
                 ),
               ),
             ]),
             const SizedBox(height: 18),
-            const Text('¿Para quiénes es apta? (libre de...)', style: TextStyle(fontWeight: FontWeight.w600)),
+            Text(tr('¿Para quiénes es apta? (libre de...)'), style: TextStyle(fontWeight: FontWeight.w600)),
             const SizedBox(height: 2),
-            const Text('Marcá solo lo que estés seguro/a de que la receta NO contiene.',
+            Text(tr('Marcá solo lo que estés seguro/a de que la receta NO contiene.'),
                 style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
             const SizedBox(height: 8),
             SelectorIntolerancias(
               seleccionadas: _libreDe,
-              prefijo: 'Sin ',
+              prefijo: tr('Sin '),
               onChanged: (s) => setState(() => _libreDe = s),
             ),
             const SizedBox(height: 18),
@@ -208,30 +208,30 @@ class _EnviarRecetaScreenState extends State<EnviarRecetaScreen> {
               controller: _ingredientes,
               maxLines: 7,
               minLines: 4,
-              decoration: const InputDecoration(
-                labelText: 'Ingredientes * (uno por línea)',
-                hintText: '2 tazas de fécula de mandioca\n1 huevo\n100 g de queso rallado',
+              decoration: InputDecoration(
+                labelText: tr('Ingredientes * (uno por línea)'),
+                hintText: tr('2 tazas de fécula de mandioca\n1 huevo\n100 g de queso rallado'),
                 alignLabelWithHint: true,
               ),
-              validator: (v) => _lineas(v ?? '').isEmpty ? 'Agregá al menos un ingrediente' : null,
+              validator: (v) => _lineas(v ?? '').isEmpty ? tr('Agregá al menos un ingrediente') : null,
             ),
             const SizedBox(height: 12),
             TextFormField(
               controller: _pasos,
               maxLines: 8,
               minLines: 4,
-              decoration: const InputDecoration(
-                labelText: 'Pasos * (uno por línea)',
-                hintText: 'Precalentar el horno a 180 °C\nMezclar los ingredientes secos\n...',
+              decoration: InputDecoration(
+                labelText: tr('Pasos * (uno por línea)'),
+                hintText: tr('Precalentar el horno a 180 °C\nMezclar los ingredientes secos\n...'),
                 alignLabelWithHint: true,
               ),
-              validator: (v) => _lineas(v ?? '').isEmpty ? 'Agregá al menos un paso' : null,
+              validator: (v) => _lineas(v ?? '').isEmpty ? tr('Agregá al menos un paso') : null,
             ),
             if (widget.modoAdmin) ...[
               const SizedBox(height: 12),
               TextFormField(
                 controller: _etiquetas,
-                decoration: const InputDecoration(labelText: 'Otras etiquetas (ej: Vegano, Rápida)'),
+                decoration: InputDecoration(labelText: tr('Otras etiquetas (ej: Vegano, Rápida)')),
               ),
             ],
             const SizedBox(height: 24),
@@ -241,8 +241,8 @@ class _EnviarRecetaScreenState extends State<EnviarRecetaScreen> {
                   ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2.5))
                   : const Icon(Icons.send_rounded),
               label: Text(widget.modoAdmin
-                  ? 'Guardar y publicar'
-                  : (widget.existente == null ? 'Enviar para revisión' : 'Guardar y reenviar')),
+                  ? tr('Guardar y publicar')
+                  : (widget.existente == null ? tr('Enviar para revisión') : tr('Guardar y reenviar'))),
               style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(50)),
             ),
             const SizedBox(height: 16),
@@ -254,10 +254,10 @@ class _EnviarRecetaScreenState extends State<EnviarRecetaScreen> {
 
   Widget _placeholderFoto() => Container(
         color: AppColors.primarySoft,
-        child: const Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+        child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
           Icon(Icons.add_a_photo_outlined, size: 34, color: AppColors.primary),
           SizedBox(height: 6),
-          Text('Agregar una foto (opcional)', style: TextStyle(color: AppColors.primary)),
+          Text(tr('Agregar una foto (opcional)'), style: TextStyle(color: AppColors.primary)),
         ]),
       );
 }
@@ -286,7 +286,7 @@ class _MisRecetasScreenState extends State<MisRecetasScreen> {
       final ok = await Navigator.of(context)
           .push<bool>(MaterialPageRoute(builder: (_) => EnviarRecetaScreen(existente: completa)));
       if (ok == true && mounted) {
-        mostrarMensaje(context, 'Receta reenviada para revisión');
+        mostrarMensaje(context, tr('Receta reenviada para revisión'));
         _recargar();
       }
     } catch (e) {
@@ -297,7 +297,7 @@ class _MisRecetasScreenState extends State<MisRecetasScreen> {
   Future<void> _nueva() async {
     final ok = await Navigator.of(context).push<bool>(MaterialPageRoute(builder: (_) => const EnviarRecetaScreen()));
     if (ok == true && mounted) {
-      mostrarMensaje(context, '¡Gracias! Tu receta se publicará cuando el equipo la apruebe.');
+      mostrarMensaje(context, tr('¡Gracias! Tu receta se publicará cuando el equipo la apruebe.'));
       _recargar();
     }
   }
@@ -305,11 +305,11 @@ class _MisRecetasScreenState extends State<MisRecetasScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Mis recetas enviadas')),
+      appBar: AppBar(title: Text(tr('Mis recetas enviadas'))),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _nueva,
         icon: const Icon(Icons.add),
-        label: const Text('Nueva receta'),
+        label: Text(tr('Nueva receta')),
       ),
       body: FutureBuilder<List<Receta>>(
         future: _future,
@@ -318,8 +318,8 @@ class _MisRecetasScreenState extends State<MisRecetasScreen> {
           if (snap.hasError) return ErrorView(mensaje: snap.error.toString(), onReintentar: _recargar);
           final lista = snap.data ?? [];
           if (lista.isEmpty) {
-            return const EmptyView(
-                mensaje: 'Todavía no enviaste recetas.\nCompartí las tuyas con la comunidad.', icono: Icons.menu_book_outlined);
+            return EmptyView(
+                mensaje: tr('Todavía no enviaste recetas.\nCompartí las tuyas con la comunidad.'), icono: Icons.menu_book_outlined);
           }
           return RefreshIndicator(
             onRefresh: () async => _recargar(),
@@ -342,7 +342,7 @@ class _MisRecetasScreenState extends State<MisRecetasScreen> {
                         ),
                       ),
                     ),
-                    title: Text(r.titulo, style: const TextStyle(fontWeight: FontWeight.w600)),
+                    title: TextoT(r.titulo, style: const TextStyle(fontWeight: FontWeight.w600)),
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -357,12 +357,12 @@ class _MisRecetasScreenState extends State<MisRecetasScreen> {
                         if (r.rechazada && r.motivoRechazo != null)
                           Padding(
                             padding: const EdgeInsets.only(top: 4),
-                            child: Text('Motivo: ${r.motivoRechazo}', style: const TextStyle(color: AppColors.danger, fontSize: 12)),
+                            child: Text(tr('Motivo: {0}', [context.tc(r.motivoRechazo)]), style: const TextStyle(color: AppColors.danger, fontSize: 12)),
                           ),
                         if (!r.estado.contains('APROBADA'))
-                          const Padding(
+                          Padding(
                             padding: EdgeInsets.only(top: 2),
-                            child: Text('Tocá para editarla', style: TextStyle(fontSize: 11)),
+                            child: Text(tr('Tocá para editarla'), style: TextStyle(fontSize: 11)),
                           ),
                       ],
                     ),

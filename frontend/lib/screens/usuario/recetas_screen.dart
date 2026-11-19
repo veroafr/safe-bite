@@ -10,6 +10,7 @@ import '../../core/widgets/receta_widgets.dart';
 import '../../core/widgets/recortar_imagen.dart';
 import 'enviar_receta_screen.dart';
 import 'receta_detail_screen.dart';
+import '../../core/i18n/i18n.dart';
 
 const _grilla = SliverGridDelegateWithFixedCrossAxisCount(
     crossAxisCount: 2, mainAxisSpacing: 12, crossAxisSpacing: 12, childAspectRatio: 0.70);
@@ -78,7 +79,7 @@ class _RecetasScreenState extends State<RecetasScreen> {
   Future<void> _compartir() async {
     final ok = await Navigator.of(context).push<bool>(MaterialPageRoute(builder: (_) => const EnviarRecetaScreen()));
     if (ok == true && mounted) {
-      mostrarMensaje(context, '¡Gracias! Tu receta se publicará cuando el equipo la apruebe.');
+      mostrarMensaje(context, tr('¡Gracias! Tu receta se publicará cuando el equipo la apruebe.'));
     }
   }
 
@@ -88,13 +89,13 @@ class _RecetasScreenState extends State<RecetasScreen> {
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _compartir,
         icon: const Icon(Icons.add),
-        label: const Text('Compartir receta'),
+        label: Text(tr('Compartir receta')),
       ),
       appBar: AppBar(
-        title: const Text('Recetas'),
+        title: Text(tr('Recetas')),
         actions: [
           IconButton(
-            tooltip: 'Mis recetas enviadas',
+            tooltip: tr('Mis recetas enviadas'),
             icon: const Icon(Icons.assignment_ind_outlined),
             onPressed: () => Navigator.of(context).push(MaterialPageRoute(builder: (_) => const MisRecetasScreen())),
           ),
@@ -105,9 +106,9 @@ class _RecetasScreenState extends State<RecetasScreen> {
           const SizedBox(height: 8),
           BarraFiltroIntolerancias(
             seleccion: _filtro,
-            prefijo: 'Sin ',
-            titulo: 'Recetas libres de...',
-            ayuda: 'Se muestran las recetas aptas para TODAS las intolerancias que marques.',
+            prefijo: tr('Sin '),
+            titulo: tr('Recetas libres de...'),
+            ayuda: tr('Se muestran las recetas aptas para TODAS las intolerancias que marques.'),
             onChanged: (s) {
               _filtro = s;
               _recargar();
@@ -167,8 +168,8 @@ class _RecetasScreenState extends State<RecetasScreen> {
         child: Row(children: [
           const Icon(Icons.public_rounded, size: 20, color: Color(0xFFE65100)),
           const SizedBox(width: 6),
-          const Expanded(
-            child: Text('Más recetas de spoonacular', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+          Expanded(
+            child: Text(tr('Más recetas de spoonacular'), style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
           ),
           if (_filtro.isNotEmpty)
             Flexible(
@@ -188,9 +189,9 @@ class _RecetasScreenState extends State<RecetasScreen> {
       return Padding(
         padding: const EdgeInsets.all(16),
         child: Column(children: [
-          Text('No se pudieron traer recetas de Spoonacular: $_errorExternas',
+          Text(tr('No se pudieron traer recetas de Spoonacular: {0}', [context.tc(_errorExternas)]),
               textAlign: TextAlign.center, style: const TextStyle(color: AppColors.textSecondary)),
-          TextButton(onPressed: () => _cargarExternas(), child: const Text('Reintentar')),
+          TextButton(onPressed: () => _cargarExternas(), child: Text(tr('Reintentar'))),
         ]),
       );
     }
@@ -198,7 +199,7 @@ class _RecetasScreenState extends State<RecetasScreen> {
       return Padding(
         padding: const EdgeInsets.all(16),
         child: Text(
-          sinPropias ? 'No hay recetas libres de todo lo que elegiste.' : 'No hay más recetas externas para este filtro.',
+          sinPropias ? tr('No hay recetas libres de todo lo que elegiste.') : tr('No hay más recetas externas para este filtro.'),
           textAlign: TextAlign.center,
           style: const TextStyle(color: AppColors.textSecondary),
         ),
@@ -209,7 +210,7 @@ class _RecetasScreenState extends State<RecetasScreen> {
       child: TextButton.icon(
         onPressed: () => _cargarExternas(),
         icon: const Icon(Icons.expand_more),
-        label: const Text('Cargar más recetas'),
+        label: Text(tr('Cargar más recetas')),
       ),
     );
   }
@@ -257,20 +258,19 @@ class _TarjetaReceta extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(receta.titulo,
+                  TextoT(receta.titulo,
                       maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
                   const SizedBox(height: 2),
                   Text(
                     [
                       if (receta.tiempoPreparacionMinutos != null) '${receta.tiempoPreparacionMinutos} min',
-                      if (receta.dificultad != null) receta.dificultad!,
+                      if (receta.dificultad != null) context.tc(receta.dificultad!),
                     ].join(' • '),
                     style: const TextStyle(fontSize: 11, color: AppColors.textSecondary),
                   ),
                   if (receta.libreDe.isNotEmpty) ...[
                     const SizedBox(height: 4),
-                    Chip1('Sin ${etiquetaIntolerancia(receta.libreDe.first)}'
-                        '${receta.libreDe.length > 1 ? ' +${receta.libreDe.length - 1}' : ''}'),
+                    Chip1(tr('Sin {0}{1}', [etiquetaIntolerancia(receta.libreDe.first), receta.libreDe.length > 1 ? ' +${receta.libreDe.length - 1}' : ''])),
                   ] else if (receta.etiquetas.isNotEmpty) ...[
                     const SizedBox(height: 4),
                     Chip1(receta.etiquetas.first),

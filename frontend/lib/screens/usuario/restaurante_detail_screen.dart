@@ -15,6 +15,7 @@ import '../../core/services/alerta_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/common_widgets.dart';
 import '../../core/widgets/recortar_imagen.dart';
+import '../../core/i18n/i18n.dart';
 
 /// Qué significa cada cantidad de estrellas. Se muestra solo al dejar una reseña.
 const List<(String, String)> significadoEstrellas = [
@@ -89,7 +90,7 @@ class _RestauranteDetailScreenState extends State<RestauranteDetailScreen> {
     );
     if (enviada == true) {
       if (mounted) {
-        mostrarMensaje(context, '¡Gracias! Tu reseña será publicada cuando el equipo la apruebe.');
+        mostrarMensaje(context, tr('¡Gracias! Tu reseña será publicada cuando el equipo la apruebe.'));
       }
       await _cargar();
     }
@@ -106,7 +107,7 @@ class _RestauranteDetailScreenState extends State<RestauranteDetailScreen> {
       ),
     );
     if (enviado == true && mounted) {
-      mostrarMensaje(context, 'Reporte enviado. El equipo lo revisará y podrá contactarte.');
+      mostrarMensaje(context, tr('Reporte enviado. El equipo lo revisará y podrá contactarte.'));
     }
   }
 
@@ -124,7 +125,7 @@ class _RestauranteDetailScreenState extends State<RestauranteDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(_restaurante?.nombre ?? 'Restaurante')),
+      appBar: AppBar(title: Text(_restaurante?.nombre ?? tr('Restaurante'))),
       body: _cargando
           ? const LoadingView()
           : _error != null
@@ -142,13 +143,13 @@ class _RestauranteDetailScreenState extends State<RestauranteDetailScreen> {
                       const SizedBox(height: 8),
                       const Divider(),
                       const SizedBox(height: 8),
-                      Text('¿Algo no está bien en este local?',
+                      Text(tr('¿Algo no está bien en este local?'),
                           style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
                       const SizedBox(height: 8),
                       OutlinedButton.icon(
                         onPressed: _reportarProblema,
                         icon: const Icon(Icons.flag_outlined),
-                        label: const Text('Reportar un problema con este local'),
+                        label: Text(tr('Reportar un problema con este local')),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: AppColors.danger,
                           side: const BorderSide(color: AppColors.danger),
@@ -190,7 +191,7 @@ class _RestauranteDetailScreenState extends State<RestauranteDetailScreen> {
           const Icon(Icons.star_rounded, color: AppColors.accent),
           Text(' ${r.ratingPromedio.toStringAsFixed(1)}',
               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-          Text('  (${_resenas.length} ${_resenas.length == 1 ? 'reseña' : 'reseñas'})',
+          Text('  (${_resenas.length} ${_resenas.length == 1 ? tr('reseña') : tr('reseñas')})',
               style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
         ],
       ),
@@ -207,14 +208,14 @@ class _RestauranteDetailScreenState extends State<RestauranteDetailScreen> {
       ],
       if (r.descripcion != null) ...[
         const SizedBox(height: 10),
-        Text(r.descripcion!),
+        TextoT(r.descripcion!),
       ],
       if (r.opcionesAptasPara.isNotEmpty) ...[
         const SizedBox(height: 10),
         Wrap(
           spacing: 6,
           runSpacing: 4,
-          children: r.opcionesAptasPara.map((t) => Chip1('Sin ${etiquetaIntolerancia(t)}')).toList(),
+          children: r.opcionesAptasPara.map((t) => Chip1(tr('Sin {0}', [etiquetaIntolerancia(t)]))).toList(),
         ),
       ],
     ];
@@ -224,7 +225,7 @@ class _RestauranteDetailScreenState extends State<RestauranteDetailScreen> {
     final r = _restaurante!;
     final punto = LatLng(r.latitud!, r.longitud!);
     return [
-      const SeccionTitulo('Ubicación en el mapa'),
+      SeccionTitulo(tr('Ubicación en el mapa')),
       ClipRRect(
         borderRadius: BorderRadius.circular(16),
         child: SizedBox(
@@ -255,7 +256,7 @@ class _RestauranteDetailScreenState extends State<RestauranteDetailScreen> {
               Positioned(
                 right: 8,
                 top: 8,
-                child: _BotonMapa(icono: Icons.open_in_full_rounded, texto: 'Ampliar', onTap: _abrirMapaCompleto),
+                child: _BotonMapa(icono: Icons.open_in_full_rounded, texto: tr('Ampliar'), onTap: _abrirMapaCompleto),
               ),
               const Positioned(left: 6, bottom: 4, child: _CreditoOsm()),
             ],
@@ -263,7 +264,7 @@ class _RestauranteDetailScreenState extends State<RestauranteDetailScreen> {
         ),
       ),
       const SizedBox(height: 6),
-      const Text('Arrastrá o pellizcá el mapa para ver las calles cercanas.',
+      Text(tr('Arrastrá o pellizcá el mapa para ver las calles cercanas.'),
           style: TextStyle(color: AppColors.textSecondary, fontSize: 12)),
     ];
   }
@@ -271,7 +272,7 @@ class _RestauranteDetailScreenState extends State<RestauranteDetailScreen> {
   List<Widget> _seccionResenas() {
     final mia = _miResena;
     return [
-      const SeccionTitulo('Reseñas'),
+      SeccionTitulo(tr('Reseñas')),
       if (mia != null && (mia.pendiente || mia.rechazada))
         Card(
           color: mia.pendiente ? AppColors.accentSoft : const Color(0xFFFDECEC),
@@ -287,15 +288,15 @@ class _RestauranteDetailScreenState extends State<RestauranteDetailScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(mia.pendiente ? 'Tu reseña está en revisión' : 'Tu reseña no fue aprobada',
+                      Text(mia.pendiente ? tr('Tu reseña está en revisión') : tr('Tu reseña no fue aprobada'),
                           style: const TextStyle(fontWeight: FontWeight.bold)),
                       const SizedBox(height: 2),
                       Text(
                         mia.pendiente
-                            ? 'La publicaremos cuando el equipo la apruebe.'
+                            ? tr('La publicaremos cuando el equipo la apruebe.')
                             : (mia.motivoRechazo != null
-                                ? 'Motivo: ${mia.motivoRechazo}. Podés editarla y enviarla de nuevo.'
-                                : 'Podés editarla y enviarla de nuevo.'),
+                                ? tr('Motivo: {0}. Podés editarla y enviarla de nuevo.', [context.tc(mia.motivoRechazo)])
+                                : tr('Podés editarla y enviarla de nuevo.')),
                         style: const TextStyle(fontSize: 13),
                       ),
                     ],
@@ -309,14 +310,14 @@ class _RestauranteDetailScreenState extends State<RestauranteDetailScreen> {
       FilledButton.icon(
         onPressed: _dejarResena,
         icon: const Icon(Icons.rate_review_outlined),
-        label: Text(mia == null ? 'Dejar un comentario' : 'Editar mi comentario'),
+        label: Text(mia == null ? tr('Dejar un comentario') : tr('Editar mi comentario')),
         style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
       ),
       const SizedBox(height: 12),
       if (_resenas.isEmpty)
-        const Padding(
+        Padding(
           padding: EdgeInsets.symmetric(vertical: 12),
-          child: Text('Todavía no hay reseñas publicadas. ¡Sé el primero en contar tu experiencia!',
+          child: Text(tr('Todavía no hay reseñas publicadas. ¡Sé el primero en contar tu experiencia!'),
               style: TextStyle(color: AppColors.textSecondary)),
         ),
       ..._resenas.map((e) => _TarjetaResena(resena: e)),
@@ -338,7 +339,7 @@ class _CreditoOsm extends StatelessWidget {
   Widget build(BuildContext context) => Container(
         padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
         color: Colors.white70,
-        child: const Text('© OpenStreetMap', style: TextStyle(fontSize: 10, color: Colors.black87)),
+        child: Text(tr('© OpenStreetMap'), style: TextStyle(fontSize: 10, color: Colors.black87)),
       );
 }
 
@@ -396,7 +397,7 @@ class _TarjetaResena extends StatelessWidget {
               EstrellasFijas(valor: resena.puntuacion),
               if (resena.comentario != null && resena.comentario!.isNotEmpty) ...[
                 const SizedBox(height: 6),
-                Text(resena.comentario!),
+                TextoT(resena.comentario!),
               ],
             ],
           ),
@@ -420,7 +421,7 @@ class EstrellasFijas extends StatelessWidget {
           ),
           if (valor >= 1 && valor <= 5) ...[
             const SizedBox(width: 6),
-            Text(significadoEstrellas[valor - 1].$1,
+            Text(tr(significadoEstrellas[valor - 1].$1),
                 style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
           ],
         ],
@@ -456,11 +457,11 @@ class _HojaResenaState extends State<_HojaResena> {
   Future<void> _enviar() async {
     final texto = _texto.text.trim();
     if (_estrellas == 0) {
-      setState(() => _aviso = 'Elegí cuántas estrellas le das.');
+      setState(() => _aviso = tr('Elegí cuántas estrellas le das.'));
       return;
     }
     if (texto.length < 10) {
-      setState(() => _aviso = 'Contanos un poco más (mínimo 10 caracteres).');
+      setState(() => _aviso = tr('Contanos un poco más (mínimo 10 caracteres).'));
       return;
     }
     setState(() {
@@ -496,10 +497,10 @@ class _HojaResenaState extends State<_HojaResena> {
               ),
             ),
             const SizedBox(height: 14),
-            Text('Tu experiencia en ${widget.restauranteNombre}',
+            Text(tr('Tu experiencia en {0}', [widget.restauranteNombre]),
                 style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
             const SizedBox(height: 4),
-            const Text('Elegí las estrellas y contá cómo te fue.',
+            Text(tr('Elegí las estrellas y contá cómo te fue.'),
                 style: TextStyle(color: AppColors.textSecondary)),
             const SizedBox(height: 12),
             Center(
@@ -509,7 +510,7 @@ class _HojaResenaState extends State<_HojaResena> {
                   final valor = i + 1;
                   return IconButton(
                     iconSize: 40,
-                    tooltip: '$valor ${valor == 1 ? 'estrella' : 'estrellas'}',
+                    tooltip: valor == 1 ? tr('1 estrella') : tr('{0} estrellas', [valor]),
                     icon: Icon(valor <= _estrellas ? Icons.star_rounded : Icons.star_outline_rounded,
                         color: AppColors.accent),
                     onPressed: () => setState(() {
@@ -521,7 +522,7 @@ class _HojaResenaState extends State<_HojaResena> {
               ),
             ),
             const SizedBox(height: 8),
-            const Text('¿Qué significa cada puntuación?', style: TextStyle(fontWeight: FontWeight.w600)),
+            Text(tr('¿Qué significa cada puntuación?'), style: TextStyle(fontWeight: FontWeight.w600)),
             const SizedBox(height: 6),
             ...List.generate(5, (i) {
               final valor = i + 1;
@@ -554,8 +555,8 @@ class _HojaResenaState extends State<_HojaResena> {
                       ),
                       Expanded(
                         child: Text.rich(TextSpan(children: [
-                          TextSpan(text: '$titulo: ', style: const TextStyle(fontWeight: FontWeight.bold)),
-                          TextSpan(text: detalle),
+                          TextSpan(text: '${tr(titulo)}: ', style: const TextStyle(fontWeight: FontWeight.bold)),
+                          TextSpan(text: tr(detalle)),
                         ]), style: const TextStyle(fontSize: 13)),
                       ),
                     ],
@@ -569,9 +570,9 @@ class _HojaResenaState extends State<_HojaResena> {
               maxLines: 4,
               maxLength: 1000,
               textCapitalization: TextCapitalization.sentences,
-              decoration: const InputDecoration(
-                labelText: 'Tu comentario',
-                hintText: 'Ej: Tienen carta sin gluten y me explicaron cómo preparan los platos.',
+              decoration: InputDecoration(
+                labelText: tr('Tu comentario'),
+                hintText: tr('Ej: Tienen carta sin gluten y me explicaron cómo preparan los platos.'),
                 alignLabelWithHint: true,
               ),
             ),
@@ -581,11 +582,11 @@ class _HojaResenaState extends State<_HojaResena> {
                 child: Text(_aviso!, style: const TextStyle(color: AppColors.danger)),
               ),
             Row(
-              children: const [
+              children: [
                 Icon(Icons.verified_user_outlined, size: 16, color: AppColors.textSecondary),
                 SizedBox(width: 6),
                 Expanded(
-                  child: Text('Para evitar reseñas falsas, el equipo de SafeBite revisa cada comentario antes de publicarlo.',
+                  child: Text(tr('Para evitar reseñas falsas, el equipo de SafeBite revisa cada comentario antes de publicarlo.'),
                       style: TextStyle(fontSize: 12, color: AppColors.textSecondary)),
                 ),
               ],
@@ -596,7 +597,7 @@ class _HojaResenaState extends State<_HojaResena> {
               style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
               child: _enviando
                   ? const SizedBox(width: 22, height: 22, child: CircularProgressIndicator(strokeWidth: 2.5))
-                  : const Text('Enviar reseña'),
+                  : Text(tr('Enviar reseña')),
             ),
           ],
         ),
@@ -634,7 +635,7 @@ class _FormularioReporteState extends State<_FormularioReporte> {
   }
 
   Future<void> _agregarPrueba() async {
-    final bytes = await elegirFotoCamaraOGaleria(context, tituloCamara: 'Sacá una foto de la prueba');
+    final bytes = await elegirFotoCamaraOGaleria(context, tituloCamara: tr('Sacá una foto de la prueba'));
     if (bytes == null || !mounted) return;
     setState(() => _pruebas.add(bytes));
   }
@@ -662,16 +663,16 @@ class _FormularioReporteState extends State<_FormularioReporte> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Reportar un problema')),
+      appBar: AppBar(title: Text(tr('Reportar un problema'))),
       body: Form(
         key: _form,
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            Text('Local: ${widget.restauranteNombre}', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+            Text(tr('Local: {0}', [widget.restauranteNombre]), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
             const SizedBox(height: 4),
-            const Text(
-              'Contanos qué pasó. El equipo de SafeBite revisa cada reporte y puede contactarte para pedir más detalles.',
+            Text(
+              tr('Contanos qué pasó. El equipo de SafeBite revisa cada reporte y puede contactarte para pedir más detalles.'),
               style: TextStyle(color: AppColors.textSecondary),
             ),
             const SizedBox(height: 18),
@@ -679,16 +680,16 @@ class _FormularioReporteState extends State<_FormularioReporte> {
               controller: _telefono,
               keyboardType: TextInputType.phone,
               inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9+()\s.-]'))],
-              decoration: const InputDecoration(
-                labelText: 'Teléfono de contacto *',
-                hintText: 'Ej: 099 123 456',
+              decoration: InputDecoration(
+                labelText: tr('Teléfono de contacto *'),
+                hintText: tr('Ej: 099 123 456'),
                 prefixIcon: Icon(Icons.phone_outlined),
-                helperText: 'Solo lo ve el equipo de SafeBite.',
+                helperText: tr('Solo lo ve el equipo de SafeBite.'),
               ),
               validator: (v) {
                 final digitos = (v ?? '').replaceAll(RegExp(r'\D'), '').length;
-                if (digitos == 0) return 'Indicá un teléfono para poder contactarte';
-                if (digitos < 8 || digitos > 15) return 'Revisá el número (8 a 15 dígitos)';
+                if (digitos == 0) return tr('Indicá un teléfono para poder contactarte');
+                if (digitos < 8 || digitos > 15) return tr('Revisá el número (8 a 15 dígitos)');
                 return null;
               },
             ),
@@ -698,22 +699,22 @@ class _FormularioReporteState extends State<_FormularioReporte> {
               maxLines: 6,
               maxLength: 1000,
               textCapitalization: TextCapitalization.sentences,
-              decoration: const InputDecoration(
-                labelText: 'Describí el problema *',
-                hintText: 'Ej: Pedí un plato sin gluten y me lo sirvieron con pan rallado. Fue el 12/11 al mediodía.',
+              decoration: InputDecoration(
+                labelText: tr('Describí el problema *'),
+                hintText: tr('Ej: Pedí un plato sin gluten y me lo sirvieron con pan rallado. Fue el 12/11 al mediodía.'),
                 alignLabelWithHint: true,
               ),
               validator: (v) {
                 final t = (v ?? '').trim();
-                if (t.isEmpty) return 'Describí el problema';
-                if (t.length < 15) return 'Agregá un poco más de detalle (mínimo 15 caracteres)';
+                if (t.isEmpty) return tr('Describí el problema');
+                if (t.length < 15) return tr('Agregá un poco más de detalle (mínimo 15 caracteres)');
                 return null;
               },
             ),
             const SizedBox(height: 12),
-            const Text('Pruebas (opcional)', style: TextStyle(fontWeight: FontWeight.w600)),
+            Text(tr('Pruebas (opcional)'), style: TextStyle(fontWeight: FontWeight.w600)),
             const SizedBox(height: 2),
-            const Text('Fotos del plato, del menú, del ticket o de lo que respalde tu reporte. Hasta 3.',
+            Text(tr('Fotos del plato, del menú, del ticket o de lo que respalde tu reporte. Hasta 3.'),
                 style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
             const SizedBox(height: 10),
             Wrap(
@@ -735,7 +736,7 @@ class _FormularioReporteState extends State<_FormularioReporte> {
                           iconSize: 16,
                           visualDensity: VisualDensity.compact,
                           style: IconButton.styleFrom(backgroundColor: AppColors.danger),
-                          tooltip: 'Quitar',
+                          tooltip: tr('Quitar'),
                           onPressed: () => setState(() => _pruebas.removeAt(i)),
                           icon: const Icon(Icons.close, color: Colors.white),
                         ),
@@ -754,12 +755,12 @@ class _FormularioReporteState extends State<_FormularioReporte> {
                         borderRadius: BorderRadius.circular(12),
                         color: AppColors.primarySoft,
                       ),
-                      child: const Column(
+                      child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Icon(Icons.add_a_photo_outlined, color: AppColors.primary),
                           SizedBox(height: 4),
-                          Text('Agregar', style: TextStyle(color: AppColors.primary, fontSize: 12)),
+                          Text(tr('Agregar'), style: TextStyle(color: AppColors.primary, fontSize: 12)),
                         ],
                       ),
                     ),
@@ -772,7 +773,7 @@ class _FormularioReporteState extends State<_FormularioReporte> {
               icon: _enviando
                   ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2.5))
                   : const Icon(Icons.send_rounded),
-              label: const Text('Enviar reporte'),
+              label: Text(tr('Enviar reporte')),
               style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(50)),
             ),
           ],
@@ -867,7 +868,7 @@ class _MapaCompletoScreenState extends State<_MapaCompletoScreen> {
                         onPressed: () => abrirEnlace(context,
                             'https://www.google.com/maps/dir/?api=1&destination=${p.latitude},${p.longitude}'),
                         icon: const Icon(Icons.directions_rounded, size: 18),
-                        label: const Text('Cómo llegar'),
+                        label: Text(tr('Cómo llegar')),
                       ),
                     ],
                   ),

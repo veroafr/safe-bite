@@ -1,3 +1,12 @@
+// Textos en el idioma de la app (lo guarda Flutter en localStorage).
+function T(es, pt) {
+  try {
+    var v = localStorage.getItem('flutter.safebite_idioma');
+    if (v && v.indexOf('pt') >= 0) return pt;
+  } catch (e) {}
+  return es;
+}
+
 // Safe-Bite: cámara propia de la versión web.
 //
 // Abre la cámara trasera en una pantalla completa dentro de la página, con
@@ -55,21 +64,21 @@
         'font-family:Roboto,Arial,sans-serif;touch-action:none');
       var cabecera = crear('div',
         'color:#fff;padding:14px 16px;font-size:16px;text-align:center;background:rgba(0,0,0,.6)',
-        titulo || 'Sacá la foto');
+        titulo || T('Sacá la foto', 'Tire a foto'));
       var video = crear('video', 'flex:1;min-height:0;width:100%;object-fit:contain;background:#000');
       video.setAttribute('playsinline', '');
       video.setAttribute('autoplay', '');
       video.setAttribute('muted', '');
       video.muted = true;
-      var aviso = crear('div', 'color:#ddd;font-size:13px;text-align:center;padding:6px 16px', 'Abriendo la cámara...');
+      var aviso = crear('div', 'color:#ddd;font-size:13px;text-align:center;padding:6px 16px', T('Abriendo la cámara...', 'Abrindo a câmera...'));
       var barra = crear('div',
         'display:flex;gap:10px;justify-content:center;align-items:center;flex-wrap:wrap;padding:14px 12px 26px;background:rgba(0,0,0,.6)');
       var estiloSecundario = 'padding:12px 16px;border-radius:24px;border:1px solid #fff;background:transparent;color:#fff;font-size:15px';
-      var cancelar = crear('button', estiloSecundario, 'Cancelar');
-      var cambiar = crear('button', estiloSecundario + ';display:none', 'Cambiar cámara');
+      var cancelar = crear('button', estiloSecundario, T('Cancelar', 'Cancelar'));
+      var cambiar = crear('button', estiloSecundario + ';display:none', T('Cambiar cámara', 'Trocar câmera'));
       var disparar = crear('button',
         'padding:14px 24px;border-radius:28px;border:none;background:#2E8B4F;color:#fff;font-size:16px;font-weight:bold',
-        'Sacar foto');
+        T('Sacar foto', 'Tirar foto'));
       disparar.disabled = true;
       barra.appendChild(cancelar);
       barra.appendChild(cambiar);
@@ -154,7 +163,7 @@
       function listo() {
         var pista = stream && stream.getVideoTracks()[0];
         var cfg = pista && pista.getSettings ? pista.getSettings() : {};
-        aviso.textContent = 'Acercá el teléfono a unos 15 cm y esperá a que se vea nítido.' +
+        aviso.textContent = T('Acercá el teléfono a unos 15 cm y esperá a que se vea nítido.', 'Aproxime o celular a uns 15 cm e espere até a imagem ficar nítida.') +
           (cfg.width ? ' (' + cfg.width + 'x' + cfg.height + ')' : '');
         disparar.disabled = false;
       }
@@ -170,7 +179,7 @@
         var negro = null; // configuración que dio cuadros, pero negros
         for (var i = 0; i < intentos.length; i++) {
           if (terminado) return;
-          if (i > 0) aviso.textContent = 'La cámara no muestra imagen, probando otra configuración...';
+          if (i > 0) aviso.textContent = T('La cámara no muestra imagen, probando otra configuración...', 'A câmera não mostra imagem, testando outra configuração...');
           try {
             var r = await abrir(intentos[i]);
             if (r === 'ok') { await cargarCamaras(); listo(); return; }
@@ -184,7 +193,7 @@
         await cargarCamaras();
         for (var j = 0; j < camaras.length; j++) {
           if (terminado) return;
-          aviso.textContent = 'Probando la cámara ' + (j + 1) + ' de ' + camaras.length + '...';
+          aviso.textContent = T('Probando la cámara ', 'Testando a câmera ') + (j + 1) + T(' de ', ' de ') + camaras.length + '...';
           try {
             var rc = await abrir({ audio: false, video: { deviceId: { exact: camaras[j].deviceId } } });
             if (rc === 'ok') {
@@ -203,17 +212,17 @@
             if ((await abrir(negro)) !== 'nada') {
               await cargarCamaras();
               listo();
-              aviso.textContent = 'La imagen se ve negra. Si hay buena luz, otra app puede estar usando la cámara: ' +
-                'cerrala o tocá "Cambiar cámara".';
+              aviso.textContent = T('La imagen se ve negra. Si hay buena luz, otra app puede estar usando la cámara: cerrala o tocá "Cambiar cámara".',
+                'A imagem está preta. Se houver boa luz, outro app pode estar usando a câmera: feche-o ou toque em "Trocar câmera".');
               return;
             }
           } catch (e) {}
         }
         disparar.disabled = true;
         if (ultimoError && ultimoError.name === 'NotAllowedError') {
-          aviso.textContent = 'No hay permiso para usar la cámara. Habilitalo en la configuración del navegador.';
+          aviso.textContent = T('No hay permiso para usar la cámara. Habilitalo en la configuración del navegador.', 'Não há permissão para usar a câmera. Ative-a nas configurações do navegador.');
         } else {
-          aviso.textContent = 'La cámara no envía imagen. Cerrá otras apps o pestañas que la usen, o reiniciá el teléfono' +
+          aviso.textContent = T('La cámara no envía imagen. Cerrá otras apps o pestañas que la usen, o reiniciá el teléfono', 'A câmera não envia imagem. Feche outros apps ou abas que a usem, ou reinicie o celular') +
             (ultimoError && ultimoError.name ? ' (' + ultimoError.name + ')' : '') + '.';
         }
       }
@@ -224,21 +233,21 @@
         if (!camaras.length) return;
         disparar.disabled = true;
         indiceCamara = (indiceCamara + 1) % camaras.length;
-        aviso.textContent = 'Cambiando a la cámara ' + (indiceCamara + 1) + ' de ' + camaras.length + '...';
+        aviso.textContent = T('Cambiando a la cámara ', 'Trocando para a câmera ') + (indiceCamara + 1) + T(' de ', ' de ') + camaras.length + '...';
         try {
           if ((await abrir({ audio: false, video: { deviceId: { exact: camaras[indiceCamara].deviceId } } })) === 'ok') {
             listo();
           } else {
-            aviso.textContent = 'Esta cámara no muestra imagen. Tocá "Cambiar cámara" otra vez.';
+            aviso.textContent = T('Esta cámara no muestra imagen. Tocá "Cambiar cámara" otra vez.', 'Esta câmera não mostra imagem. Toque em "Trocar câmera" de novo.');
           }
         } catch (e) {
-          aviso.textContent = 'No se pudo abrir esta cámara (' + (e && e.name) + '). Tocá "Cambiar cámara" otra vez.';
+          aviso.textContent = T('No se pudo abrir esta cámara (', 'Não foi possível abrir esta câmera (') + (e && e.name) + T('). Tocá "Cambiar cámara" otra vez.', '). Toque em "Trocar câmera" de novo.');
         }
       };
 
       disparar.onclick = async function () {
         disparar.disabled = true;
-        aviso.textContent = 'Sacando la foto...';
+        aviso.textContent = T('Sacando la foto...', 'Tirando a foto...');
         var pista = stream && stream.getVideoTracks()[0];
         // Con ImageCapture (Chrome en Android) la foto sale a resolución
         // completa y con enfoque; si no, se usa el cuadro del video.
@@ -254,13 +263,13 @@
           if (!video.videoWidth) throw new Error('sin imagen');
           cerrar(await aJpeg(video, video.videoWidth, video.videoHeight, 2000));
         } catch (e) {
-          aviso.textContent = 'No se pudo sacar la foto. Probá de nuevo.';
+          aviso.textContent = T('No se pudo sacar la foto. Probá de nuevo.', 'Não foi possível tirar a foto. Tente de novo.');
           disparar.disabled = false;
         }
       };
 
       if (!window.safebiteCamaraDisponible()) {
-        aviso.textContent = 'Este navegador no permite usar la cámara.';
+        aviso.textContent = T('Este navegador no permite usar la cámara.', 'Este navegador não permite usar a câmera.');
         return;
       }
       iniciar();

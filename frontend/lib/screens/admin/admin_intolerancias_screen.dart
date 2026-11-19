@@ -6,6 +6,7 @@ import '../../core/providers/intolerancias_provider.dart';
 import '../../core/services/intolerancia_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/common_widgets.dart';
+import '../../core/i18n/i18n.dart';
 
 /// Gestion de las intolerancias / alergenos del sistema.
 ///
@@ -62,45 +63,45 @@ class _AdminIntoleranciasScreenState extends State<AdminIntoleranciasScreen> {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text(existente == null ? 'Nueva intolerancia' : 'Editar intolerancia',
+                  Text(existente == null ? tr('Nueva intolerancia') : tr('Editar intolerancia'),
                       style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                   if (existente != null)
-                    Text('Código: ${existente.codigo}',
+                    Text(tr('Código: {0}', [existente.codigo]),
                         style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: nombreCtrl,
                     textCapitalization: TextCapitalization.sentences,
-                    decoration: const InputDecoration(labelText: 'Nombre (ej: Sésamo)'),
-                    validator: (v) => (v == null || v.trim().isEmpty) ? 'El nombre es obligatorio' : null,
+                    decoration: InputDecoration(labelText: tr('Nombre (ej: Sésamo)')),
+                    validator: (v) => (v == null || v.trim().isEmpty) ? tr('El nombre es obligatorio') : null,
                   ),
                   const SizedBox(height: 10),
                   TextFormField(
                     controller: cientificoCtrl,
-                    decoration: const InputDecoration(labelText: 'Nombre científico (opcional)', hintText: 'Ej: Sesamum indicum'),
+                    decoration: InputDecoration(labelText: tr('Nombre científico (opcional)'), hintText: tr('Ej: Sesamum indicum')),
                   ),
                   const SizedBox(height: 10),
                   TextFormField(
                     controller: descripcionCtrl,
                     maxLines: 2,
-                    decoration: const InputDecoration(labelText: 'Descripción (opcional)'),
+                    decoration: InputDecoration(labelText: tr('Descripción (opcional)')),
                   ),
                   const SizedBox(height: 10),
                   TextFormField(
                     controller: clavesCtrl,
                     maxLines: 3,
-                    decoration: const InputDecoration(
-                      labelText: 'Palabras clave para detectarla en ingredientes',
-                      hintText: 'Separadas por coma, en español y portugués. Ej: sesamo, gergelim, tahini',
-                      helperText: 'Si lo dejás vacío se usa el nombre.',
+                    decoration: InputDecoration(
+                      labelText: tr('Palabras clave para detectarla en ingredientes'),
+                      hintText: tr('Separadas por coma, en español y portugués. Ej: sesamo, gergelim, tahini'),
+                      helperText: tr('Si lo dejás vacío se usa el nombre.'),
                       helperMaxLines: 2,
                     ),
                   ),
                   const SizedBox(height: 6),
                   SwitchListTile(
                     contentPadding: EdgeInsets.zero,
-                    title: const Text('Activa'),
-                    subtitle: const Text('Si está inactiva no aparece en el registro, el perfil ni los filtros.'),
+                    title: Text(tr('Activa')),
+                    subtitle: Text(tr('Si está inactiva no aparece en el registro, el perfil ni los filtros.')),
                     value: activa,
                     activeColor: AppColors.primary,
                     onChanged: (v) => setModal(() => activa = v),
@@ -110,7 +111,7 @@ class _AdminIntoleranciasScreenState extends State<AdminIntoleranciasScreen> {
                     onPressed: () {
                       if (formKey.currentState!.validate()) Navigator.pop(ctx, true);
                     },
-                    child: const Text('Guardar'),
+                    child: Text(tr('Guardar')),
                   ),
                 ],
               ),
@@ -136,7 +137,7 @@ class _AdminIntoleranciasScreenState extends State<AdminIntoleranciasScreen> {
         await service.editar(existente.id, body);
       }
       if (!mounted) return;
-      mostrarMensaje(context, existente == null ? 'Intolerancia agregada' : 'Intolerancia actualizada');
+      mostrarMensaje(context, existente == null ? tr('Intolerancia agregada') : tr('Intolerancia actualizada'));
       await _recargar();
     } catch (e) {
       if (mounted) mostrarError(context, e);
@@ -156,14 +157,14 @@ class _AdminIntoleranciasScreenState extends State<AdminIntoleranciasScreen> {
     final confirmar = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Eliminar intolerancia'),
-        content: Text('¿Eliminar "${i.nombre}"? Si ya la usan usuarios o productos, conviene desactivarla en lugar de borrarla.'),
+        title: Text(tr('Eliminar intolerancia')),
+        content: Text(tr('¿Eliminar "{0}"? Si ya la usan usuarios o productos, conviene desactivarla en lugar de borrarla.', [i.nombre])),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr('Cancelar'))),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Eliminar'),
+            child: Text(tr('Eliminar')),
           ),
         ],
       ),
@@ -172,7 +173,7 @@ class _AdminIntoleranciasScreenState extends State<AdminIntoleranciasScreen> {
     try {
       await context.read<IntoleranciaService>().eliminar(i.id);
       if (!mounted) return;
-      mostrarMensaje(context, 'Intolerancia eliminada');
+      mostrarMensaje(context, tr('Intolerancia eliminada'));
       await _recargar();
     } catch (e) {
       if (mounted) mostrarError(context, e);
@@ -182,11 +183,11 @@ class _AdminIntoleranciasScreenState extends State<AdminIntoleranciasScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Intolerancias del sistema')),
+      appBar: AppBar(title: Text(tr('Intolerancias del sistema'))),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _abrirFormulario(),
         icon: const Icon(Icons.add),
-        label: const Text('Nueva'),
+        label: Text(tr('Nueva')),
       ),
       body: FutureBuilder<List<Intolerancia>>(
         future: _future,
@@ -194,7 +195,7 @@ class _AdminIntoleranciasScreenState extends State<AdminIntoleranciasScreen> {
           if (snapshot.connectionState == ConnectionState.waiting) return const LoadingView();
           if (snapshot.hasError) return ErrorView(mensaje: snapshot.error.toString(), onReintentar: _recargar);
           final lista = snapshot.data ?? [];
-          if (lista.isEmpty) return const EmptyView(mensaje: 'No hay intolerancias cargadas', icono: Icons.no_food_outlined);
+          if (lista.isEmpty) return EmptyView(mensaje: tr('No hay intolerancias cargadas'), icono: Icons.no_food_outlined);
           final activas = lista.where((i) => i.activa).length;
           return RefreshIndicator(
             onRefresh: _recargar,
@@ -206,8 +207,7 @@ class _AdminIntoleranciasScreenState extends State<AdminIntoleranciasScreen> {
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 8),
                     child: Text(
-                      '$activas activas de ${lista.length}. Las nuevas aparecen al instante en el registro, '
-                      'el perfil, los filtros y los formularios de locales, noticias, recetas y productos.',
+                      tr('{0} activas de {1}. Las nuevas aparecen al instante en el registro, el perfil, los filtros y los formularios de locales, noticias, recetas y productos.', [activas, lista.length]),
                       style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
                     ),
                   );
@@ -215,7 +215,7 @@ class _AdminIntoleranciasScreenState extends State<AdminIntoleranciasScreen> {
                 final i = lista[idx - 1];
                 return Card(
                   child: ListTile(
-                    title: Text(i.nombre,
+                    title: TextoT(i.nombre,
                         style: TextStyle(
                           fontWeight: FontWeight.w600,
                           color: i.activa ? AppColors.textPrimary : AppColors.textSecondary,
@@ -223,8 +223,8 @@ class _AdminIntoleranciasScreenState extends State<AdminIntoleranciasScreen> {
                     subtitle: Text(
                       [
                         if (i.nombreCientifico != null) i.nombreCientifico!,
-                        i.predefinida ? 'Lista oficial' : 'Agregada por admin',
-                        if (!i.activa) 'Inactiva',
+                        i.predefinida ? tr('Lista oficial') : tr('Agregada por admin'),
+                        if (!i.activa) tr('Inactiva'),
                       ].join(' · '),
                       style: const TextStyle(fontSize: 12),
                     ),
@@ -239,7 +239,7 @@ class _AdminIntoleranciasScreenState extends State<AdminIntoleranciasScreen> {
                         ),
                         if (!i.predefinida)
                           IconButton(
-                            tooltip: 'Eliminar',
+                            tooltip: tr('Eliminar'),
                             icon: const Icon(Icons.delete_outline, color: AppColors.danger),
                             onPressed: () => _eliminar(i),
                           ),

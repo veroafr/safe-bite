@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import '../api/api_client.dart';
 import '../models/usuario.dart';
+import '../i18n/i18n.dart';
 import '../services/session_storage.dart';
 
 enum EstadoAuth { cargando, autenticado, invitado }
@@ -33,6 +34,11 @@ class AuthProvider extends ChangeNotifier {
     final data = await _client.post('/auth/login',
         body: {'email': email, 'password': password}, withAuth: false);
     await _persistirSesion(data);
+    // El idioma elegido en este dispositivo queda guardado en el perfil.
+    final idioma = Idioma.instancia.codigo;
+    if (usuario != null && usuario!.idioma != idioma) {
+      _client.put('/usuarios/me', body: {'idioma': idioma}).catchError((_) => null);
+    }
   }
 
   Future<void> registrar({

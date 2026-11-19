@@ -19,9 +19,11 @@ import 'admin_productos_screen.dart';
 import 'admin_intolerancias_screen.dart';
 import 'admin_ia_screen.dart';
 import 'admin_resenas_screen.dart';
+import '../../core/widgets/selector_idioma.dart';
 import '../../core/services/restaurante_service.dart';
 import '../../core/services/receta_service.dart';
 import '../../core/services/usuario_service.dart';
+import '../../core/i18n/i18n.dart';
 
 class AdminHomeScreen extends StatefulWidget {
   const AdminHomeScreen({super.key});
@@ -155,80 +157,80 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
 
     final modulos = [
       _ModuloAdmin(
-        titulo: 'Productos',
-        subtitulo: 'Gestionar catálogo',
+        titulo: tr('Productos'),
+        subtitulo: tr('Gestionar catálogo'),
         icono: Icons.inventory_2_rounded,
         pantalla: const AdminProductosScreen(),
         notificaciones: _productosPendientes,
         color: const Color(0xFF7C4DFF),
       ),
       _ModuloAdmin(
-        titulo: 'Restaurantes',
-        subtitulo: 'Gestionar locales',
+        titulo: tr('Restaurantes'),
+        subtitulo: tr('Gestionar locales'),
         icono: Icons.storefront_rounded,
         pantalla: const AdminRestaurantesScreen(),
         notificaciones: 0,
         color: const Color(0xFF00C853),
       ),
       _ModuloAdmin(
-        titulo: 'Reseñas',
-        subtitulo: 'Aprobar comentarios',
+        titulo: tr('Reseñas'),
+        subtitulo: tr('Aprobar comentarios'),
         icono: Icons.rate_review_rounded,
         pantalla: const AdminResenasScreen(),
         notificaciones: _resenasPendientes,
         color: const Color(0xFFFFB300),
       ),
       _ModuloAdmin(
-        titulo: 'Alertas',
-        subtitulo: 'Revisar incidencias',
+        titulo: tr('Alertas'),
+        subtitulo: tr('Revisar incidencias'),
         icono: Icons.warning_amber_rounded,
         pantalla: const AdminAlertasScreen(),
         notificaciones: _alertasPendientes,
         color: const Color(0xFFFF5252),
       ),
       _ModuloAdmin(
-        titulo: 'Noticias',
-        subtitulo: 'Gestionar noticias',
+        titulo: tr('Noticias'),
+        subtitulo: tr('Gestionar noticias'),
         icono: Icons.newspaper_rounded,
         pantalla: const AdminNoticiasScreen(),
         notificaciones: 0,
         color: const Color(0xFFFF9800),
       ),
       _ModuloAdmin(
-        titulo: 'Recetas',
-        subtitulo: 'Gestionar recetas',
+        titulo: tr('Recetas'),
+        subtitulo: tr('Gestionar recetas'),
         icono: Icons.menu_book_rounded,
         pantalla: const AdminRecetasScreen(),
         notificaciones: _recetasPendientes,
         color: const Color(0xFF009688),
       ),
       _ModuloAdmin(
-        titulo: 'Intolerancias',
-        subtitulo: 'Alérgenos del sistema',
+        titulo: tr('Intolerancias'),
+        subtitulo: tr('Alérgenos del sistema'),
         icono: Icons.no_food_rounded,
         pantalla: const AdminIntoleranciasScreen(),
         notificaciones: 0,
         color: const Color(0xFFE91E63),
       ),
       _ModuloAdmin(
-        titulo: 'Usuarios',
-        subtitulo: 'Perfiles y contraseñas',
+        titulo: tr('Usuarios'),
+        subtitulo: tr('Perfiles y contraseñas'),
         icono: Icons.groups_rounded,
         pantalla: AdminUsuariosScreen(pestanaInicial: _recuperacionesPendientes > 0 ? 1 : 0),
         notificaciones: _recuperacionesPendientes,
         color: const Color(0xFF00B8D4),
       ),
       _ModuloAdmin(
-        titulo: 'Inteligencia artificial',
-        subtitulo: 'Gasto y diagnóstico',
+        titulo: tr('Inteligencia artificial'),
+        subtitulo: tr('Gasto y diagnóstico'),
         icono: Icons.auto_awesome_rounded,
         pantalla: const AdminIaScreen(),
         notificaciones: 0,
         color: const Color(0xFF6D4C41),
       ),
       _ModuloAdmin(
-        titulo: 'Reportes y estadísticas',
-        subtitulo: 'Gráficos y exportar PDF',
+        titulo: tr('Reportes y estadísticas'),
+        subtitulo: tr('Gráficos y exportar PDF'),
         icono: Icons.analytics_rounded,
         pantalla: const AdminReportesScreen(),
         notificaciones: 0,
@@ -241,9 +243,10 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
 
       appBar: AppBarSafeBite(
         actions: [
+          const SelectorIdioma(claro: true),
           // Actualizar manualmente
           IconButton(
-            tooltip: 'Actualizar',
+            tooltip: tr('Actualizar'),
             icon: const Icon(
               Icons.refresh_rounded,
               color: Colors.white,
@@ -252,7 +255,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
           ),
 
           IconButton(
-            tooltip: 'Cerrar sesión',
+            tooltip: tr('Cerrar sesión'),
             icon: const Icon(
               Icons.logout_rounded,
               color: Colors.white,
@@ -354,7 +357,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                                       CrossAxisAlignment.start,
                                   children: [
                                     Text(
-                                      'Hola, ${usuario?.nombre ?? 'Administrador'} 👋',
+                                      tr('Hola, {0} 👋', [usuario?.nombre ?? tr('Administrador')]),
                                       maxLines: 1,
                                       overflow:
                                           TextOverflow.ellipsis,
@@ -392,9 +395,9 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
 
                         Row(
                           children: [
-                            const Expanded(
+                            Expanded(
                               child: Text(
-                                'Pendientes',
+                                tr('Pendientes'),
                                 style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.w700,
@@ -416,7 +419,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                                       BorderRadius.circular(20),
                                 ),
                                 child: Text(
-                                  '$_totalPendientes pendientes',
+                                  tr('{0} pendientes', [_totalPendientes]),
                                   style: const TextStyle(
                                     color: Color(0xFFD32F2F),
                                     fontSize: 10,
@@ -430,8 +433,8 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
 
                         const SizedBox(height: 5),
 
-                        const Text(
-                          'Elementos que necesitan tu revisión.',
+                        Text(
+                          tr('Elementos que necesitan tu revisión.'),
                           style: TextStyle(
                             fontSize: 11,
                             color: Color(0xFF777777),
@@ -484,9 +487,9 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
 
                         Row(
                           children: [
-                            const Expanded(
+                            Expanded(
                               child: Text(
-                                'Administración',
+                                tr('Administración'),
                                 style: TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.w700,
@@ -494,7 +497,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                               ),
                             ),
                             Text(
-                              '${modulos.length} módulos',
+                              tr('{0} módulos', [modulos.length]),
                               style: const TextStyle(
                                 fontSize: 10,
                                 color: Colors.grey,
@@ -561,7 +564,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     if (_productosPendientes > 0) {
       tarjetas.add(
         _PendingCard(
-          titulo: 'Productos por revisar',
+          titulo: tr('Productos por revisar'),
           valor: _productosPendientes,
           icono: Icons.inventory_2_rounded,
           color: const Color(0xFF7C4DFF),
@@ -577,7 +580,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     if (_recuperacionesPendientes > 0) {
       tarjetas.add(
         _PendingCard(
-          titulo: 'Pedidos de contraseña',
+          titulo: tr('Pedidos de contraseña'),
           valor: _recuperacionesPendientes,
           icono: Icons.lock_reset_rounded,
           color: const Color(0xFF00B8D4),
@@ -593,7 +596,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     if (_recetasPendientes > 0) {
       tarjetas.add(
         _PendingCard(
-          titulo: 'Recetas por aprobar',
+          titulo: tr('Recetas por aprobar'),
           valor: _recetasPendientes,
           icono: Icons.menu_book_rounded,
           color: const Color(0xFF009688),
@@ -609,7 +612,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     if (_resenasPendientes > 0) {
       tarjetas.add(
         _PendingCard(
-          titulo: 'Reseñas por aprobar',
+          titulo: tr('Reseñas por aprobar'),
           valor: _resenasPendientes,
           icono: Icons.rate_review_rounded,
           color: const Color(0xFFFFB300),
@@ -625,7 +628,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     if (_alertasPendientes > 0) {
       tarjetas.add(
         _PendingCard(
-          titulo: 'Alertas por revisar',
+          titulo: tr('Alertas por revisar'),
           valor: _alertasPendientes,
           icono: Icons.warning_amber_rounded,
           color: const Color(0xFFFF5252),
@@ -675,7 +678,7 @@ class _TodoAlDiaCard extends StatelessWidget {
               .withOpacity(.15),
         ),
       ),
-      child: const Row(
+      child: Row(
         children: [
           Icon(
             Icons.check_circle_rounded,
@@ -691,7 +694,7 @@ class _TodoAlDiaCard extends StatelessWidget {
                   CrossAxisAlignment.start,
               children: [
                 Text(
-                  'Todo al día',
+                  tr('Todo al día'),
                   style: TextStyle(
                     color: Color(0xFF2E7D32),
                     fontWeight: FontWeight.w700,
@@ -700,7 +703,7 @@ class _TodoAlDiaCard extends StatelessWidget {
                 ),
                 SizedBox(height: 2),
                 Text(
-                  'No hay elementos pendientes de revisión.',
+                  tr('No hay elementos pendientes de revisión.'),
                   style: TextStyle(
                     fontSize: 10.5,
                     color: Color(0xFF558B2F),
@@ -773,9 +776,9 @@ class _ErrorPendientes extends StatelessWidget {
 
           const SizedBox(width: 10),
 
-          const Expanded(
+          Expanded(
             child: Text(
-              'No se pudieron consultar los pendientes.',
+              tr('No se pudieron consultar los pendientes.'),
               style: TextStyle(
                 fontSize: 11,
               ),
@@ -784,8 +787,8 @@ class _ErrorPendientes extends StatelessWidget {
 
           TextButton(
             onPressed: onReintentar,
-            child: const Text(
-              'Reintentar',
+            child: Text(
+              tr('Reintentar'),
             ),
           ),
         ],

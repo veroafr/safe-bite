@@ -9,6 +9,8 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  flutter_localizations:
+    sdk: flutter
   cupertino_icons: ^1.0.8
 
   # Networking
@@ -34,7 +36,7 @@ dependencies:
   latlong2: ^0.9.1
 
   # Utilidades de UI
-  intl: ^0.19.0
+  intl: any
   fl_chart: ^0.68.0
 
   # Guardar el PDF de reportes exportado por el admin

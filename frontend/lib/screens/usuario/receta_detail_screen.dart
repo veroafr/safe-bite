@@ -8,6 +8,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/widgets/common_widgets.dart';
 import '../../core/widgets/receta_widgets.dart';
 import '../../core/widgets/recortar_imagen.dart';
+import '../../core/i18n/i18n.dart';
 
 class RecetaDetailScreen extends StatefulWidget {
   final int recetaId;
@@ -49,7 +50,7 @@ class _RecetaDetailScreenState extends State<RecetaDetailScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(_receta?.titulo ?? 'Receta')),
+      appBar: AppBar(title: TextoT(_receta?.titulo ?? tr('Receta'))),
       body: _error != null
           ? ErrorView(mensaje: _error!, onReintentar: _cargar)
           : _receta == null
@@ -83,56 +84,53 @@ class ContenidoReceta extends StatelessWidget {
             ),
           ),
         const SizedBox(height: 12),
-        Text(r.titulo, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
+        TextoT(r.titulo, style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold)),
         const SizedBox(height: 6),
         Wrap(spacing: 8, runSpacing: 6, crossAxisAlignment: WrapCrossAlignment.center, children: [
           EtiquetaOrigenReceta(receta: r),
           if (r.esDeUsuario && r.autorNombre != null)
-            Text('Compartida por ${r.autorNombre}', style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+            Text(tr('Compartida por {0}', [r.autorNombre]), style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
         ]),
         const SizedBox(height: 10),
         Wrap(spacing: 8, runSpacing: 6, children: [
           if (r.tiempoPreparacionMinutos != null) _Dato(Icons.schedule, '${r.tiempoPreparacionMinutos} min'),
-          if (r.porciones != null) _Dato(Icons.people_outline, '${r.porciones} porciones'),
-          if (r.dificultad != null) _Dato(Icons.signal_cellular_alt, r.dificultad!),
-          ...r.etiquetas.map((e) => _Dato(Icons.label_outline, e)),
+          if (r.porciones != null) _Dato(Icons.people_outline, tr('{0} porciones', [r.porciones])),
+          if (r.dificultad != null) _Dato(Icons.signal_cellular_alt, context.tc(r.dificultad!)),
+          ...r.etiquetas.map((e) => _Dato(Icons.label_outline, context.tc(e))),
         ]),
 
         // ---- Avisos de seguridad ----
         if (peligrosas.isNotEmpty)
           AvisoReceta(
             icono: Icons.warning_amber_rounded,
-            titulo: 'Atención: puede no ser apta para vos',
-            texto: 'Los ingredientes mencionan: ${peligrosas.map(etiquetaIntolerancia).join(', ')}. '
-                'Revisalos antes de prepararla.',
+            titulo: tr('Atención: puede no ser apta para vos'),
+            texto: tr('Los ingredientes mencionan: {0}. Revisalos antes de prepararla.', [peligrosas.map(etiquetaIntolerancia).join(', ')]),
             color: AppColors.danger,
           ),
         if (r.aviso != null)
-          AvisoReceta(icono: Icons.info_outline, titulo: 'Aviso', texto: r.aviso, color: const Color(0xFFB26A00)),
+          AvisoReceta(icono: Icons.info_outline, titulo: tr('Aviso'), texto: r.aviso, color: const Color(0xFFB26A00)),
         if (r.esSpoonacular)
           AvisoReceta(
             icono: Icons.translate_rounded,
-            titulo: 'Receta de una fuente externa',
-            texto: '${r.traducida ? 'Traducida automáticamente del inglés. ' : ''}'
-                'SafeBite filtró los ingredientes, pero siempre controlá las etiquetas de los productos que uses '
-                'y el riesgo de contaminación cruzada.',
+            titulo: tr('Receta de una fuente externa'),
+            texto: tr('{0}SafeBite filtró los ingredientes, pero siempre controlá las etiquetas de los productos que uses y el riesgo de contaminación cruzada.', [r.traducida ? tr('Traducida automáticamente del inglés. ') : '']),
             color: const Color(0xFF546E7A),
           ),
 
         if (r.libreDe.isNotEmpty) ...[
-          const SeccionTitulo('Apta para quienes evitan'),
+          SeccionTitulo(tr('Apta para quienes evitan')),
           Wrap(
             spacing: 6,
             runSpacing: 4,
-            children: r.libreDe.map((c) => Chip1('Sin ${etiquetaIntolerancia(c)}')).toList(),
+            children: r.libreDe.map((c) => Chip1(tr('Sin {0}', [etiquetaIntolerancia(c)]))).toList(),
           ),
         ],
         if (r.descripcion != null && r.descripcion!.isNotEmpty) ...[
-          const SeccionTitulo('Descripción'),
-          Text(r.descripcion!),
+          SeccionTitulo(tr('Descripción')),
+          TextoT(r.descripcion!),
         ],
         if (r.ingredientes.isNotEmpty) ...[
-          const SeccionTitulo('Ingredientes'),
+          SeccionTitulo(tr('Ingredientes')),
           ...r.ingredientes.map((i) => Padding(
                 padding: const EdgeInsets.symmetric(vertical: 4),
                 child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
@@ -141,12 +139,12 @@ class ContenidoReceta extends StatelessWidget {
                     child: Icon(Icons.circle, size: 6, color: AppColors.primary),
                   ),
                   const SizedBox(width: 10),
-                  Expanded(child: Text(i)),
+                  Expanded(child: TextoT(i)),
                 ]),
               )),
         ],
         if (r.pasos.isNotEmpty) ...[
-          const SeccionTitulo('Preparación'),
+          SeccionTitulo(tr('Preparación')),
           ...r.pasos.asMap().entries.map((entry) => Padding(
                 padding: const EdgeInsets.symmetric(vertical: 6),
                 child: Row(
@@ -154,7 +152,7 @@ class ContenidoReceta extends StatelessWidget {
                   children: [
                     CircleAvatar(radius: 12, child: Text('${entry.key + 1}', style: const TextStyle(fontSize: 12))),
                     const SizedBox(width: 10),
-                    Expanded(child: Text(entry.value)),
+                    Expanded(child: TextoT(entry.value)),
                   ],
                 ),
               )),
@@ -170,7 +168,7 @@ class ContenidoReceta extends StatelessWidget {
             const SizedBox(width: 6),
             Expanded(
               child: Text.rich(TextSpan(children: [
-                const TextSpan(text: 'Receta vía '),
+                TextSpan(text: tr('Receta vía ')),
                 WidgetSpan(
                   alignment: PlaceholderAlignment.baseline,
                   baseline: TextBaseline.alphabetic,
@@ -189,7 +187,7 @@ class ContenidoReceta extends StatelessWidget {
             OutlinedButton.icon(
               onPressed: () => abrirEnlace(context, r.fuenteUrl!),
               icon: const Icon(Icons.open_in_new, size: 18),
-              label: const Text('Ver la receta original'),
+              label: Text(tr('Ver la receta original')),
             ),
           ],
         ],

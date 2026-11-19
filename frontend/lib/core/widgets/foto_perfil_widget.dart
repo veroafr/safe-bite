@@ -4,14 +4,15 @@ import 'package:flutter/material.dart';
 import '../theme/app_theme.dart';
 import 'common_widgets.dart';
 import 'recortar_imagen.dart';
+import '../../core/i18n/i18n.dart';
 
 /// Elige una foto (cámara o galería) y la deja encuadrar en un círculo.
 /// Devuelve la imagen recortada (PNG, 400 px) o null si se cancela.
 Future<Uint8List?> elegirFotoDePerfil(BuildContext context) async {
-  final bytes = await elegirFotoCamaraOGaleria(context, tituloCamara: 'Tu foto de perfil');
+  final bytes = await elegirFotoCamaraOGaleria(context, tituloCamara: tr('Tu foto de perfil'));
   if (bytes == null || !context.mounted) return null;
   return recortarImagen(context,
-      bytes: Uint8List.fromList(bytes), proporcion: 1, anchoSalida: 400, titulo: 'Encuadrá tu foto');
+      bytes: Uint8List.fromList(bytes), proporcion: 1, anchoSalida: 400, titulo: tr('Encuadrá tu foto'));
 }
 
 /// Foto de perfil redonda con un botón de cámara para cambiarla.
@@ -82,9 +83,9 @@ class FotoPerfilEditable extends StatelessWidget {
       ]),
       const SizedBox(height: 4),
       if (tieneFoto && onQuitar != null)
-        TextButton(onPressed: cargando ? null : onQuitar, child: const Text('Quitar foto'))
+        TextButton(onPressed: cargando ? null : onQuitar, child: Text(tr('Quitar foto')))
       else if (!tieneFoto)
-        TextButton(onPressed: cargando ? null : onCambiar, child: const Text('Agregar foto (opcional)')),
+        TextButton(onPressed: cargando ? null : onCambiar, child: Text(tr('Agregar foto (opcional)'))),
     ]);
   }
 }

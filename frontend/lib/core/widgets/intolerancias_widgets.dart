@@ -5,6 +5,7 @@ import '../models/intolerancia.dart';
 import '../providers/auth_provider.dart';
 import '../providers/intolerancias_provider.dart';
 import '../theme/app_theme.dart';
+import '../../core/i18n/i18n.dart';
 
 /// Chips para marcar / desmarcar intolerancias. Muestra TODAS las
 /// intolerancias activas del sistema (las predefinidas y las que agrega el
@@ -54,11 +55,11 @@ class _SelectorIntoleranciasState extends State<SelectorIntolerancias> {
     if (provider.activas.isEmpty && provider.error != null) {
       return Row(
         children: [
-          const Expanded(
-            child: Text('No se pudo cargar la lista de intolerancias.',
+          Expanded(
+            child: Text(tr('No se pudo cargar la lista de intolerancias.'),
                 style: TextStyle(color: AppColors.danger, fontSize: 13)),
           ),
-          TextButton(onPressed: provider.recargar, child: const Text('Reintentar')),
+          TextButton(onPressed: provider.recargar, child: Text(tr('Reintentar'))),
         ],
       );
     }
@@ -69,7 +70,7 @@ class _SelectorIntoleranciasState extends State<SelectorIntolerancias> {
     Widget chip(String codigo, String nombre, {String? tooltip}) {
       final sel = widget.seleccionadas.contains(codigo);
       final c = FilterChip(
-        label: Text('${widget.prefijo}$nombre'),
+        label: Text('${widget.prefijo}${context.tc(nombre)}'),
         selected: sel,
         showCheckmark: true,
         selectedColor: widget.color.withOpacity(0.18),
@@ -95,7 +96,7 @@ class _SelectorIntoleranciasState extends State<SelectorIntolerancias> {
       runSpacing: 2,
       children: [
         for (final i in provider.activas) chip(i.codigo, i.nombre, tooltip: i.nombreCientifico),
-        for (final c in extras) chip(c, '${etiquetaIntolerancia(c)} (inactiva)'),
+        for (final c in extras) chip(c, tr('{0} (inactiva)', [etiquetaIntolerancia(c)])),
       ],
     );
   }
@@ -127,7 +128,7 @@ Future<Set<String>?> abrirFiltroIntolerancias(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(titulo, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                Text(tr(titulo), style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 if (ayuda != null) ...[
                   const SizedBox(height: 4),
                   Text(ayuda, style: const TextStyle(color: AppColors.textSecondary, fontSize: 13)),
@@ -139,12 +140,12 @@ Future<Set<String>?> abrirFiltroIntolerancias(
                     if (misIntolerancias.isNotEmpty)
                       ActionChip(
                         avatar: const Icon(Icons.person_outline, size: 18),
-                        label: const Text('Mis intolerancias'),
+                        label: Text(tr('Mis intolerancias')),
                         onPressed: () => setModal(() => temp = {...misIntolerancias}),
                       ),
                     ActionChip(
                       avatar: const Icon(Icons.clear_all, size: 18),
-                      label: const Text('Limpiar'),
+                      label: Text(tr('Limpiar')),
                       onPressed: () => setModal(() => temp = {}),
                     ),
                   ],
@@ -158,7 +159,7 @@ Future<Set<String>?> abrirFiltroIntolerancias(
                 const SizedBox(height: 16),
                 ElevatedButton(
                   onPressed: () => Navigator.pop(ctx, temp),
-                  child: Text(temp.isEmpty ? 'Ver todo' : 'Aplicar (${temp.length})'),
+                  child: Text(temp.isEmpty ? tr('Ver todo') : tr('Aplicar ({0})', [temp.length])),
                 ),
               ],
             ),
@@ -209,7 +210,7 @@ class BarraFiltroIntolerancias extends StatelessWidget {
             padding: const EdgeInsets.only(right: 6),
             child: ActionChip(
               avatar: Icon(Icons.tune, size: 18, color: seleccion.isEmpty ? AppColors.textSecondary : AppColors.primary),
-              label: Text(seleccion.isEmpty ? 'Intolerancias' : 'Intolerancias (${seleccion.length})'),
+              label: Text(seleccion.isEmpty ? tr('Intolerancias') : tr('Intolerancias ({0})', [seleccion.length])),
               onPressed: () => _abrir(context),
             ),
           ),
@@ -217,7 +218,7 @@ class BarraFiltroIntolerancias extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.only(right: 6),
               child: InputChip(
-                label: Text('$prefijo${etiquetaIntolerancia(c)}'),
+                label: Text('${prefijo}${etiquetaIntolerancia(c)}'),
                 selected: true,
                 showCheckmark: false,
                 selectedColor: AppColors.primary.withOpacity(0.15),
@@ -225,7 +226,7 @@ class BarraFiltroIntolerancias extends StatelessWidget {
               ),
             ),
           if (seleccion.isNotEmpty)
-            TextButton(onPressed: () => onChanged({}), child: const Text('Quitar filtros')),
+            TextButton(onPressed: () => onChanged({}), child: Text(tr('Quitar filtros'))),
         ],
       ),
     );

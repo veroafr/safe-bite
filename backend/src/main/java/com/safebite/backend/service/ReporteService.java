@@ -40,8 +40,18 @@ public class ReporteService {
     private final UsoIaRepository usoIaRepository;
     private final SolicitudRecuperacionRepository recuperacionRepository;
     private final IntoleranciaService intoleranciaService;
+    private final TraduccionContenidoService traduccion;
 
     public ReporteResponse obtenerEstadisticas() {
+        ReporteResponse r = calcular();
+        if (TraduccionRecetaService.pidePortugues()) {
+            r.setSeries(r.getSeries().stream().map(s -> new Serie(s.clave(), t(s.titulo()), t(s.descripcion()), s.tipo(), t(s.unidad()),
+                    s.datos().stream().map(d -> new Dato(t(d.etiqueta()), d.valor())).toList())).toList());
+        }
+        return r;
+    }
+
+    private ReporteResponse calcular() {
         List<Usuario> usuarios = usuarioRepository.findAll().stream().filter(u -> u.getRol() == Rol.USUARIO).toList();
         List<Producto> productos = productoRepository.findAll();
         List<Receta> recetas = recetaRepository.findAll().stream().filter(r -> !r.isEsTip()).toList();
@@ -164,14 +174,14 @@ public class ReporteService {
             Font negrita = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 10);
             Font chico = FontFactory.getFont(FontFactory.HELVETICA, 8, GRIS);
 
-            Paragraph t = new Paragraph("SafeBite - Reporte de estadísticas", titulo);
+            Paragraph t = new Paragraph(t("SafeBite - Reporte de estadísticas"), titulo);
             doc.add(t);
-            Paragraph f = new Paragraph("Generado el " + r.getGenerado().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")), sub);
+            Paragraph f = new Paragraph(t("Generado el") + " " + r.getGenerado().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")), sub);
             f.setSpacingAfter(16);
             doc.add(f);
 
             // Resumen
-            doc.add(new Paragraph("Resumen", seccion));
+            doc.add(new Paragraph(t("Resumen"), seccion));
             PdfPTable resumen = new PdfPTable(4);
             resumen.setWidthPercentage(100);
             resumen.setSpacingBefore(8);
@@ -189,7 +199,7 @@ public class ReporteService {
                 c.setBorderColor(VERDE_CLARO);
                 c.setPadding(8);
                 c.addElement(new Paragraph(String.valueOf(fila[1]), FontFactory.getFont(FontFactory.HELVETICA_BOLD, 16, VERDE)));
-                c.addElement(new Paragraph(String.valueOf(fila[0]), chico));
+                c.addElement(new Paragraph(t(String.valueOf(fila[0])), chico));
                 resumen.addCell(c);
             }
             doc.add(resumen);
@@ -202,7 +212,7 @@ public class ReporteService {
                 doc.add(h);
                 if (s.descripcion() != null) doc.add(new Paragraph(s.descripcion(), chico));
                 if (s.datos().isEmpty()) {
-                    Paragraph v = new Paragraph("Sin datos todavía.", normal);
+                    Paragraph v = new Paragraph(t("Sin datos todavía."), normal);
                     v.setSpacingAfter(12);
                     doc.add(v);
                     continue;
@@ -257,6 +267,67 @@ public class ReporteService {
             cb.fill();
             cb.restoreState();
         }
+    }
+
+    // ---------- portugués ----------
+
+    private static final Map<String, String> PT = Map.ofEntries(
+            Map.entry("SafeBite - Reporte de estadísticas", "SafeBite - Relatório de estatísticas"),
+            Map.entry("Generado el", "Gerado em"),
+            Map.entry("Resumen", "Resumo"),
+            Map.entry("Sin datos todavía.", "Ainda sem dados."),
+            Map.entry("Usuarios", "Usuários"), Map.entry("Usuarios activos", "Usuários ativos"),
+            Map.entry("Restaurantes", "Restaurantes"), Map.entry("Reseñas publicadas", "Avaliações publicadas"),
+            Map.entry("Recetas publicadas", "Receitas publicadas"), Map.entry("Productos", "Produtos"),
+            Map.entry("Noticias", "Notícias"), Map.entry("Alertas pendientes", "Alertas pendentes"),
+            Map.entry("Productos por revisar", "Produtos para revisar"), Map.entry("Recetas por aprobar", "Receitas para aprovar"),
+            Map.entry("Reseñas por aprobar", "Avaliações para aprovar"), Map.entry("Pedidos de contraseña", "Pedidos de senha"),
+            Map.entry("Usuarios nuevos por mes", "Novos usuários por mês"),
+            Map.entry("Registros de los últimos 6 meses", "Cadastros dos últimos 6 meses"),
+            Map.entry("usuarios", "usuários"), Map.entry("productos", "produtos"), Map.entry("recetas", "receitas"),
+            Map.entry("estrellas", "estrelas"), Map.entry("reseñas", "avaliações"), Map.entry("alertas", "alertas"),
+            Map.entry("noticias", "notícias"), Map.entry("consultas", "consultas"),
+            Map.entry("Usuarios por intolerancia", "Usuários por intolerância"),
+            Map.entry("Cuántas personas declararon cada restricción", "Quantas pessoas declararam cada restrição"),
+            Map.entry("Usuarios por país", "Usuários por país"), Map.entry("Sin indicar", "Não informado"),
+            Map.entry("Uruguay", "Uruguai"), Map.entry("Paraguay", "Paraguai"), Map.entry("Perú", "Peru"),
+            Map.entry("Colombia", "Colômbia"), Map.entry("Ecuador", "Equador"), Map.entry("España", "Espanha"),
+            Map.entry("Bolivia", "Bolívia"),
+            Map.entry("Productos por origen", "Produtos por origem"),
+            Map.entry("Aportados por usuarios", "Enviados por usuários"), Map.entry("Cargados por el admin", "Cadastrados pelo admin"),
+            Map.entry("Recetas publicadas por origen", "Receitas publicadas por origem"),
+            Map.entry("Comunidad", "Comunidade"), Map.entry("Equipo SafeBite", "Equipe SafeBite"),
+            Map.entry("Restaurantes mejor puntuados", "Restaurantes mais bem avaliados"),
+            Map.entry("Promedio de estrellas (reseñas aprobadas)", "Média de estrelas (avaliações aprovadas)"),
+            Map.entry("Reseñas por estado", "Avaliações por status"),
+            Map.entry("Pendientes", "Pendentes"), Map.entry("Rechazadas", "Recusadas"), Map.entry("Aprobadas", "Aprovadas"),
+            Map.entry("Alertas por estado", "Alertas por status"), Map.entry("Aceptadas", "Aceitas"), Map.entry("Denegadas", "Recusadas"),
+            Map.entry("Alertas por tipo", "Alertas por tipo"), Map.entry("Comentarios", "Comentários"),
+            Map.entry("Noticias por país", "Notícias por país"), Map.entry("Cargadas a mano", "Cadastradas manualmente"),
+            Map.entry("Consultas de IA por mes", "Consultas de IA por mês"),
+            Map.entry("Lectura de paquetes y traducciones (Claude y Gemini)", "Leitura de embalagens e traduções (Claude e Gemini)"),
+            Map.entry("Trigo", "Trigo"), Map.entry("Centeno", "Centeio"), Map.entry("Cebada", "Cevada"), Map.entry("Avena", "Aveia"),
+            Map.entry("Crustáceos", "Crustáceos"), Map.entry("Huevos", "Ovos"), Map.entry("Pescados", "Peixes"),
+            Map.entry("Maní", "Amendoim"), Map.entry("Soja", "Soja"), Map.entry("Leche", "Leite"), Map.entry("Almendra", "Amêndoa"),
+            Map.entry("Avellanas", "Avelãs"), Map.entry("Castaña de cajú", "Castanha de caju"),
+            Map.entry("Castaña de Pará", "Castanha-do-pará"), Map.entry("Macadamias", "Macadâmias"), Map.entry("Nueces", "Nozes"),
+            Map.entry("Pecanas", "Pecãs"), Map.entry("Pistachos", "Pistaches"), Map.entry("Piñones", "Pinhões"),
+            Map.entry("Castañas", "Castanhas"), Map.entry("Látex natural", "Látex natural"));
+
+    private static final Map<String, String> MESES_PT = Map.ofEntries(
+            Map.entry("Ene", "Jan"), Map.entry("Feb", "Fev"), Map.entry("Mar", "Mar"), Map.entry("Abr", "Abr"),
+            Map.entry("May", "Mai"), Map.entry("Jun", "Jun"), Map.entry("Jul", "Jul"), Map.entry("Ago", "Ago"),
+            Map.entry("Sep", "Set"), Map.entry("Oct", "Out"), Map.entry("Nov", "Nov"), Map.entry("Dic", "Dez"));
+
+    /** Texto en el idioma pedido (portugués si la app lo pidió). */
+    private String t(String es) {
+        if (es == null || !TraduccionRecetaService.pidePortugues()) return es;
+        String fijo = PT.get(es);
+        if (fijo != null) return fijo;
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("^(\\p{L}{3}) (\\d{2})$").matcher(es);
+        if (m.matches() && MESES_PT.containsKey(m.group(1))) return MESES_PT.get(m.group(1)) + " " + m.group(2);
+        // Intolerancias agregadas por el admin u otros textos: traducción con IA (queda guardada).
+        return traduccion.traducirUno("pt", es);
     }
 
     // ---------- utilidades ----------

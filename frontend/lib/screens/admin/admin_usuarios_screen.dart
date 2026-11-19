@@ -15,6 +15,7 @@ import '../../core/widgets/common_widgets.dart';
 import '../../core/widgets/form_widgets.dart';
 import '../../core/widgets/intolerancias_widgets.dart';
 import '../../core/widgets/recortar_imagen.dart';
+import '../../core/i18n/i18n.dart';
 
 /// Usuarios: buscar y editar perfiles, y atender los pedidos de "olvidé mi contraseña".
 class AdminUsuariosScreen extends StatefulWidget {
@@ -40,7 +41,7 @@ class _AdminUsuariosScreenState extends State<AdminUsuariosScreen> with SingleTi
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Usuarios'),
+        title: Text(tr('Usuarios')),
         bottom: TabBar(
           controller: _tabs,
           labelColor: Colors.white,
@@ -48,12 +49,12 @@ class _AdminUsuariosScreenState extends State<AdminUsuariosScreen> with SingleTi
           indicatorColor: AppColors.lime,
           indicatorWeight: 3,
           dividerColor: Colors.transparent,
-          tabs: const [Tab(text: 'Usuarios'), Tab(text: 'Pedidos de contraseña')],
+          tabs: [Tab(text: tr('Usuarios')), Tab(text: tr('Pedidos de contraseña'))],
         ),
       ),
       floatingActionButton: _tabs.index == 0
           ? FloatingActionButton(
-              tooltip: 'Agregar usuario',
+              tooltip: tr('Agregar usuario'),
               onPressed: () => _listaKey.currentState?.agregarUsuario(),
               child: const Icon(Icons.person_add_alt_1),
             )
@@ -116,30 +117,30 @@ class _ListaUsuariosState extends State<_ListaUsuarios> with AutomaticKeepAliveC
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Agregar usuario', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  Text(tr('Agregar usuario'), style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 16),
                   TextFormField(
                     controller: nombreCtrl,
-                    decoration: const InputDecoration(labelText: 'Nombre'),
+                    decoration: InputDecoration(labelText: tr('Nombre')),
                     validator: (v) => Validadores.requerido(v),
                   ),
                   const SizedBox(height: 10),
                   TextFormField(
                     controller: emailCtrl,
                     keyboardType: TextInputType.emailAddress,
-                    decoration: const InputDecoration(labelText: 'Email'),
+                    decoration: InputDecoration(labelText: tr('Email')),
                     validator: Validadores.email,
                   ),
                   const SizedBox(height: 10),
                   CampoPassword(
                     controller: passwordCtrl,
-                    label: 'Contraseña inicial',
+                    label: tr('Contraseña inicial'),
                     validator: Validadores.passwordSegura,
                   ),
                   const SizedBox(height: 10),
                   DropdownButtonFormField<Rol>(
                     value: rol,
-                    decoration: const InputDecoration(labelText: 'Rol'),
+                    decoration: InputDecoration(labelText: tr('Rol')),
                     items: Rol.values.map((r) => DropdownMenuItem(value: r, child: Text(_nombreRol(r)))).toList(),
                     onChanged: (v) => setModalState(() => rol = v ?? Rol.USUARIO),
                   ),
@@ -149,7 +150,7 @@ class _ListaUsuariosState extends State<_ListaUsuarios> with AutomaticKeepAliveC
                       if (form.currentState!.validate()) Navigator.pop(ctx, true);
                     },
                     style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(48)),
-                    child: const Text('Crear'),
+                    child: Text(tr('Crear')),
                   ),
                 ],
               ),
@@ -168,7 +169,7 @@ class _ListaUsuariosState extends State<_ListaUsuarios> with AutomaticKeepAliveC
           'rol': rol.name,
         });
         if (mounted) {
-          mostrarMensaje(context, 'Usuario creado');
+          mostrarMensaje(context, tr('Usuario creado'));
           recargar();
         }
       } catch (e) {
@@ -184,8 +185,8 @@ class _ListaUsuariosState extends State<_ListaUsuarios> with AutomaticKeepAliveC
       Padding(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
         child: TextField(
-          decoration: const InputDecoration(
-            hintText: 'Buscar por nombre, email o teléfono',
+          decoration: InputDecoration(
+            hintText: tr('Buscar por nombre, email o teléfono'),
             prefixIcon: Icon(Icons.search),
           ),
           onChanged: (v) => setState(() => _busqueda = v.trim().toLowerCase()),
@@ -204,7 +205,7 @@ class _ListaUsuariosState extends State<_ListaUsuarios> with AutomaticKeepAliveC
                     u.email.toLowerCase().contains(_busqueda) ||
                     (u.telefono ?? '').contains(_busqueda))
                 .toList();
-            if (usuarios.isEmpty) return const EmptyView(mensaje: 'No se encontraron usuarios');
+            if (usuarios.isEmpty) return EmptyView(mensaje: tr('No se encontraron usuarios'));
             return RefreshIndicator(
               onRefresh: () async => recargar(),
               child: ListView.builder(
@@ -220,11 +221,11 @@ class _ListaUsuariosState extends State<_ListaUsuarios> with AutomaticKeepAliveC
                         Flexible(child: Text(u.nombre, overflow: TextOverflow.ellipsis)),
                         if (u.rol == Rol.ADMINISTRADOR) ...[
                           const SizedBox(width: 6),
-                          Chip1('Admin', color: AppColors.accent),
+                          Chip1(tr('Admin'), color: AppColors.accent),
                         ],
                         if (!u.activo) ...[
                           const SizedBox(width: 6),
-                          Chip1('Desactivado', color: AppColors.danger),
+                          Chip1(tr('Desactivado'), color: AppColors.danger),
                         ],
                       ]),
                       subtitle: Text(u.email),
@@ -241,7 +242,7 @@ class _ListaUsuariosState extends State<_ListaUsuarios> with AutomaticKeepAliveC
   }
 }
 
-String _nombreRol(Rol r) => r == Rol.ADMINISTRADOR ? 'Administrador' : 'Usuario';
+String _nombreRol(Rol r) => r == Rol.ADMINISTRADOR ? tr('Administrador') : tr('Usuario');
 
 class AvatarUsuario extends StatelessWidget {
   final Usuario usuario;
@@ -305,10 +306,10 @@ class _AdminEditarUsuarioScreenState extends State<AdminEditarUsuarioScreen> {
   }
 
   Future<void> _elegirFoto() async {
-    final bytes = await elegirFotoCamaraOGaleria(context, tituloCamara: 'Foto de perfil');
+    final bytes = await elegirFotoCamaraOGaleria(context, tituloCamara: tr('Foto de perfil'));
     if (bytes == null || !mounted) return;
     final recortada = await recortarImagen(context,
-        bytes: Uint8List.fromList(bytes), proporcion: 1, anchoSalida: 400, titulo: 'Encuadrá la foto de perfil');
+        bytes: Uint8List.fromList(bytes), proporcion: 1, anchoSalida: 400, titulo: tr('Encuadrá la foto de perfil'));
     if (recortada == null || !mounted) return;
     setState(() {
       _fotoNueva = recortada;
@@ -335,7 +336,7 @@ class _AdminEditarUsuarioScreenState extends State<AdminEditarUsuarioScreen> {
         if (_quitarFoto) 'fotoBase64': '',
       });
       if (!mounted) return;
-      mostrarMensaje(context, 'Perfil actualizado');
+      mostrarMensaje(context, tr('Perfil actualizado'));
       Navigator.pop(context, true);
     } catch (e) {
       if (mounted) {
@@ -370,7 +371,7 @@ class _AdminEditarUsuarioScreenState extends State<AdminEditarUsuarioScreen> {
         if (!didPop) Navigator.pop(context, _huboCambios);
       },
       child: Scaffold(
-        appBar: AppBar(title: const Text('Editar usuario')),
+        appBar: AppBar(title: Text(tr('Editar usuario'))),
         body: Form(
           key: _form,
           child: ListView(
@@ -400,7 +401,7 @@ class _AdminEditarUsuarioScreenState extends State<AdminEditarUsuarioScreen> {
                     right: 0,
                     bottom: 0,
                     child: IconButton.filled(
-                      tooltip: 'Cambiar foto',
+                      tooltip: tr('Cambiar foto'),
                       onPressed: _elegirFoto,
                       icon: const Icon(Icons.photo_camera_outlined, size: 18),
                     ),
@@ -414,28 +415,27 @@ class _AdminEditarUsuarioScreenState extends State<AdminEditarUsuarioScreen> {
                       _fotoNueva = null;
                       _quitarFoto = true;
                     }),
-                    child: const Text('Quitar foto'),
+                    child: Text(tr('Quitar foto')),
                   ),
                 ),
               const SizedBox(height: 8),
               Text(
-                'ID ${u.id}'
-                '${u.fechaRegistro != null ? ' · registrado el ${DateFormat('dd/MM/yyyy').format(u.fechaRegistro!)}' : ''}',
+                'ID ${u.id}' '${u.fechaRegistro != null ? tr(' · registrado el {0}', [DateFormat('dd/MM/yyyy').format(u.fechaRegistro!)]) : ''}',
                 textAlign: TextAlign.center,
                 style: const TextStyle(color: AppColors.textSecondary, fontSize: 12),
               ),
-              const SeccionTitulo('Datos personales'),
+              SeccionTitulo(tr('Datos personales')),
               TextFormField(
                 controller: _nombre,
                 textCapitalization: TextCapitalization.words,
-                decoration: const InputDecoration(labelText: 'Nombre', prefixIcon: Icon(Icons.person_outline)),
+                decoration: InputDecoration(labelText: tr('Nombre'), prefixIcon: Icon(Icons.person_outline)),
                 validator: (v) => Validadores.requerido(v),
               ),
               const SizedBox(height: 12),
               TextFormField(
                 controller: _email,
                 keyboardType: TextInputType.emailAddress,
-                decoration: const InputDecoration(labelText: 'Email', prefixIcon: Icon(Icons.alternate_email)),
+                decoration: InputDecoration(labelText: tr('Email'), prefixIcon: Icon(Icons.alternate_email)),
                 validator: Validadores.email,
               ),
               const SizedBox(height: 12),
@@ -443,7 +443,7 @@ class _AdminEditarUsuarioScreenState extends State<AdminEditarUsuarioScreen> {
                 controller: _telefono,
                 keyboardType: TextInputType.phone,
                 inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'[0-9+()\s.-]'))],
-                decoration: const InputDecoration(labelText: 'Teléfono (opcional)', prefixIcon: Icon(Icons.phone_outlined)),
+                decoration: InputDecoration(labelText: tr('Teléfono (opcional)'), prefixIcon: Icon(Icons.phone_outlined)),
               ),
               const SizedBox(height: 12),
               SelectorUbicacion(
@@ -455,44 +455,44 @@ class _AdminEditarUsuarioScreenState extends State<AdminEditarUsuarioScreen> {
                   _ciudad = c;
                 }),
               ),
-              const SeccionTitulo('Cuenta'),
+              SeccionTitulo(tr('Cuenta')),
               DropdownButtonFormField<Rol>(
                 value: _rol,
-                decoration: const InputDecoration(labelText: 'Rol', prefixIcon: Icon(Icons.badge_outlined)),
+                decoration: InputDecoration(labelText: tr('Rol'), prefixIcon: Icon(Icons.badge_outlined)),
                 items: Rol.values.map((r) => DropdownMenuItem(value: r, child: Text(_nombreRol(r)))).toList(),
                 onChanged: esUnoMismo ? null : (v) => setState(() => _rol = v ?? _rol),
               ),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('Cuenta activa'),
-                subtitle: const Text('Si la desactivás, la persona no puede iniciar sesión'),
+                title: Text(tr('Cuenta activa')),
+                subtitle: Text(tr('Si la desactivás, la persona no puede iniciar sesión')),
                 value: _activo,
                 onChanged: esUnoMismo ? null : (v) => setState(() => _activo = v),
               ),
               OutlinedButton.icon(
                 onPressed: _asignarPassword,
                 icon: const Icon(Icons.lock_reset_rounded),
-                label: const Text('Asignar contraseña nueva'),
+                label: Text(tr('Asignar contraseña nueva')),
                 style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(46)),
               ),
-              const SeccionTitulo('Restricciones alimentarias'),
+              SeccionTitulo(tr('Restricciones alimentarias')),
               SelectorIntolerancias(
                 seleccionadas: _intolerancias,
                 onChanged: (s) => setState(() => _intolerancias = s),
               ),
               SwitchListTile(
                 contentPadding: EdgeInsets.zero,
-                title: const Text('Busca alimentarse mejor'),
+                title: Text(tr('Busca alimentarse mejor')),
                 value: _saludable,
                 onChanged: (v) => setState(() => _saludable = v),
               ),
               DropdownButtonFormField<NivelAlerta>(
                 value: _nivel,
-                decoration: const InputDecoration(labelText: 'Nivel de alerta'),
-                items: const [
-                  DropdownMenuItem(value: NivelAlerta.BAJO, child: Text('Bajo')),
-                  DropdownMenuItem(value: NivelAlerta.MEDIO, child: Text('Medio')),
-                  DropdownMenuItem(value: NivelAlerta.ALTO, child: Text('Alto')),
+                decoration: InputDecoration(labelText: tr('Nivel de alerta')),
+                items: [
+                  DropdownMenuItem(value: NivelAlerta.BAJO, child: Text(tr('Bajo'))),
+                  DropdownMenuItem(value: NivelAlerta.MEDIO, child: Text(tr('Medio'))),
+                  DropdownMenuItem(value: NivelAlerta.ALTO, child: Text(tr('Alto'))),
                 ],
                 onChanged: (v) => setState(() => _nivel = v ?? _nivel),
               ),
@@ -502,7 +502,7 @@ class _AdminEditarUsuarioScreenState extends State<AdminEditarUsuarioScreen> {
                 icon: _guardando
                     ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2.5))
                     : const Icon(Icons.save_outlined),
-                label: const Text('Guardar cambios'),
+                label: Text(tr('Guardar cambios')),
                 style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(50)),
               ),
               const SizedBox(height: 12),
@@ -510,7 +510,7 @@ class _AdminEditarUsuarioScreenState extends State<AdminEditarUsuarioScreen> {
                 TextButton.icon(
                   onPressed: _eliminar,
                   icon: const Icon(Icons.delete_outline, color: AppColors.danger),
-                  label: const Text('Eliminar usuario', style: TextStyle(color: AppColors.danger)),
+                  label: Text(tr('Eliminar usuario'), style: TextStyle(color: AppColors.danger)),
                 ),
               const SizedBox(height: 16),
             ],
@@ -524,14 +524,14 @@ class _AdminEditarUsuarioScreenState extends State<AdminEditarUsuarioScreen> {
     final confirmar = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Eliminar usuario'),
-        content: Text('¿Seguro que querés eliminar a ${u.nombre}? No se puede deshacer.'),
+        title: Text(tr('Eliminar usuario')),
+        content: Text(tr('¿Seguro que querés eliminar a {0}? No se puede deshacer.', [u.nombre])),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr('Cancelar'))),
           FilledButton(
               style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
               onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Eliminar')),
+              child: Text(tr('Eliminar'))),
         ],
       ),
     );
@@ -575,44 +575,44 @@ Future<PasswordNueva?> pedirPasswordNueva(BuildContext context, {required String
     context: context,
     builder: (ctx) => StatefulBuilder(
       builder: (ctx, setD) => AlertDialog(
-        title: Text('Nueva contraseña para $nombre'),
+        title: Text(tr('Nueva contraseña para {0}', [nombre])),
         content: Form(
           key: form,
           child: SingleChildScrollView(
             child: Column(mainAxisSize: MainAxisSize.min, children: [
-              CampoPassword(controller: ctrl, label: 'Contraseña', validator: Validadores.passwordSegura),
+              CampoPassword(controller: ctrl, label: tr('Contraseña'), validator: Validadores.passwordSegura),
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton.icon(
                   onPressed: () => setD(() => ctrl.text = generarPassword()),
                   icon: const Icon(Icons.casino_outlined, size: 18),
-                  label: const Text('Generar otra'),
+                  label: Text(tr('Generar otra')),
                 ),
               ),
               CheckboxListTile(
                 contentPadding: EdgeInsets.zero,
                 value: temporal,
                 onChanged: (v) => setD(() => temporal = v ?? true),
-                title: const Text('Pedir que la cambie al entrar'),
-                subtitle: const Text('Recomendado'),
+                title: Text(tr('Pedir que la cambie al entrar')),
+                subtitle: Text(tr('Recomendado')),
               ),
               if (conNota)
                 TextField(
                   controller: nota,
-                  decoration: const InputDecoration(labelText: 'Nota interna (opcional)', hintText: 'Ej: verificado por teléfono'),
+                  decoration: InputDecoration(labelText: tr('Nota interna (opcional)'), hintText: tr('Ej: verificado por teléfono')),
                 ),
             ]),
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Cancelar')),
+          TextButton(onPressed: () => Navigator.pop(ctx), child: Text(tr('Cancelar'))),
           FilledButton(
             onPressed: () {
               if (form.currentState!.validate()) {
                 Navigator.pop(ctx, PasswordNueva(ctrl.text, temporal, nota.text.trim().isEmpty ? null : nota.text.trim()));
               }
             },
-            child: const Text('Asignar'),
+            child: Text(tr('Asignar')),
           ),
         ],
       ),
@@ -623,15 +623,14 @@ Future<PasswordNueva?> pedirPasswordNueva(BuildContext context, {required String
 /// Muestra la contraseña asignada para copiarla y avisarle a la persona.
 Future<void> mostrarPasswordAsignada(BuildContext context,
     {required String password, required String nombre, required String email, String? telefono}) {
-  final texto = 'Hola $nombre, te escribimos de SafeBite. Tu contraseña temporal es: $password\n'
-      'Entrá a la app con tu email ($email) y elegí una contraseña nueva.';
+  final texto = tr('Hola {0}, te escribimos de SafeBite. Tu contraseña temporal es: {1}\nEntrá a la app con tu email ({2}) y elegí una contraseña nueva.', [nombre, password, email]);
   final digitos = (telefono ?? '').replaceAll(RegExp(r'\D'), '');
   return showDialog<void>(
     context: context,
     builder: (ctx) => AlertDialog(
-      title: const Text('Contraseña asignada'),
+      title: Text(tr('Contraseña asignada')),
       content: Column(mainAxisSize: MainAxisSize.min, crossAxisAlignment: CrossAxisAlignment.start, children: [
-        const Text('Comunicásela a la persona por un medio seguro:'),
+        Text(tr('Comunicásela a la persona por un medio seguro:')),
         const SizedBox(height: 12),
         Container(
           width: double.infinity,
@@ -644,25 +643,25 @@ Future<void> mostrarPasswordAsignada(BuildContext context,
         TextButton.icon(
           onPressed: () {
             Clipboard.setData(ClipboardData(text: password));
-            mostrarMensaje(ctx, 'Contraseña copiada');
+            mostrarMensaje(ctx, tr('Contraseña copiada'));
           },
           icon: const Icon(Icons.copy, size: 18),
-          label: const Text('Copiar contraseña'),
+          label: Text(tr('Copiar contraseña')),
         ),
         if (digitos.length >= 8)
           TextButton.icon(
-            onPressed: () => abrirEnlace(ctx, 'https://wa.me/$digitos?text=${Uri.encodeComponent(texto)}'),
+            onPressed: () => abrirEnlace(ctx, 'https://wa.me/${digitos}?text=${Uri.encodeComponent(texto)}'),
             icon: const Icon(Icons.chat_outlined, size: 18),
-            label: const Text('Avisar por WhatsApp'),
+            label: Text(tr('Avisar por WhatsApp')),
           ),
         TextButton.icon(
           onPressed: () => abrirEnlace(ctx,
-              'mailto:$email?subject=${Uri.encodeComponent('SafeBite: tu contraseña temporal')}&body=${Uri.encodeComponent(texto)}'),
+              'mailto:${email}?subject=${Uri.encodeComponent(tr('SafeBite: tu contraseña temporal'))}&body=${Uri.encodeComponent(texto)}'),
           icon: const Icon(Icons.email_outlined, size: 18),
-          label: const Text('Avisar por email'),
+          label: Text(tr('Avisar por email')),
         ),
       ]),
-      actions: [FilledButton(onPressed: () => Navigator.pop(ctx), child: const Text('Listo'))],
+      actions: [FilledButton(onPressed: () => Navigator.pop(ctx), child: Text(tr('Listo')))],
     ),
   );
 }
@@ -710,14 +709,14 @@ class _PedidosRecuperacionState extends State<_PedidosRecuperacion> with Automat
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Descartar pedido'),
+        title: Text(tr('Descartar pedido')),
         content: TextField(
           controller: nota,
-          decoration: const InputDecoration(labelText: 'Motivo (opcional)', hintText: 'Ej: no se pudo verificar la identidad'),
+          decoration: InputDecoration(labelText: tr('Motivo (opcional)'), hintText: tr('Ej: no se pudo verificar la identidad')),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Descartar')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr('Cancelar'))),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(tr('Descartar'))),
         ],
       ),
     );
@@ -748,10 +747,10 @@ class _PedidosRecuperacionState extends State<_PedidosRecuperacion> with Automat
       Padding(
         padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
         child: Wrap(spacing: 8, children: [
-          for (final (valor, texto) in const [
-            ('PENDIENTE', 'Pendientes'),
-            ('RESUELTA', 'Resueltos'),
-            ('DESCARTADA', 'Descartados'),
+          for (final (valor, texto) in [
+            ('PENDIENTE', tr('Pendientes')),
+            ('RESUELTA', tr('Resueltos')),
+            ('DESCARTADA', tr('Descartados')),
           ])
             ChoiceChip(
               label: Text(texto),
@@ -763,11 +762,10 @@ class _PedidosRecuperacionState extends State<_PedidosRecuperacion> with Automat
             ),
         ]),
       ),
-      const Padding(
+      Padding(
         padding: EdgeInsets.fromLTRB(16, 8, 16, 0),
         child: Text(
-          'Antes de asignar una contraseña, confirmá que quien pide es la dueña de la cuenta '
-          '(por ejemplo, llamando al teléfono que dejó o preguntando datos de su perfil).',
+          tr('Antes de asignar una contraseña, confirmá que quien pide es la dueña de la cuenta (por ejemplo, llamando al teléfono que dejó o preguntando datos de su perfil).'),
           style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
         ),
       ),
@@ -780,7 +778,7 @@ class _PedidosRecuperacionState extends State<_PedidosRecuperacion> with Automat
             final lista = snap.data ?? [];
             if (lista.isEmpty) {
               return EmptyView(
-                  mensaje: _estado == 'PENDIENTE' ? 'No hay pedidos de contraseña pendientes' : 'No hay pedidos en este estado',
+                  mensaje: _estado == 'PENDIENTE' ? tr('No hay pedidos de contraseña pendientes') : tr('No hay pedidos en este estado'),
                   icono: Icons.lock_open_rounded);
             }
             return RefreshIndicator(
@@ -804,28 +802,25 @@ class _PedidosRecuperacionState extends State<_PedidosRecuperacion> with Automat
                         ]),
                         const SizedBox(height: 6),
                         if (s.cuentaEncontrada)
-                          Text('Cuenta: ${s.usuarioNombre}${s.usuarioActivo ? '' : ' (desactivada)'}')
+                          Text(tr('Cuenta: {0}{1}', [s.usuarioNombre, s.usuarioActivo ? '' : tr(' (desactivada)')]))
                         else
-                          const Text('⚠ No hay ninguna cuenta con ese email',
+                          Text(tr('⚠ No hay ninguna cuenta con ese email'),
                               style: TextStyle(color: AppColors.danger, fontWeight: FontWeight.w600)),
                         if ((s.telefono ?? s.usuarioTelefono) != null)
                           Padding(
                             padding: const EdgeInsets.only(top: 4),
-                            child: Text('Teléfono: ${s.telefono ?? s.usuarioTelefono}'),
+                            child: Text(tr('Teléfono: {0}', [s.telefono ?? s.usuarioTelefono])),
                           ),
                         if (s.mensaje != null)
                           Padding(
                             padding: const EdgeInsets.only(top: 4),
-                            child: Text('"${s.mensaje}"', style: const TextStyle(fontStyle: FontStyle.italic)),
+                            child: Text('"${context.tc(s.mensaje)}"', style: const TextStyle(fontStyle: FontStyle.italic)),
                           ),
                         if (!s.pendiente)
                           Padding(
                             padding: const EdgeInsets.only(top: 6),
                             child: Text(
-                              '${s.estado == 'RESUELTA' ? 'Resuelto' : 'Descartado'}'
-                              '${s.resueltaPor != null ? ' por ${s.resueltaPor}' : ''}'
-                              '${s.fechaResolucion != null ? ' el ${DateFormat('dd/MM/yyyy').format(s.fechaResolucion!)}' : ''}'
-                              '${s.nota != null ? ' · ${s.nota}' : ''}',
+                              '${s.estado == 'RESUELTA' ? tr('Resuelto') : tr('Descartado')}' '${s.resueltaPor != null ? ' por ${s.resueltaPor}' : ''}' '${s.fechaResolucion != null ? ' el ${DateFormat('dd/MM/yyyy').format(s.fechaResolucion!)}' : ''}' '${s.nota != null ? ' · ${s.nota}' : ''}',
                               style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
                             ),
                           ),
@@ -836,11 +831,11 @@ class _PedidosRecuperacionState extends State<_PedidosRecuperacion> with Automat
                               FilledButton.icon(
                                 onPressed: () => _resolver(s),
                                 icon: const Icon(Icons.key_rounded, size: 18),
-                                label: const Text('Asignar contraseña'),
+                                label: Text(tr('Asignar contraseña')),
                               ),
                             if (s.cuentaEncontrada)
-                              OutlinedButton(onPressed: () => _verPerfil(s), child: const Text('Ver perfil')),
-                            TextButton(onPressed: () => _descartar(s), child: const Text('Descartar')),
+                              OutlinedButton(onPressed: () => _verPerfil(s), child: Text(tr('Ver perfil'))),
+                            TextButton(onPressed: () => _descartar(s), child: Text(tr('Descartar'))),
                           ]),
                         ],
                       ]),

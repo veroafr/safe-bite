@@ -1,3 +1,5 @@
+import '../i18n/i18n.dart';
+
 enum TipoAlerta { RESTAURANTE, PRODUCTO, COMENTARIO }
 
 enum EstadoAlerta { PENDIENTE, ACEPTADA, DENEGADA }
@@ -49,3 +51,15 @@ class Alerta {
         fecha: DateTime.tryParse(json['fecha'] ?? '') ?? DateTime.now(),
       );
 }
+
+String nombreTipoAlerta(TipoAlerta t) => switch (t) {
+      TipoAlerta.RESTAURANTE => tr('Restaurante'),
+      TipoAlerta.PRODUCTO => tr('Producto'),
+      TipoAlerta.COMENTARIO => tr('Comentario'),
+    };
+
+String nombreEstadoAlerta(EstadoAlerta e) => switch (e) {
+      EstadoAlerta.PENDIENTE => tr('Pendiente'),
+      EstadoAlerta.ACEPTADA => tr('Aceptada'),
+      EstadoAlerta.DENEGADA => tr('Denegada'),
+    };

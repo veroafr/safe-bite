@@ -6,6 +6,7 @@ import '../../core/services/restaurante_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/common_widgets.dart';
 import '../usuario/restaurante_detail_screen.dart' show EstrellasFijas;
+import '../../core/i18n/i18n.dart';
 
 /// Moderación de reseñas de restaurantes: nada se publica sin aprobación.
 class AdminResenasScreen extends StatefulWidget {
@@ -31,7 +32,7 @@ class _AdminResenasScreenState extends State<AdminResenasScreen> {
   Future<void> _aprobar(Evaluacion e) async {
     try {
       await context.read<RestauranteService>().moderarResena(e.id, aprobar: true);
-      if (mounted) mostrarMensaje(context, 'Reseña publicada');
+      if (mounted) mostrarMensaje(context, tr('Reseña publicada'));
       _recargar();
     } catch (err) {
       if (mounted) mostrarError(context, err);
@@ -43,21 +44,21 @@ class _AdminResenasScreenState extends State<AdminResenasScreen> {
     final ok = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Rechazar reseña'),
+        title: Text(tr('Rechazar reseña')),
         content: TextField(
           controller: motivoCtrl,
           maxLines: 3,
-          decoration: const InputDecoration(
-            labelText: 'Motivo (opcional, lo verá el autor)',
-            hintText: 'Ej: contiene información no verificable u ofensiva',
+          decoration: InputDecoration(
+            labelText: tr('Motivo (opcional, lo verá el autor)'),
+            hintText: tr('Ej: contiene información no verificable u ofensiva'),
           ),
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr('Cancelar'))),
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Rechazar'),
+            child: Text(tr('Rechazar')),
           ),
         ],
       ),
@@ -65,7 +66,7 @@ class _AdminResenasScreenState extends State<AdminResenasScreen> {
     if (ok != true) return;
     try {
       await context.read<RestauranteService>().moderarResena(e.id, aprobar: false, motivo: motivoCtrl.text.trim());
-      if (mounted) mostrarMensaje(context, 'Reseña rechazada');
+      if (mounted) mostrarMensaje(context, tr('Reseña rechazada'));
       _recargar();
     } catch (err) {
       if (mounted) mostrarError(context, err);
@@ -75,7 +76,7 @@ class _AdminResenasScreenState extends State<AdminResenasScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Reseñas de restaurantes')),
+      appBar: AppBar(title: Text(tr('Reseñas de restaurantes'))),
       body: Column(
         children: [
           Padding(
@@ -83,10 +84,10 @@ class _AdminResenasScreenState extends State<AdminResenasScreen> {
             child: Wrap(
               spacing: 8,
               children: [
-                for (final (valor, texto) in const [
-                  ('PENDIENTE', 'Pendientes'),
-                  ('APROBADA', 'Aprobadas'),
-                  ('RECHAZADA', 'Rechazadas'),
+                for (final (valor, texto) in [
+                  ('PENDIENTE', tr('Pendientes')),
+                  ('APROBADA', tr('Aprobadas')),
+                  ('RECHAZADA', tr('Rechazadas')),
                 ])
                   ChoiceChip(
                     label: Text(texto),
@@ -108,7 +109,7 @@ class _AdminResenasScreenState extends State<AdminResenasScreen> {
                 final lista = snap.data ?? [];
                 if (lista.isEmpty) {
                   return EmptyView(
-                      mensaje: _estado == 'PENDIENTE' ? 'No hay reseñas esperando aprobación' : 'No hay reseñas en este estado');
+                      mensaje: _estado == 'PENDIENTE' ? tr('No hay reseñas esperando aprobación') : tr('No hay reseñas en este estado'));
                 }
                 return RefreshIndicator(
                   onRefresh: () async => _recargar(),
@@ -127,20 +128,20 @@ class _AdminResenasScreenState extends State<AdminResenasScreen> {
                                 const Icon(Icons.storefront_rounded, size: 18, color: AppColors.primary),
                                 const SizedBox(width: 6),
                                 Expanded(
-                                  child: Text(e.restauranteNombre ?? 'Restaurante #${e.restauranteId}',
+                                  child: Text(e.restauranteNombre ?? tr('Restaurante #{0}', [e.restauranteId]),
                                       style: const TextStyle(fontWeight: FontWeight.bold)),
                                 ),
                               ]),
                               const SizedBox(height: 6),
                               EstrellasFijas(valor: e.puntuacion),
                               const SizedBox(height: 6),
-                              Text(e.comentario ?? ''),
+                              TextoT(e.comentario ?? ''),
                               const SizedBox(height: 6),
-                              Text('Por ${e.usuarioNombre} · ${DateFormat('dd/MM/yyyy HH:mm').format(e.fecha)}',
+                              Text(tr('Por {0} · {1}', [e.usuarioNombre, DateFormat('dd/MM/yyyy HH:mm').format(e.fecha)]),
                                   style: const TextStyle(color: AppColors.textSecondary, fontSize: 11)),
                               if (e.rechazada && e.motivoRechazo != null) ...[
                                 const SizedBox(height: 4),
-                                Text('Motivo: ${e.motivoRechazo}',
+                                Text(tr('Motivo: {0}', [context.tc(e.motivoRechazo)]),
                                     style: const TextStyle(color: AppColors.danger, fontSize: 12)),
                               ],
                               const SizedBox(height: 10),
@@ -153,7 +154,7 @@ class _AdminResenasScreenState extends State<AdminResenasScreen> {
                                         foregroundColor: AppColors.danger,
                                         side: const BorderSide(color: AppColors.danger),
                                       ),
-                                      child: Text(e.pendiente ? 'Rechazar' : 'Despublicar'),
+                                      child: Text(e.pendiente ? tr('Rechazar') : tr('Despublicar')),
                                     ),
                                   ),
                                 if (!e.rechazada && e.pendiente) const SizedBox(width: 10),
@@ -161,7 +162,7 @@ class _AdminResenasScreenState extends State<AdminResenasScreen> {
                                   Expanded(
                                     child: FilledButton(
                                       onPressed: () => _aprobar(e),
-                                      child: const Text('Aprobar y publicar'),
+                                      child: Text(tr('Aprobar y publicar')),
                                     ),
                                   ),
                               ]),

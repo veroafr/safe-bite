@@ -4,6 +4,7 @@ import 'package:http/http.dart' as http;
 import '../services/session_storage.dart';
 import 'api_config.dart';
 import 'api_exception.dart';
+import '../../core/i18n/i18n.dart';
 
 class ApiClient {
   Future<String?> _getToken() async {
@@ -11,7 +12,7 @@ class ApiClient {
   }
 
   Future<Map<String, String>> _headers({bool withAuth = true}) async {
-    final headers = {'Content-Type': 'application/json'};
+    final headers = {'Content-Type': 'application/json', 'Accept-Language': Idioma.instancia.codigo};
     if (withAuth) {
       final token = await _getToken();
       if (token != null && token.isNotEmpty) {
@@ -22,7 +23,7 @@ class ApiClient {
   }
 
   Uri _buildUri(String path, Map<String, dynamic>? query) {
-    final uri = Uri.parse('${ApiConfig.baseUrl}$path');
+    final uri = Uri.parse('${ApiConfig.baseUrl}${path}');
     if (query == null || query.isEmpty) return uri;
 
     // Uri acepta String o Iterable<String> como valor: las listas se envian
@@ -108,7 +109,7 @@ class ApiClient {
     if (response.statusCode < 200 || response.statusCode >= 300) {
       throw ApiException(
         response.statusCode,
-        'Error ${response.statusCode}: ${response.reasonPhrase ?? 'algo salio mal'}',
+        tr('Error {0}: {1}', [response.statusCode, response.reasonPhrase ?? tr('algo salio mal')]),
       );
     }
     return response.bodyBytes;
@@ -123,8 +124,7 @@ class ApiClient {
       return await peticion();
     } on http.ClientException {
       throw ApiException(0,
-          'No se pudo conectar con el servidor. Si recién se publicó una versión o estuvo inactivo, '
-          'puede tardar 1 o 2 minutos en arrancar: esperá un momento y volvé a intentar.');
+          tr('No se pudo conectar con el servidor. Si recién se publicó una versión o estuvo inactivo, puede tardar 1 o 2 minutos en arrancar: esperá un momento y volvé a intentar.'));
     }
   }
 
@@ -141,13 +141,13 @@ class ApiClient {
     if (!isSuccess) {
       if ((response.statusCode == 401 || response.statusCode == 403) && decoded == null) {
         throw ApiException(response.statusCode,
-            'Tu sesión venció o no es válida. Cerrá sesión y volvé a iniciar sesión.');
+            tr('Tu sesión venció o no es válida. Cerrá sesión y volvé a iniciar sesión.'));
       }
       final message = (decoded is Map && decoded['mensaje'] != null)
           ? decoded['mensaje'].toString()
           : (decoded is Map && decoded['message'] != null)
               ? decoded['message'].toString()
-              : 'Error ${response.statusCode}: ${response.reasonPhrase ?? 'algo salio mal'}';
+              : tr('Error {0}: {1}', [response.statusCode, response.reasonPhrase ?? tr('algo salio mal')]);
       throw ApiException(response.statusCode, message);
     }
 

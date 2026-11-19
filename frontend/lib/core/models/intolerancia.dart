@@ -1,3 +1,4 @@
+import '../i18n/i18n.dart';
 /// Intolerancia / alergeno del sistema. Ya no es un enum fijo: la lista
 /// viene del backend (`/api/intolerancias`) y el administrador puede
 /// agregar nuevas. En el resto de la app se manejan por su [codigo]
@@ -63,4 +64,6 @@ class IntoleranciaCatalogo {
 }
 
 /// Nombre para mostrar de un codigo de intolerancia.
-String etiquetaIntolerancia(String codigo) => IntoleranciaCatalogo.nombre(codigo);
+/// Nombre de la intolerancia en el idioma de la app.
+String etiquetaIntolerancia(String codigo) =>
+    TraductorContenido.instancia.traducirSinContexto(IntoleranciaCatalogo.nombre(codigo));

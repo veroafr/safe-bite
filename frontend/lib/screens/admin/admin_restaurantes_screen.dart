@@ -10,6 +10,7 @@ import '../../core/theme/app_theme.dart';
 import '../../core/widgets/common_widgets.dart';
 import '../../core/widgets/intolerancias_widgets.dart';
 import '../../core/widgets/recortar_imagen.dart';
+import '../../core/i18n/i18n.dart';
 
 class AdminRestaurantesScreen extends StatefulWidget {
   const AdminRestaurantesScreen({super.key});
@@ -68,29 +69,29 @@ class _AdminRestaurantesScreenState extends State<AdminRestaurantesScreen> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(existente == null ? 'Agregar restaurante' : 'Editar restaurante',
+                Text(existente == null ? tr('Agregar restaurante') : tr('Editar restaurante'),
                     style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 16),
-                TextField(controller: nombreCtrl, decoration: const InputDecoration(labelText: 'Nombre')),
+                TextField(controller: nombreCtrl, decoration: InputDecoration(labelText: tr('Nombre'))),
                 const SizedBox(height: 10),
-                TextField(controller: descripcionCtrl, decoration: const InputDecoration(labelText: 'Descripción'), maxLines: 2),
+                TextField(controller: descripcionCtrl, decoration: InputDecoration(labelText: tr('Descripción')), maxLines: 2),
                 const SizedBox(height: 10),
-                TextField(controller: direccionCtrl, decoration: const InputDecoration(labelText: 'Dirección')),
+                TextField(controller: direccionCtrl, decoration: InputDecoration(labelText: tr('Dirección'))),
                 const SizedBox(height: 10),
                 Row(children: [
-                  Expanded(child: TextField(controller: latCtrl, decoration: const InputDecoration(labelText: 'Latitud'), keyboardType: const TextInputType.numberWithOptions(signed: true, decimal: true))),
+                  Expanded(child: TextField(controller: latCtrl, decoration: InputDecoration(labelText: tr('Latitud')), keyboardType: const TextInputType.numberWithOptions(signed: true, decimal: true))),
                   const SizedBox(width: 10),
-                  Expanded(child: TextField(controller: lngCtrl, decoration: const InputDecoration(labelText: 'Longitud'), keyboardType: const TextInputType.numberWithOptions(signed: true, decimal: true))),
+                  Expanded(child: TextField(controller: lngCtrl, decoration: InputDecoration(labelText: tr('Longitud')), keyboardType: const TextInputType.numberWithOptions(signed: true, decimal: true))),
                 ]),
                 const SizedBox(height: 10),
-                const Text('Fotos', style: TextStyle(fontWeight: FontWeight.w600)),
+                Text(tr('Fotos'), style: TextStyle(fontWeight: FontWeight.w600)),
                 const SizedBox(height: 6),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _SelectorFotoRestaurante(
-                      titulo: 'Miniatura',
-                      ayuda: 'Cuadrada, para la lista',
+                      titulo: tr('Miniatura'),
+                      ayuda: tr('Cuadrada, para la lista'),
                       proporcion: 1,
                       anchoVista: 104,
                       anchoSalida: 600,
@@ -108,8 +109,8 @@ class _AdminRestaurantesScreenState extends State<AdminRestaurantesScreen> {
                     const SizedBox(width: 12),
                     Expanded(
                       child: _SelectorFotoRestaurante(
-                        titulo: 'Banner',
-                        ayuda: 'Rectangular (2:1), para la ficha',
+                        titulo: tr('Banner'),
+                        ayuda: tr('Rectangular (2:1), para la ficha'),
                         proporcion: 2,
                         anchoVista: null,
                         anchoSalida: 1200,
@@ -128,13 +129,13 @@ class _AdminRestaurantesScreenState extends State<AdminRestaurantesScreen> {
                   ],
                 ),
                 const SizedBox(height: 10),
-                TextField(controller: tiposCocinaCtrl, decoration: const InputDecoration(labelText: 'Tipos de cocina (separados por coma)')),
+                TextField(controller: tiposCocinaCtrl, decoration: InputDecoration(labelText: tr('Tipos de cocina (separados por coma)'))),
                 const SizedBox(height: 10),
-                const Text('Tiene opciones aptas para quienes evitan:', style: TextStyle(fontWeight: FontWeight.w600)),
+                Text(tr('Tiene opciones aptas para quienes evitan:'), style: TextStyle(fontWeight: FontWeight.w600)),
                 const SizedBox(height: 6),
                 SelectorIntolerancias(
                   seleccionadas: opciones,
-                  prefijo: 'Sin ',
+                  prefijo: tr('Sin '),
                   onChanged: (s) => setModalState(() => opciones = s),
                 ),
                 const SizedBox(height: 20),
@@ -143,7 +144,7 @@ class _AdminRestaurantesScreenState extends State<AdminRestaurantesScreen> {
                     if (nombreCtrl.text.trim().isEmpty) return;
                     Navigator.pop(ctx, true);
                   },
-                  child: const Text('Guardar'),
+                  child: Text(tr('Guardar')),
                 ),
               ],
             ),
@@ -176,7 +177,7 @@ class _AdminRestaurantesScreenState extends State<AdminRestaurantesScreen> {
           await service.editar(existente.id, body);
         }
         if (mounted) {
-          mostrarMensaje(context, 'Restaurante guardado');
+          mostrarMensaje(context, tr('Restaurante guardado'));
           _recargar();
         }
       } catch (e) {
@@ -189,14 +190,14 @@ class _AdminRestaurantesScreenState extends State<AdminRestaurantesScreen> {
     final confirmar = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Eliminar restaurante'),
-        content: Text('¿Seguro que querés eliminar "${r.nombre}"?'),
+        title: Text(tr('Eliminar restaurante')),
+        content: Text(tr('¿Seguro que querés eliminar "{0}"?', [r.nombre])),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr('Cancelar'))),
           FilledButton(
               style: FilledButton.styleFrom(backgroundColor: AppColors.danger),
               onPressed: () => Navigator.pop(ctx, true),
-              child: const Text('Eliminar')),
+              child: Text(tr('Eliminar'))),
         ],
       ),
     );
@@ -213,16 +214,16 @@ class _AdminRestaurantesScreenState extends State<AdminRestaurantesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Gestión de Restaurantes')),
+      appBar: AppBar(title: Text(tr('Gestión de Restaurantes'))),
       floatingActionButton: FloatingActionButton(onPressed: () => _abrirFormulario(), child: const Icon(Icons.add)),
       body: Column(
         children: [
           const SizedBox(height: 8),
           BarraFiltroIntolerancias(
             seleccion: _filtro,
-            prefijo: 'Sin ',
-            titulo: 'Locales aptos para...',
-            ayuda: 'Muestra los locales con opciones aptas para TODAS las marcadas.',
+            prefijo: tr('Sin '),
+            titulo: tr('Locales aptos para...'),
+            ayuda: tr('Muestra los locales con opciones aptas para TODAS las marcadas.'),
             onChanged: (s) {
               _filtro = s;
               _recargar();
@@ -235,7 +236,7 @@ class _AdminRestaurantesScreenState extends State<AdminRestaurantesScreen> {
                 if (snapshot.connectionState == ConnectionState.waiting) return const LoadingView();
                 if (snapshot.hasError) return ErrorView(mensaje: snapshot.error.toString(), onReintentar: _recargar);
                 final restaurantes = snapshot.data ?? [];
-                if (restaurantes.isEmpty) return const EmptyView(mensaje: 'No hay restaurantes cargados');
+                if (restaurantes.isEmpty) return EmptyView(mensaje: tr('No hay restaurantes cargados'));
                 return ListView.builder(
                   padding: const EdgeInsets.all(16),
                   itemCount: restaurantes.length,
@@ -299,7 +300,7 @@ class _SelectorFotoRestaurante extends StatelessWidget {
       bytes: Uint8List.fromList(bytes),
       proporcion: proporcion,
       anchoSalida: anchoSalida,
-      titulo: 'Encuadrar ${titulo.toLowerCase()}',
+      titulo: tr('Encuadrar {0}', [titulo.toLowerCase()]),
     );
     if (recortada != null) onElegida(recortada);
   }
@@ -340,7 +341,7 @@ class _SelectorFotoRestaurante extends StatelessWidget {
               TextButton(
                 style: TextButton.styleFrom(padding: EdgeInsets.zero, visualDensity: VisualDensity.compact),
                 onPressed: () => _elegir(context),
-                child: Text(hayFoto ? 'Cambiar' : 'Elegir'),
+                child: Text(hayFoto ? tr('Cambiar') : tr('Elegir')),
               ),
               if (hayFoto)
                 TextButton(
@@ -350,7 +351,7 @@ class _SelectorFotoRestaurante extends StatelessWidget {
                     foregroundColor: AppColors.danger,
                   ),
                   onPressed: onQuitar,
-                  child: const Text('Quitar'),
+                  child: Text(tr('Quitar')),
                 ),
             ],
           ),

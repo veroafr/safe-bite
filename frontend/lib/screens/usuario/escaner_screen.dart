@@ -17,6 +17,7 @@ import '../../core/widgets/marca_widgets.dart';
 import '../../core/widgets/intolerancias_widgets.dart';
 import 'cargar_producto_screen.dart';
 import '../../core/web/lector_codigo_foto.dart';
+import '../../core/i18n/i18n.dart';
 
 class EscanerScreen extends StatelessWidget {
   const EscanerScreen({super.key});
@@ -44,7 +45,7 @@ class _DesgloseIntolerancias extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const SizedBox(height: 10),
-        Text(filtro.personalizado ? 'Intolerancias elegidas en el filtro:' : 'Tus intolerancias en este producto:',
+        Text(filtro.personalizado ? tr('Intolerancias elegidas en el filtro:') : tr('Tus intolerancias en este producto:'),
             style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
         const SizedBox(height: 6),
         ...intolerancias.map((t) {
@@ -60,7 +61,7 @@ class _DesgloseIntolerancias extends StatelessWidget {
                 ),
                 const SizedBox(width: 6),
                 Text(
-                  '${etiquetaIntolerancia(t)}: ${esSeguro ? 'es seguro' : 'no es seguro'}',
+                  '${etiquetaIntolerancia(t)}: ${esSeguro ? tr('es seguro') : tr('no es seguro')}',
                   style: TextStyle(
                     color: esSeguro ? AppColors.primary : AppColors.danger,
                     fontWeight: FontWeight.w600,
@@ -188,11 +189,11 @@ class ResultadoEscaneoCard extends StatelessWidget {
     final confirmado = await showDialog<bool>(
       context: context,
       builder: (ctx) => AlertDialog(
-        title: const Text('Reportar producto'),
-        content: TextField(controller: descripcionCtrl, maxLines: 3, decoration: const InputDecoration(hintText: 'Describí el problema')),
+        title: Text(tr('Reportar producto')),
+        content: TextField(controller: descripcionCtrl, maxLines: 3, decoration: InputDecoration(hintText: tr('Describí el problema'))),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('Cancelar')),
-          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('Enviar')),
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: Text(tr('Cancelar'))),
+          FilledButton(onPressed: () => Navigator.pop(ctx, true), child: Text(tr('Enviar'))),
         ],
       ),
     );
@@ -203,7 +204,7 @@ class ResultadoEscaneoCard extends StatelessWidget {
               productoId: resultado.producto.id,
               descripcion: descripcionCtrl.text.trim(),
             );
-        if (context.mounted) mostrarMensaje(context, 'Alerta enviada');
+        if (context.mounted) mostrarMensaje(context, tr('Alerta enviada'));
       } catch (e) {
         if (context.mounted) mostrarError(context, e);
       }
@@ -223,7 +224,7 @@ class ResultadoEscaneoCard extends StatelessWidget {
       ),
     );
     if (completado == true && context.mounted) {
-      mostrarMensaje(context, 'Escaneá de nuevo el producto para ver los datos actualizados');
+      mostrarMensaje(context, tr('Escaneá de nuevo el producto para ver los datos actualizados'));
     }
   }
 
@@ -242,12 +243,12 @@ class ResultadoEscaneoCard extends StatelessWidget {
             Row(
               children: [
                 Expanded(
-                  child: Text(p.nombre, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                  child: TextoT(p.nombre, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
                 ),
                 Chip1(
                   !resultado.datosSuficientes
-                      ? 'Sin datos'
-                      : (resultado.seguro ? 'Seguro' : 'Alerta'),
+                      ? tr('Sin datos')
+                      : (resultado.seguro ? tr('Seguro') : tr('Alerta')),
                   color: !resultado.datosSuficientes
                       ? AppColors.accent
                       : (resultado.seguro ? AppColors.primary : AppColors.danger),
@@ -255,7 +256,7 @@ class ResultadoEscaneoCard extends StatelessWidget {
               ],
             ),
             if (p.marca != null) Text(p.marca!, style: const TextStyle(color: AppColors.textSecondary)),
-            if (p.codigoEan != null) Text('Código: ${p.codigoEan}', style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+            if (p.codigoEan != null) Text(tr('Código: {0}', [p.codigoEan]), style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
             const SizedBox(height: 10),
             if (!p.verificado)
               Container(
@@ -267,13 +268,13 @@ class ResultadoEscaneoCard extends StatelessWidget {
                   border: Border.all(color: AppColors.accent, width: 1.5),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: const Row(
+                child: Row(
                   children: [
                     Icon(Icons.hourglass_top, color: AppColors.accent, size: 18),
                     SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        'Cargado por otro usuario, pendiente de revisión por un admin.',
+                        tr('Cargado por otro usuario, pendiente de revisión por un admin.'),
                         style: TextStyle(color: Color(0xFF8A5A00), fontWeight: FontWeight.w600, fontSize: 12),
                       ),
                     ),
@@ -312,7 +313,7 @@ class ResultadoEscaneoCard extends StatelessWidget {
                 child: ElevatedButton.icon(
                   onPressed: () => _completarDatos(context),
                   icon: const Icon(Icons.edit_note),
-                  label: const Text('Completar datos de este producto'),
+                  label: Text(tr('Completar datos de este producto')),
                 ),
               ),
             ] else if (!resultado.seguro)
@@ -345,12 +346,12 @@ class ResultadoEscaneoCard extends StatelessWidget {
                 ),
               )
             else
-              Text(resultado.mensaje),
+              TextoT(resultado.mensaje),
             if (resultado.datosSuficientes) _DesgloseIntolerancias(alergenosProducto: p.alergenos),
             if (p.ingredientes.isNotEmpty) ...[
               const SizedBox(height: 10),
-              const Text('Ingredientes:', style: TextStyle(fontWeight: FontWeight.bold)),
-              Text(p.ingredientes.join(', ')),
+              Text(tr('Ingredientes:'), style: TextStyle(fontWeight: FontWeight.bold)),
+              TextoT(p.ingredientes.join(', ')),
             ],
             if (p.alergenos.isNotEmpty) ...[
               const SizedBox(height: 10),
@@ -361,7 +362,7 @@ class ResultadoEscaneoCard extends StatelessWidget {
             OutlinedButton.icon(
               onPressed: () => _reportarAlerta(context),
               icon: const Icon(Icons.flag_outlined),
-              label: const Text('Reportar producto'),
+              label: Text(tr('Reportar producto')),
             ),
           ],
         ),
@@ -404,19 +405,19 @@ class _AnalisisPaqueteCard extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  analisis.nombreSugerido ?? 'Producto sin identificar',
+                  analisis.nombreSugerido ?? tr('Producto sin identificar'),
                   style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                 ),
               ),
               Chip1(
-                !hayDatos ? 'Sin datos' : (seguro ? 'Seguro' : 'Alerta'),
+                !hayDatos ? tr('Sin datos') : (seguro ? tr('Seguro') : tr('Alerta')),
                 color: !hayDatos ? AppColors.accent : (seguro ? AppColors.primary : AppColors.danger),
               ),
             ],
           ),
           if (analisis.marcaSugerida != null) Text(analisis.marcaSugerida!, style: const TextStyle(color: AppColors.textSecondary)),
           if (analisis.categoriaSugerida != null)
-            Text(analisis.categoriaSugerida!, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+            TextoT(analisis.categoriaSugerida!, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
           const SizedBox(height: 10),
           if (!hayDatos)
             Container(
@@ -427,8 +428,8 @@ class _AnalisisPaqueteCard extends StatelessWidget {
                 border: Border.all(color: AppColors.accent, width: 1.5),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Text(
-                'No se pudieron identificar ingredientes en esta foto. Probá sacarle una foto más de cerca a la tabla de ingredientes.',
+              child: Text(
+                tr('No se pudieron identificar ingredientes en esta foto. Probá sacarle una foto más de cerca a la tabla de ingredientes.'),
                 style: TextStyle(color: Color(0xFF8A5A00), fontWeight: FontWeight.bold),
               ),
             )
@@ -441,19 +442,19 @@ class _AnalisisPaqueteCard extends StatelessWidget {
                 border: Border.all(color: AppColors.danger, width: 1.5),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: const Text(
-                'Atención: este producto contiene alérgenos que coinciden con tus intolerancias.',
+              child: Text(
+                tr('Atención: este producto contiene alérgenos que coinciden con tus intolerancias.'),
                 style: TextStyle(color: AppColors.danger, fontWeight: FontWeight.bold),
               ),
             )
           else
-            const Text('No detectamos alérgenos que coincidan con tus intolerancias en esta foto.'),
+            Text(tr('No detectamos alérgenos que coincidan con tus intolerancias en esta foto.')),
           _DesgloseIntolerancias(alergenosProducto: analisis.alergenos),
           if (hayDatos && !seguro) _RecomendacionesIa(analisis: analisis),
           if (analisis.ingredientes.isNotEmpty) ...[
             const SizedBox(height: 10),
-            const Text('Ingredientes detectados:', style: TextStyle(fontWeight: FontWeight.bold)),
-            Text(analisis.ingredientes.join(', ')),
+            Text(tr('Ingredientes detectados:'), style: TextStyle(fontWeight: FontWeight.bold)),
+            TextoT(analisis.ingredientes.join(', ')),
           ],
           if (analisis.observacion != null) ...[
             const SizedBox(height: 10),
@@ -463,22 +464,22 @@ class _AnalisisPaqueteCard extends StatelessWidget {
                 const Icon(Icons.smart_toy_outlined, size: 16, color: AppColors.textSecondary),
                 const SizedBox(width: 6),
                 Expanded(
-                  child: Text(analisis.observacion!, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                  child: TextoT(analisis.observacion!, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
                 ),
               ],
             ),
           ],
           if (analisis.proveedor != null) ...[
             const SizedBox(height: 6),
-            Text('Leído con IA (${analisis.proveedor})', style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+            Text(tr('Leído con IA ({0})', [analisis.proveedor]), style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
           ],
           const SizedBox(height: 12),
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(10),
             decoration: BoxDecoration(color: AppColors.primary.withOpacity(0.06), borderRadius: BorderRadius.circular(8)),
-            child: const Text(
-              'Este chequeo es rápido y no queda guardado en la base. Si querés que otros usuarios también lo vean, escaneá su código de barras y cargalo desde ahí.',
+            child: Text(
+              tr('Este chequeo es rápido y no queda guardado en la base. Si querés que otros usuarios también lo vean, escaneá su código de barras y cargalo desde ahí.'),
               style: TextStyle(fontSize: 12),
             ),
           ),
@@ -526,27 +527,27 @@ class _RecomendacionesIaState extends State<_RecomendacionesIa> {
         future: _futuro,
         builder: (context, snap) {
           if (snap.connectionState != ConnectionState.done) {
-            return const Row(
+            return Row(
               children: [
                 SizedBox(height: 16, width: 16, child: CircularProgressIndicator(strokeWidth: 2)),
                 SizedBox(width: 10),
-                Expanded(child: Text('Buscando alternativas para vos...', style: TextStyle(fontSize: 13))),
+                Expanded(child: Text(tr('Buscando alternativas para vos...'), style: TextStyle(fontSize: 13))),
               ],
             );
           }
           if (snap.hasError || snap.data == null) {
             return Row(
               children: [
-                const Expanded(
-                  child: Text('No pudimos buscar alternativas ahora.', style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+                Expanded(
+                  child: Text(tr('No pudimos buscar alternativas ahora.'), style: TextStyle(fontSize: 13, color: AppColors.textSecondary)),
                 ),
-                TextButton(onPressed: _reintentar, child: const Text('Reintentar')),
+                TextButton(onPressed: _reintentar, child: Text(tr('Reintentar'))),
               ],
             );
           }
           final r = snap.data!;
           if (r.items.isEmpty) {
-            return Text(r.mensaje, style: const TextStyle(fontSize: 13, color: AppColors.textSecondary));
+            return TextoT(r.mensaje, style: const TextStyle(fontSize: 13, color: AppColors.textSecondary));
           }
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -555,13 +556,13 @@ class _RecomendacionesIaState extends State<_RecomendacionesIa> {
                 children: [
                   const Icon(Icons.swap_horiz, color: AppColors.primary, size: 20),
                   const SizedBox(width: 6),
-                  const Text('Esto sí podrías consumir', style: TextStyle(fontWeight: FontWeight.bold)),
+                  Text(tr('Esto sí podrías consumir'), style: TextStyle(fontWeight: FontWeight.bold)),
                   const SizedBox(width: 6),
                   if (r.conIa) const Icon(Icons.smart_toy_outlined, size: 14, color: AppColors.textSecondary),
                 ],
               ),
               const SizedBox(height: 4),
-              Text(r.mensaje, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+              TextoT(r.mensaje, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
               const SizedBox(height: 8),
               ...r.items.map(_itemTile),
               if (r.advertencia != null && r.advertencia!.isNotEmpty)
@@ -588,8 +589,8 @@ class _RecomendacionesIaState extends State<_RecomendacionesIa> {
                     ],
                   ),
                 ),
-              const Text(
-                'Datos de la comunidad SafeBite, de Open Food Facts y sugerencias de la IA.',
+              Text(
+                tr('Datos de la comunidad SafeBite, de Open Food Facts y sugerencias de la IA.'),
                 style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
               ),
             ],
@@ -601,9 +602,9 @@ class _RecomendacionesIaState extends State<_RecomendacionesIa> {
 
   Widget _itemTile(RecomendacionIa it) {
     final detalle = it.origen == 'GENERICA'
-        ? 'Sugerencia general'
+        ? tr('Sugerencia general')
         : it.origen == 'MARCA_IA'
-            ? [if (it.marca != null && it.marca!.isNotEmpty) it.marca!, 'Sugerencia de la IA'].join(' · ')
+            ? [if (it.marca != null && it.marca!.isNotEmpty) it.marca!, tr('Sugerencia de la IA')].join(' · ')
             : [
             if (it.marca != null && it.marca!.isNotEmpty) it.marca!,
             if (it.pais != null) it.pais!,
@@ -643,20 +644,20 @@ class _RecomendacionesIaState extends State<_RecomendacionesIa> {
               children: [
                 Row(
                   children: [
-                    Expanded(child: Text(it.nombre, style: const TextStyle(fontWeight: FontWeight.w600))),
+                    Expanded(child: TextoT(it.nombre, style: const TextStyle(fontWeight: FontWeight.w600))),
                     if (it.origen == 'SAFEBITE')
                       const Icon(Icons.verified_outlined, size: 16, color: AppColors.primary),
                   ],
                 ),
                 if (detalle.isNotEmpty)
-                  Text(detalle, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
+                  TextoT(detalle, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
                 if (it.motivo != null && it.motivo!.isNotEmpty)
                   Padding(
                     padding: const EdgeInsets.only(top: 2),
-                    child: Text(it.motivo!, style: const TextStyle(fontSize: 12)),
+                    child: TextoT(it.motivo!, style: const TextStyle(fontSize: 12)),
                   ),
                 if (it.verificarMarca)
-                  const Padding(
+                  Padding(
                     padding: EdgeInsets.only(top: 4),
                     child: Row(
                       children: [
@@ -664,7 +665,7 @@ class _RecomendacionesIaState extends State<_RecomendacionesIa> {
                         SizedBox(width: 4),
                         Expanded(
                           child: Text(
-                            'Depende de la marca o del lote: revisá el envase',
+                            tr('Depende de la marca o del lote: revisá el envase'),
                             style: TextStyle(fontSize: 11, color: Color(0xFF8A5A00), fontWeight: FontWeight.w600),
                           ),
                         ),
@@ -695,10 +696,10 @@ class _AlternativasSeguras extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
-            children: const [
+            children: [
               Icon(Icons.thumb_up_alt_outlined, color: AppColors.primary, size: 18),
               SizedBox(width: 6),
-              Text('Estas opciones sí podés comer', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+              Text(tr('Estas opciones sí podés comer'), style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
             ],
           ),
           const SizedBox(height: 8),
@@ -719,7 +720,7 @@ class _AlternativasSeguras extends StatelessWidget {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(a.nombre, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
+                          TextoT(a.nombre, style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
                           if (a.marca != null) Text(a.marca!, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
                         ],
                       ),
@@ -747,11 +748,11 @@ class AnalisisIngredientesCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Expanded(
-                child: Text('Análisis de ingredientes', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+              Expanded(
+                child: Text(tr('Análisis de ingredientes'), style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
               ),
               Chip1(
-                analisis.seguro ? 'Seguro' : 'Alerta',
+                analisis.seguro ? tr('Seguro') : tr('Alerta'),
                 color: analisis.seguro ? AppColors.primary : AppColors.danger,
               ),
             ],
@@ -787,7 +788,7 @@ class AnalisisIngredientesCard extends StatelessWidget {
               ),
             )
           else
-            Text(analisis.mensaje),
+            TextoT(analisis.mensaje),
           _DesgloseIntolerancias(alergenosProducto: analisis.alergenosEncontrados),
           if (analisis.alergenosEncontrados.isNotEmpty) ...[
             const SizedBox(height: 10),
@@ -799,7 +800,7 @@ class AnalisisIngredientesCard extends StatelessWidget {
             ),
           ],
           const SizedBox(height: 10),
-          const Text('Texto detectado en la foto:', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+          Text(tr('Texto detectado en la foto:'), style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
           const SizedBox(height: 4),
           Text(analisis.textoAnalizado, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
         ],
@@ -835,7 +836,7 @@ class _LectorEanTabState extends State<_LectorEanTab> {
     // En la web se usa la cámara propia de la app (web/camara-app.js); en el
     // teléfono, la cámara del sistema.
     final Future<Uint8List?> pedido = camaraAppDisponible()
-        ? sacarFotoConCamaraApp('Sacá una foto del código de barras')
+        ? sacarFotoConCamaraApp(tr('Sacá una foto del código de barras'))
         : ImagePicker()
             .pickImage(source: ImageSource.camera, maxWidth: 2000, imageQuality: 90)
             .then((f) async => f == null ? null : await f.readAsBytes());
@@ -852,7 +853,7 @@ class _LectorEanTabState extends State<_LectorEanTab> {
       if (!mounted) return;
       if (codigo == null || codigo.isEmpty) {
         mostrarError(context,
-            'No se pudo leer el código en la foto. Sacala de frente, a unos 15 cm y con buena luz, o ingresá el número a mano.');
+            tr('No se pudo leer el código en la foto. Sacala de frente, a unos 15 cm y con buena luz, o ingresá el número a mano.'));
         return;
       }
       _codigoManualCtrl.text = codigo;
@@ -870,7 +871,7 @@ class _LectorEanTabState extends State<_LectorEanTab> {
   Future<void> _escanearIngredientes() async {
     setState(() => _escaneandoPaquete = true);
     try {
-      final bytes = await elegirFotoCamaraOGaleria(context, tituloCamara: 'Sacá una foto de la lista de ingredientes');
+      final bytes = await elegirFotoCamaraOGaleria(context, tituloCamara: tr('Sacá una foto de la lista de ingredientes'));
       if (bytes == null || !mounted) return;
 
       final foto64 = base64Encode(bytes);
@@ -886,7 +887,7 @@ class _LectorEanTabState extends State<_LectorEanTab> {
           if (encontrado) return;
         }
         if (mounted) {
-          mostrarError(context, analisis.observacion ?? 'No se pudo leer el envase. Probá con mejor luz y más cerca.');
+          mostrarError(context, analisis.observacion ?? tr('No se pudo leer el envase. Probá con mejor luz y más cerca.'));
         }
         return;
       }
@@ -937,7 +938,7 @@ class _LectorEanTabState extends State<_LectorEanTab> {
       setState(() => _resultado = resultado);
       return true;
     } catch (e) {
-      if (mounted && !silencioso) setState(() => _error = 'Código: $codigo\n$e');
+      if (mounted && !silencioso) setState(() => _error = tr('Código: {0}\n{1}', [codigo, e]));
       return false;
     } finally {
       if (mounted) setState(() => _procesando = false);
@@ -1037,7 +1038,7 @@ class _LectorEanTabState extends State<_LectorEanTab> {
           child: TextButton.icon(
             onPressed: _reiniciar,
             icon: const Icon(Icons.barcode_reader),
-            label: const Text('Escanear otro producto'),
+            label: Text(tr('Escanear otro producto')),
           ),
         ),
         ResultadoEscaneoCard(resultado: _resultado!),
@@ -1053,7 +1054,7 @@ class _LectorEanTabState extends State<_LectorEanTab> {
               child: ElevatedButton.icon(
                 onPressed: _irACargarProducto,
                 icon: const Icon(Icons.add_box_outlined),
-                label: const Text('Cargar este producto'),
+                label: Text(tr('Cargar este producto')),
               ),
             ),
         ],
@@ -1070,9 +1071,8 @@ class _LectorEanTabState extends State<_LectorEanTab> {
             child: const Icon(Icons.verified_user_outlined, color: AppColors.primary, size: 30),
           ),
           const SizedBox(height: 12),
-          const Text(
-            'Sacá una foto del código de barras para ver el producto, '
-            'o de la lista de ingredientes para que la IA la analice.',
+          Text(
+            tr('Sacá una foto del código de barras para ver el producto, o de la lista de ingredientes para que la IA la analice.'),
             textAlign: TextAlign.center,
             style: TextStyle(color: AppColors.textSecondary, height: 1.4),
           ),
@@ -1089,9 +1089,9 @@ class _LectorEanTabState extends State<_LectorEanTab> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            const EncabezadoSafeBite(
-              titulo: '¿Qué vas a comer hoy?',
-              subtitulo: 'Revisamos cada producto contra tus restricciones.',
+            EncabezadoSafeBite(
+              titulo: tr('¿Qué vas a comer hoy?'),
+              subtitulo: tr('Revisamos cada producto contra tus restricciones.'),
               espacioInferior: 64,
             ),
             // Las dos tarjetas se superponen al encabezado.
@@ -1107,9 +1107,9 @@ class _LectorEanTabState extends State<_LectorEanTab> {
                         icono: Icons.barcode_reader,
                         colorIcono: AppColors.primary,
                         fondoIcono: AppColors.primarySoft,
-                        texto: 'Escanear código de barras',
-                        ayuda: 'Foto del código',
-                        textoCargando: 'Leyendo el código...',
+                        texto: tr('Escanear código de barras'),
+                        ayuda: tr('Foto del código'),
+                        textoCargando: tr('Leyendo el código...'),
                         cargando: _leyendoFotoCodigo,
                         onPressed: _escanearCodigoDeBarras,
                       ),
@@ -1118,9 +1118,9 @@ class _LectorEanTabState extends State<_LectorEanTab> {
                         icono: Icons.auto_awesome,
                         colorIcono: const Color(0xFFB26A00),
                         fondoIcono: AppColors.accentSoft,
-                        texto: 'Escanear ingredientes del paquete',
-                        ayuda: 'La IA lee la etiqueta',
-                        textoCargando: 'Analizando con IA...',
+                        texto: tr('Escanear ingredientes del paquete'),
+                        ayuda: tr('La IA lee la etiqueta'),
+                        textoCargando: tr('Analizando con IA...'),
                         cargando: _escaneandoPaquete,
                         onPressed: _escanearIngredientes,
                       ),
@@ -1141,12 +1141,12 @@ class _LectorEanTabState extends State<_LectorEanTab> {
                       keyboardType: TextInputType.number,
                       onSubmitted: (_) => _buscarConCodigoManual(),
                       decoration: InputDecoration(
-                        hintText: 'Ingresá el código a mano',
+                        hintText: tr('Ingresá el código a mano'),
                         prefixIcon: const Icon(Icons.dialpad_rounded, color: AppColors.textSecondary),
                         suffixIcon: Padding(
                           padding: const EdgeInsets.all(6),
                           child: IconButton.filled(
-                            tooltip: 'Buscar',
+                            tooltip: tr('Buscar'),
                             style: IconButton.styleFrom(
                               backgroundColor: AppColors.primary,
                               foregroundColor: Colors.white,
@@ -1195,7 +1195,7 @@ class _FiltroEscanerBarra extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  filtro.personalizado ? 'Revisando contra el filtro elegido:' : 'Revisando contra tus intolerancias:',
+                  filtro.personalizado ? tr('Revisando contra el filtro elegido:') : tr('Revisando contra tus intolerancias:'),
                   style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
                 ),
               ),
@@ -1206,16 +1206,15 @@ class _FiltroEscanerBarra extends StatelessWidget {
                     filtro.restablecer();
                     onCambio();
                   },
-                  child: const Text('Usar las mías', style: TextStyle(fontSize: 12)),
+                  child: Text(tr('Usar las mías'), style: TextStyle(fontSize: 12)),
                 ),
             ],
           ),
         ),
         BarraFiltroIntolerancias(
           seleccion: filtro.efectivas(usuario),
-          titulo: 'Revisar productos contra...',
-          ayuda: 'El escáner te avisa si el producto contiene alguna de las intolerancias marcadas. '
-              'Por defecto se usan las de tu perfil.',
+          titulo: tr('Revisar productos contra...'),
+          ayuda: tr('El escáner te avisa si el producto contiene alguna de las intolerancias marcadas. Por defecto se usan las de tu perfil.'),
           onChanged: (s) {
             filtro.cambiar(s, usuario);
             onCambio();

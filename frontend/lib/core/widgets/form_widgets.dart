@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../data/ubicaciones.dart';
 import '../theme/app_theme.dart';
 import '../utils/validadores.dart';
+import '../../core/i18n/i18n.dart';
 
 /// Campo de contraseña con "ojito" para mostrar / ocultar el texto.
 class CampoPassword extends StatefulWidget {
@@ -47,10 +48,10 @@ class _CampoPasswordState extends State<CampoPassword> {
           textInputAction: widget.textInputAction,
           onFieldSubmitted: widget.onFieldSubmitted,
           decoration: InputDecoration(
-            labelText: widget.label,
+            labelText: tr(widget.label),
             prefixIcon: const Icon(Icons.lock_outline),
             suffixIcon: IconButton(
-              tooltip: _oculta ? 'Mostrar contraseña' : 'Ocultar contraseña',
+              tooltip: _oculta ? tr('Mostrar contraseña') : tr('Ocultar contraseña'),
               icon: Icon(_oculta ? Icons.visibility_outlined : Icons.visibility_off_outlined),
               onPressed: () => setState(() => _oculta = !_oculta),
             ),
@@ -91,10 +92,10 @@ class _RequisitosPassword extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        item(valor.length >= 6, 'Mínimo 6 caracteres'),
-        item(RegExp(r'[A-Z]').hasMatch(valor), 'Al menos 1 mayúscula'),
-        item(RegExp(r'\d').hasMatch(valor), 'Al menos 1 número'),
-        item(RegExp(r'[^A-Za-z0-9\s]').hasMatch(valor), 'Al menos 1 carácter especial (! @ # \$ % ...)'),
+        item(valor.length >= 6, tr('Mínimo 6 caracteres')),
+        item(RegExp(r'[A-Z]').hasMatch(valor), tr('Al menos 1 mayúscula')),
+        item(RegExp(r'\d').hasMatch(valor), tr('Al menos 1 número')),
+        item(RegExp(r'[^A-Za-z0-9\s]').hasMatch(valor), tr('Al menos 1 carácter especial (! @ # \$ % ...)')),
       ],
     );
   }
@@ -127,10 +128,10 @@ class SelectorUbicacion extends StatelessWidget {
         DropdownButtonFormField<String>(
           value: (pais == null || pais!.isEmpty) ? null : pais,
           isExpanded: true,
-          decoration: const InputDecoration(labelText: 'País', prefixIcon: Icon(Icons.public)),
-          items: paises.map((p) => DropdownMenuItem(value: p, child: Text(p))).toList(),
+          decoration: InputDecoration(labelText: tr('País'), prefixIcon: Icon(Icons.public)),
+          items: paises.map((p) => DropdownMenuItem(value: p, child: Text(tr(p)))).toList(),
           onChanged: (p) => onChanged(p, null),
-          validator: obligatorio ? (v) => Validadores.requerido(v, 'Elegí tu país') : null,
+          validator: obligatorio ? (v) => Validadores.requerido(v, tr('Elegí tu país')) : null,
         ),
         const SizedBox(height: 14),
         _CampoCiudad(
@@ -215,15 +216,15 @@ class _CampoCiudad extends StatelessWidget {
           enabled: pais != null && pais!.isNotEmpty,
           textCapitalization: TextCapitalization.words,
           decoration: InputDecoration(
-            labelText: 'Ciudad',
+            labelText: tr('Ciudad'),
             prefixIcon: const Icon(Icons.location_city_outlined),
             suffixIcon: const Icon(Icons.search),
-            hintText: pais == null ? 'Primero elegí el país' : 'Escribí para buscar',
-            helperText: pais != null && ciudades.length > 60 ? 'Si tu localidad no aparece, escribila igual' : null,
+            hintText: pais == null ? tr('Primero elegí el país') : tr('Escribí para buscar'),
+            helperText: pais != null && ciudades.length > 60 ? tr('Si tu localidad no aparece, escribila igual') : null,
           ),
           // Se acepta lo que escriba (por si su localidad no está en la lista).
           onChanged: (v) => onChanged(v.trim().isEmpty ? null : v.trim()),
-          validator: obligatorio ? (v) => Validadores.requerido(v, 'Elegí tu ciudad') : null,
+          validator: obligatorio ? (v) => Validadores.requerido(v, tr('Elegí tu ciudad')) : null,
         ),
       ),
     );

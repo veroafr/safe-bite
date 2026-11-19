@@ -10,6 +10,7 @@ import '../../core/utils/validadores.dart';
 import '../../core/widgets/form_widgets.dart';
 import '../../core/widgets/intolerancias_widgets.dart';
 import '../usuario/usuario_home_screen.dart';
+import '../../core/i18n/i18n.dart';
 
 class RegisterScreen extends StatefulWidget {
   final String idiomaInicial;
@@ -61,7 +62,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
         password: _passwordCtrl.text,
         ciudad: _ciudad,
         pais: _pais,
-        idioma: widget.idiomaInicial,
+        idioma: Idioma.instancia.codigo,
         intolerancias: _intolerancias,
         buscaAlimentacionSaludable: _comerMejor,
         fotoBase64: _foto != null ? base64Encode(_foto!) : null,
@@ -81,7 +82,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Crear Usuario')),
+      appBar: AppBar(title: Text(tr('Crear Usuario'))),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(24),
@@ -104,16 +105,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 TextFormField(
                   controller: _nombreCtrl,
                   textCapitalization: TextCapitalization.words,
-                  decoration: const InputDecoration(labelText: 'Nombre completo', prefixIcon: Icon(Icons.person_outline)),
-                  validator: (v) => Validadores.requerido(v, 'Ingresá tu nombre'),
+                  decoration: InputDecoration(labelText: tr('Nombre completo'), prefixIcon: Icon(Icons.person_outline)),
+                  validator: (v) => Validadores.requerido(v, tr('Ingresá tu nombre')),
                 ),
                 const SizedBox(height: 14),
                 TextFormField(
                   controller: _emailCtrl,
                   keyboardType: TextInputType.emailAddress,
                   autocorrect: false,
-                  decoration: const InputDecoration(
-                    labelText: 'Email',
+                  decoration: InputDecoration(
+                    labelText: tr('Email'),
                     hintText: 'nombre@dominio.com',
                     prefixIcon: Icon(Icons.email_outlined),
                   ),
@@ -128,8 +129,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const SizedBox(height: 14),
                 CampoPassword(
                   controller: _password2Ctrl,
-                  label: 'Repetí la contraseña',
-                  validator: (v) => v != _passwordCtrl.text ? 'Las contraseñas no coinciden' : null,
+                  label: tr('Repetí la contraseña'),
+                  validator: (v) => v != _passwordCtrl.text ? tr('Las contraseñas no coinciden') : null,
                 ),
                 const SizedBox(height: 14),
                 SelectorUbicacion(
@@ -141,11 +142,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   }),
                 ),
                 const SizedBox(height: 24),
-                const Text('Restricción alimentaria',
+                Text(tr('Restricción alimentaria'),
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 const SizedBox(height: 4),
-                const Text(
-                  'Marcá los alimentos a los que tenés alergia o intolerancia. Podés cambiarlos después desde tu perfil.',
+                Text(
+                  tr('Marcá los alimentos a los que tenés alergia o intolerancia. Podés cambiarlos después desde tu perfil.'),
                   style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
                 ),
                 const SizedBox(height: 10),
@@ -164,27 +165,27 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     value: _comerMejor,
                     activeColor: AppColors.primary,
                     controlAffinity: ListTileControlAffinity.leading,
-                    title: const Text('Busco alimentarme mejor', style: TextStyle(fontWeight: FontWeight.w600)),
-                    subtitle: const Text('No tengo (solo) una restricción: quiero comer más sano.'),
+                    title: Text(tr('Busco alimentarme mejor'), style: TextStyle(fontWeight: FontWeight.w600)),
+                    subtitle: Text(tr('No tengo (solo) una restricción: quiero comer más sano.')),
                     onChanged: (v) => setState(() => _comerMejor = v ?? false),
                   ),
                 ),
                 if (_intentoEnviar && !_restriccionValida)
-                  const Padding(
+                  Padding(
                     padding: EdgeInsets.only(top: 6, left: 4),
-                    child: Text('Elegí al menos una restricción o "Busco alimentarme mejor"',
+                    child: Text(tr('Elegí al menos una restricción o "Busco alimentarme mejor"'),
                         style: TextStyle(color: AppColors.danger, fontSize: 12)),
                   ),
                 if (_error != null) ...[
                   const SizedBox(height: 12),
-                  Text(_error!, style: const TextStyle(color: AppColors.danger), textAlign: TextAlign.center),
+                  TextoT(_error!, style: const TextStyle(color: AppColors.danger), textAlign: TextAlign.center),
                 ],
                 const SizedBox(height: 20),
                 ElevatedButton(
                   onPressed: _cargando ? null : _registrarse,
                   child: _cargando
                       ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                      : const Text('Crear cuenta'),
+                      : Text(tr('Crear cuenta')),
                 ),
               ],
             ),

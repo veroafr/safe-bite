@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_theme.dart';
+import '../../core/i18n/i18n.dart';
 
 /// Rutas de las imágenes de la marca (carpeta assets/images).
 class MarcaAssets {
@@ -26,7 +27,7 @@ class LogoSafeBite extends StatelessWidget {
       claro ? MarcaAssets.logoClaro : MarcaAssets.logo,
       height: alto,
       fit: BoxFit.contain,
-      semanticLabel: 'SafeBite',
+      semanticLabel: tr('SafeBite'),
     );
   }
 }

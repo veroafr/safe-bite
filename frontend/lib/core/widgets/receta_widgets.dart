@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../models/receta.dart';
 import '../theme/app_theme.dart';
+import '../../core/i18n/i18n.dart';
 
 /// Indica de dónde viene la receta: del equipo de SafeBite, de la comunidad
 /// (enviada por una persona y aprobada) o de Spoonacular.
@@ -12,9 +13,9 @@ class EtiquetaOrigenReceta extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (IconData icono, String texto, Color color) = switch (receta.origen) {
-      'USUARIO' => (Icons.people_alt_rounded, 'Comunidad', const Color(0xFF7C4DFF)),
+      'USUARIO' => (Icons.people_alt_rounded, tr('Comunidad'), const Color(0xFF7C4DFF)),
       'SPOONACULAR' => (Icons.public_rounded, 'spoonacular', const Color(0xFFE65100)),
-      _ => (Icons.verified_rounded, compacta ? 'SafeBite' : 'Verificada por SafeBite', AppColors.primary),
+      _ => (Icons.verified_rounded, compacta ? tr('SafeBite') : tr('Verificada por SafeBite'), AppColors.primary),
     };
     return Container(
       padding: EdgeInsets.symmetric(horizontal: compacta ? 6 : 8, vertical: compacta ? 2 : 4),
@@ -39,9 +40,9 @@ class EtiquetaEstadoReceta extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (String texto, Color color) = switch (receta.estado) {
-      'PENDIENTE' => ('En revisión', const Color(0xFFB26A00)),
-      'RECHAZADA' => ('No aprobada', AppColors.danger),
-      _ => ('Publicada', AppColors.primary),
+      'PENDIENTE' => (tr('En revisión'), const Color(0xFFB26A00)),
+      'RECHAZADA' => (tr('No aprobada'), AppColors.danger),
+      _ => (tr('Publicada'), AppColors.primary),
     };
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
@@ -73,10 +74,10 @@ class AvisoReceta extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
             child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-              Text(titulo, style: TextStyle(fontWeight: FontWeight.bold, color: color)),
+              TextoT(titulo, style: TextStyle(fontWeight: FontWeight.bold, color: color)),
               if (texto != null) ...[
                 const SizedBox(height: 2),
-                Text(texto!, style: const TextStyle(fontSize: 13)),
+                TextoT(texto!, style: const TextStyle(fontSize: 13)),
               ],
             ]),
           ),

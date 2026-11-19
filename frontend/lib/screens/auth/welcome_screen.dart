@@ -4,6 +4,8 @@ import '../../core/theme/app_theme.dart';
 import '../../core/widgets/marca_widgets.dart';
 import 'login_screen.dart';
 import 'register_screen.dart';
+import '../../core/i18n/i18n.dart';
+import '../../core/widgets/selector_idioma.dart';
 
 /// Pantalla Principal (UC01): logo y accesos a login/registro.
 class WelcomeScreen extends StatelessWidget {
@@ -21,11 +23,12 @@ class WelcomeScreen extends StatelessWidget {
               padding: const EdgeInsets.all(24),
               child: Column(
                 children: [
+                  const Align(alignment: Alignment.topRight, child: SelectorIdioma(claro: true)),
                   const Spacer(flex: 2),
                   const LogoSafeBite(alto: 92, claro: true),
                   const SizedBox(height: 20),
                   Text(
-                    'Elegí mejor qué comer,\na tu medida',
+                    tr('Elegí mejor qué comer,\na tu medida'),
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.92),
                       fontSize: 18,
@@ -45,7 +48,7 @@ class WelcomeScreen extends StatelessWidget {
                       ),
                       onPressed: () => Navigator.of(context).push(
                           MaterialPageRoute(builder: (_) => const LoginScreen())),
-                      child: const Text('Iniciar sesión'),
+                      child: Text(tr('Iniciar sesión')),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -59,7 +62,7 @@ class WelcomeScreen extends StatelessWidget {
                       ),
                       onPressed: () => Navigator.of(context).push(
                           MaterialPageRoute(builder: (_) => const RegisterScreen())),
-                      child: const Text('Crear cuenta'),
+                      child: Text(tr('Crear cuenta')),
                     ),
                   ),
                   const SizedBox(height: 16),

@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 
 import '../theme/app_theme.dart';
+import '../../core/i18n/i18n.dart';
 
 /// Muestra una imagen que puede venir como data URL ("data:image/jpeg;base64,...")
 /// o como enlace http(s). Si no hay imagen o falla, muestra [sinImagen].
@@ -104,7 +105,7 @@ class _RecortadorPantallaState extends State<_RecortadorPantalla> {
     } catch (e) {
       if (mounted) {
         setState(() => _guardando = false);
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('No se pudo recortar la imagen: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(tr('No se pudo recortar la imagen: {0}', [e]))));
       }
     }
   }
@@ -126,7 +127,7 @@ class _RecortadorPantallaState extends State<_RecortadorPantalla> {
             onPressed: _guardando ? null : _usar,
             child: _guardando
                 ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                : const Text('Usar', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 16)),
+                : Text(tr('Usar'), style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700, fontSize: 16)),
           ),
         ],
       ),
@@ -180,16 +181,16 @@ class _RecortadorPantallaState extends State<_RecortadorPantalla> {
               top: false,
               child: Column(
                 children: [
-                  const Text(
-                    'Mové la imagen y hacé zoom (dos dedos o la rueda del mouse) para encuadrarla.',
+                  Text(
+                    tr('Mové la imagen y hacé zoom (dos dedos o la rueda del mouse) para encuadrarla.'),
                     textAlign: TextAlign.center,
                     style: TextStyle(color: Colors.white70, fontSize: 13),
                   ),
                   const SizedBox(height: 10),
                   SegmentedButton<bool>(
-                    segments: const [
-                      ButtonSegment(value: false, label: Text('Llenar el marco'), icon: Icon(Icons.crop)),
-                      ButtonSegment(value: true, label: Text('Imagen completa'), icon: Icon(Icons.fit_screen)),
+                    segments: [
+                      ButtonSegment(value: false, label: Text(tr('Llenar el marco')), icon: Icon(Icons.crop)),
+                      ButtonSegment(value: true, label: Text(tr('Imagen completa')), icon: Icon(Icons.fit_screen)),
                     ],
                     selected: {_completa},
                     onSelectionChanged: (s) => _cambiarModo(s.first),

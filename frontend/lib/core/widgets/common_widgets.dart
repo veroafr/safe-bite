@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../theme/app_theme.dart';
 import '../web/lector_codigo_foto.dart';
+import '../../core/i18n/i18n.dart';
 
 class LoadingView extends StatelessWidget {
   const LoadingView({super.key});
@@ -27,10 +28,10 @@ class ErrorView extends StatelessWidget {
           children: [
             const Icon(Icons.error_outline, color: AppColors.danger, size: 42),
             const SizedBox(height: 12),
-            Text(mensaje, textAlign: TextAlign.center),
+            TextoT(mensaje, textAlign: TextAlign.center),
             if (onReintentar != null) ...[
               const SizedBox(height: 12),
-              OutlinedButton(onPressed: onReintentar, child: const Text('Reintentar')),
+              OutlinedButton(onPressed: onReintentar, child: Text(tr('Reintentar'))),
             ],
           ],
         ),
@@ -54,7 +55,7 @@ class EmptyView extends StatelessWidget {
           children: [
             Icon(icono, color: AppColors.textSecondary, size: 42),
             const SizedBox(height: 12),
-            Text(mensaje, textAlign: TextAlign.center, style: const TextStyle(color: AppColors.textSecondary)),
+            TextoT(mensaje, textAlign: TextAlign.center, style: const TextStyle(color: AppColors.textSecondary)),
           ],
         ),
       ),
@@ -68,19 +69,19 @@ class SeccionTitulo extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Padding(
         padding: const EdgeInsets.only(top: 8, bottom: 8),
-        child: Text(texto, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        child: TextoT(texto, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
       );
 }
 
 void mostrarError(BuildContext context, Object error) {
   ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(content: Text(error.toString()), backgroundColor: AppColors.danger),
+    SnackBar(content: TextoT(error.toString()), backgroundColor: AppColors.danger),
   );
 }
 
 void mostrarMensaje(BuildContext context, String mensaje) {
   ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(content: Text(mensaje), backgroundColor: AppColors.primary),
+    SnackBar(content: TextoT(mensaje), backgroundColor: AppColors.primary),
   );
 }
 
@@ -97,7 +98,7 @@ class Chip1 extends StatelessWidget {
         color: color.withOpacity(0.12),
         borderRadius: BorderRadius.circular(20),
       ),
-      child: Text(texto, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w600)),
+      child: TextoT(texto, style: TextStyle(color: color, fontSize: 12, fontWeight: FontWeight.w600)),
     );
   }
 }
@@ -134,13 +135,13 @@ Future<List<int>?> elegirFotoCamaraOGaleria(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Padding(
+          Padding(
             padding: EdgeInsets.only(top: 12, bottom: 4),
-            child: Text('Elegir foto', style: TextStyle(fontWeight: FontWeight.bold)),
+            child: Text(tr('Elegir foto'), style: TextStyle(fontWeight: FontWeight.bold)),
           ),
           ListTile(
             leading: const Icon(Icons.camera_alt_outlined, color: AppColors.primary),
-            title: const Text('Tomar foto con la cámara'),
+            title: Text(tr('Tomar foto con la cámara')),
             onTap: () {
               final directa = fotoDirecta?.call();
               // En la web se usa la cámara propia de la app (web/camara-app.js):
@@ -151,14 +152,14 @@ Future<List<int>?> elegirFotoCamaraOGaleria(
                 directa != null
                     ? directa()
                     : camaraAppDisponible()
-                        ? sacarFotoConCamaraApp(tituloCamara)
+                        ? sacarFotoConCamaraApp(tr(tituloCamara))
                         : abrir(ImageSource.camera),
               );
             },
           ),
           ListTile(
             leading: const Icon(Icons.photo_library_outlined, color: AppColors.primary),
-            title: const Text('Elegir de la galería'),
+            title: Text(tr('Elegir de la galería')),
             onTap: () => Navigator.pop(ctx, abrir(ImageSource.gallery)),
           ),
           const SizedBox(height: 8),
@@ -259,12 +260,12 @@ class _SelectorFotoState extends State<SelectorFoto> {
             IconButton(
               icon: const Icon(Icons.close, size: 18, color: AppColors.danger),
               onPressed: _quitar,
-              tooltip: 'Quitar',
+              tooltip: tr('Quitar'),
             ),
           TextButton.icon(
             onPressed: _elegir,
             icon: Icon(_bytes == null ? Icons.add_a_photo_outlined : Icons.refresh, size: 18),
-            label: Text(_bytes == null ? 'Agregar' : 'Cambiar'),
+            label: Text(_bytes == null ? tr('Agregar') : tr('Cambiar')),
           ),
         ],
       ),
@@ -285,7 +286,7 @@ Future<void> abrirEnlace(BuildContext context, String url) async {
     }
   }
   if (!abierto && context.mounted) {
-    mostrarError(context, 'No se pudo abrir el enlace.');
+    mostrarError(context, tr('No se pudo abrir el enlace.'));
   }
 }
 
@@ -303,14 +304,12 @@ class AvisoInformacionLocales extends StatelessWidget {
           borderRadius: BorderRadius.circular(12),
           border: Border.all(color: AppColors.border),
         ),
-        child: const Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
+        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Icon(Icons.info_outline, size: 18, color: AppColors.textSecondary),
           SizedBox(width: 8),
           Expanded(
             child: Text(
-              'La información inicial puede provenir de fuentes públicas, comercios y la comunidad. '
-              'SafeBite no garantiza que un local mantenga su oferta, horarios o protocolos para '
-              'restricciones alimentarias: confirmá directamente con el local antes de consumir.',
+              tr('La información inicial puede provenir de fuentes públicas, comercios y la comunidad. SafeBite no garantiza que un local mantenga su oferta, horarios o protocolos para restricciones alimentarias: confirmá directamente con el local antes de consumir.'),
               style: TextStyle(fontSize: 11.5, color: AppColors.textSecondary, height: 1.35),
             ),
           ),

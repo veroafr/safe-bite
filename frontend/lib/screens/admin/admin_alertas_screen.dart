@@ -6,6 +6,7 @@ import '../../core/services/alerta_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/widgets/common_widgets.dart';
 import '../../core/widgets/recortar_imagen.dart';
+import '../../core/i18n/i18n.dart';
 
 class AdminAlertasScreen extends StatefulWidget {
   const AdminAlertasScreen({super.key});
@@ -52,7 +53,7 @@ class _AdminAlertasScreenState extends State<AdminAlertasScreen> {
             child: ImagenFlexible(
               fuente: imagen,
               fit: BoxFit.contain,
-              sinImagen: const SizedBox(height: 200, child: Center(child: Text('No se pudo mostrar'))),
+              sinImagen: SizedBox(height: 200, child: Center(child: Text(tr('No se pudo mostrar')))),
             ),
           ),
           Positioned(
@@ -68,7 +69,7 @@ class _AdminAlertasScreenState extends State<AdminAlertasScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Gestión de Alertas')),
+      appBar: AppBar(title: Text(tr('Gestión de Alertas'))),
       body: Column(
         children: [
           Padding(
@@ -76,13 +77,13 @@ class _AdminAlertasScreenState extends State<AdminAlertasScreen> {
             child: Wrap(
               spacing: 8,
               children: [
-                ChoiceChip(label: const Text('Pendientes'), selected: _filtro == EstadoAlerta.PENDIENTE,
+                ChoiceChip(label: Text(tr('Pendientes')), selected: _filtro == EstadoAlerta.PENDIENTE,
                     onSelected: (_) { setState(() => _filtro = EstadoAlerta.PENDIENTE); _recargar(); }),
-                ChoiceChip(label: const Text('Aceptadas'), selected: _filtro == EstadoAlerta.ACEPTADA,
+                ChoiceChip(label: Text(tr('Aceptadas')), selected: _filtro == EstadoAlerta.ACEPTADA,
                     onSelected: (_) { setState(() => _filtro = EstadoAlerta.ACEPTADA); _recargar(); }),
-                ChoiceChip(label: const Text('Denegadas'), selected: _filtro == EstadoAlerta.DENEGADA,
+                ChoiceChip(label: Text(tr('Denegadas')), selected: _filtro == EstadoAlerta.DENEGADA,
                     onSelected: (_) { setState(() => _filtro = EstadoAlerta.DENEGADA); _recargar(); }),
-                ChoiceChip(label: const Text('Todas'), selected: _filtro == null,
+                ChoiceChip(label: Text(tr('Todas')), selected: _filtro == null,
                     onSelected: (_) { setState(() => _filtro = null); _recargar(); }),
               ],
             ),
@@ -94,7 +95,7 @@ class _AdminAlertasScreenState extends State<AdminAlertasScreen> {
                 if (snapshot.connectionState == ConnectionState.waiting) return const LoadingView();
                 if (snapshot.hasError) return ErrorView(mensaje: snapshot.error.toString(), onReintentar: _recargar);
                 final alertas = snapshot.data ?? [];
-                if (alertas.isEmpty) return const EmptyView(mensaje: 'No hay alertas en este estado');
+                if (alertas.isEmpty) return EmptyView(mensaje: tr('No hay alertas en este estado'));
                 return ListView.builder(
                   padding: const EdgeInsets.all(16),
                   itemCount: alertas.length,
@@ -109,14 +110,14 @@ class _AdminAlertasScreenState extends State<AdminAlertasScreen> {
                             Row(
                               children: [
                                 Expanded(
-                                  child: Text(a.restauranteNombre ?? a.productoNombre ?? 'Reporte',
+                                  child: Text(a.restauranteNombre ?? a.productoNombre ?? tr('Reporte'),
                                       style: const TextStyle(fontWeight: FontWeight.bold)),
                                 ),
-                                Chip1(a.tipo.name),
+                                Chip1(nombreTipoAlerta(a.tipo)),
                               ],
                             ),
                             const SizedBox(height: 6),
-                            Text(a.descripcion),
+                            TextoT(a.descripcion),
                             if (a.telefonoContacto != null) ...[
                               const SizedBox(height: 8),
                               InkWell(
@@ -131,7 +132,7 @@ class _AdminAlertasScreenState extends State<AdminAlertasScreen> {
                             ],
                             if (a.pruebas.isNotEmpty) ...[
                               const SizedBox(height: 8),
-                              Text('Pruebas (${a.pruebas.length})',
+                              Text(tr('Pruebas ({0})', [a.pruebas.length]),
                                   style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13)),
                               const SizedBox(height: 6),
                               Wrap(
@@ -156,7 +157,7 @@ class _AdminAlertasScreenState extends State<AdminAlertasScreen> {
                               ),
                             ],
                             const SizedBox(height: 6),
-                            Text('Reportado por ${a.usuarioNombre ?? '-'} el ${DateFormat('dd/MM/yyyy HH:mm').format(a.fecha)}',
+                            Text(tr('Reportado por {0} el {1}', [a.usuarioNombre ?? '-', DateFormat('dd/MM/yyyy HH:mm').format(a.fecha)]),
                                 style: const TextStyle(color: AppColors.textSecondary, fontSize: 11)),
                             if (a.estado == EstadoAlerta.PENDIENTE) ...[
                               const SizedBox(height: 10),
@@ -166,20 +167,20 @@ class _AdminAlertasScreenState extends State<AdminAlertasScreen> {
                                     child: OutlinedButton(
                                       onPressed: () => _revisar(a, EstadoAlerta.DENEGADA),
                                       style: OutlinedButton.styleFrom(side: const BorderSide(color: AppColors.danger)),
-                                      child: const Text('Denegar', style: TextStyle(color: AppColors.danger)),
+                                      child: Text(tr('Denegar'), style: TextStyle(color: AppColors.danger)),
                                     ),
                                   ),
                                   const SizedBox(width: 10),
                                   Expanded(
                                     child: ElevatedButton(
                                       onPressed: () => _revisar(a, EstadoAlerta.ACEPTADA),
-                                      child: const Text('Aceptar'),
+                                      child: Text(tr('Aceptar')),
                                     ),
                                   ),
                                 ],
                               ),
                             ] else
-                              Chip1(a.estado.name, color: a.estado == EstadoAlerta.ACEPTADA ? AppColors.primary : AppColors.danger),
+                              Chip1(nombreEstadoAlerta(a.estado), color: a.estado == EstadoAlerta.ACEPTADA ? AppColors.primary : AppColors.danger),
                           ],
                         ),
                       ),

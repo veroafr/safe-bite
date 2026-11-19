@@ -6,6 +6,7 @@ import '../../core/services/reporte_service.dart';
 import '../../core/theme/app_theme.dart';
 import '../../core/web/descarga.dart';
 import '../../core/widgets/common_widgets.dart';
+import '../../core/i18n/i18n.dart';
 
 /// Reportes y estadísticas: totales, gráficos de cada variable y exportación a PDF.
 class AdminReportesScreen extends StatefulWidget {
@@ -26,7 +27,7 @@ class _AdminReportesScreenState extends State<AdminReportesScreen> {
       final bytes = await context.read<ReporteService>().exportarPdf();
       final nombre = 'reporte-safebite-${DateFormat('yyyy-MM-dd_HHmm').format(DateTime.now())}.pdf';
       final ruta = await guardarArchivo(bytes, nombre, 'application/pdf');
-      if (mounted) mostrarMensaje(context, ruta == null ? 'PDF descargado: $nombre' : 'PDF guardado en: $ruta');
+      if (mounted) mostrarMensaje(context, ruta == null ? tr('PDF descargado: {0}', [nombre]) : tr('PDF guardado en: {0}', [ruta]));
     } catch (e) {
       if (mounted) mostrarError(context, e);
     } finally {
@@ -38,15 +39,15 @@ class _AdminReportesScreenState extends State<AdminReportesScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Reportes y estadísticas'),
-        actions: [IconButton(tooltip: 'Actualizar', onPressed: _recargar, icon: const Icon(Icons.refresh))],
+        title: Text(tr('Reportes y estadísticas')),
+        actions: [IconButton(tooltip: tr('Actualizar'), onPressed: _recargar, icon: const Icon(Icons.refresh))],
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: _exportando ? null : _exportarPdf,
         icon: _exportando
             ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white))
             : const Icon(Icons.picture_as_pdf_outlined),
-        label: Text(_exportando ? 'Generando...' : 'Exportar PDF'),
+        label: Text(_exportando ? tr('Generando...') : tr('Exportar PDF')),
       ),
       body: FutureBuilder<Reporte>(
         future: _future,
@@ -55,20 +56,20 @@ class _AdminReportesScreenState extends State<AdminReportesScreen> {
           if (snapshot.hasError) return ErrorView(mensaje: snapshot.error.toString(), onReintentar: _recargar);
           final r = snapshot.data!;
           final totales = [
-            _Total('Usuarios', r.totalUsuarios, Icons.people_alt_rounded, const Color(0xFF1E88E5)),
-            _Total('Usuarios activos', r.usuariosActivos, Icons.how_to_reg_rounded, AppColors.primary),
-            _Total('Restaurantes', r.totalRestaurantes, Icons.storefront_rounded, const Color(0xFF00897B)),
-            _Total('Reseñas publicadas', r.totalResenas, Icons.rate_review_rounded, const Color(0xFFFFB300)),
-            _Total('Recetas publicadas', r.totalRecetas, Icons.menu_book_rounded, const Color(0xFF8E24AA)),
-            _Total('Productos', r.totalProductos, Icons.inventory_2_rounded, const Color(0xFF7C4DFF)),
-            _Total('Noticias', r.totalNoticias, Icons.newspaper_rounded, const Color(0xFFFF7043)),
-            _Total('Alertas pendientes', r.alertasPendientes, Icons.warning_amber_rounded, AppColors.danger),
+            _Total(tr('Usuarios'), r.totalUsuarios, Icons.people_alt_rounded, const Color(0xFF1E88E5)),
+            _Total(tr('Usuarios activos'), r.usuariosActivos, Icons.how_to_reg_rounded, AppColors.primary),
+            _Total(tr('Restaurantes'), r.totalRestaurantes, Icons.storefront_rounded, const Color(0xFF00897B)),
+            _Total(tr('Reseñas publicadas'), r.totalResenas, Icons.rate_review_rounded, const Color(0xFFFFB300)),
+            _Total(tr('Recetas publicadas'), r.totalRecetas, Icons.menu_book_rounded, const Color(0xFF8E24AA)),
+            _Total(tr('Productos'), r.totalProductos, Icons.inventory_2_rounded, const Color(0xFF7C4DFF)),
+            _Total(tr('Noticias'), r.totalNoticias, Icons.newspaper_rounded, const Color(0xFFFF7043)),
+            _Total(tr('Alertas pendientes'), r.alertasPendientes, Icons.warning_amber_rounded, AppColors.danger),
           ];
           final pendientes = [
-            ('Productos por revisar', r.productosPendientes),
-            ('Recetas por aprobar', r.recetasPendientes),
-            ('Reseñas por aprobar', r.resenasPendientes),
-            ('Pedidos de contraseña', r.recuperacionesPendientes),
+            (tr('Productos por revisar'), r.productosPendientes),
+            (tr('Recetas por aprobar'), r.recetasPendientes),
+            (tr('Reseñas por aprobar'), r.resenasPendientes),
+            (tr('Pedidos de contraseña'), r.recuperacionesPendientes),
           ];
           return RefreshIndicator(
             onRefresh: () async => _recargar(),
@@ -79,7 +80,7 @@ class _AdminReportesScreenState extends State<AdminReportesScreen> {
                 padding: const EdgeInsets.fromLTRB(16, 16, 16, 96),
                 children: [
                   if (r.generado != null)
-                    Text('Actualizado el ${DateFormat('dd/MM/yyyy HH:mm').format(r.generado!)}',
+                    Text(tr('Actualizado el {0}', [DateFormat('dd/MM/yyyy HH:mm').format(r.generado!)]),
                         style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
                   const SizedBox(height: 10),
                   GridView.count(
@@ -99,7 +100,7 @@ class _AdminReportesScreenState extends State<AdminReportesScreen> {
                         spacing: 18,
                         runSpacing: 8,
                         children: [
-                          const Text('Pendientes de revisión:', style: TextStyle(fontWeight: FontWeight.w600)),
+                          Text(tr('Pendientes de revisión:'), style: TextStyle(fontWeight: FontWeight.w600)),
                           for (final (titulo, valor) in pendientes)
                             Text('$titulo: $valor',
                                 style: TextStyle(color: valor > 0 ? AppColors.danger : AppColors.textSecondary)),
@@ -188,17 +189,17 @@ class _TarjetaGrafico extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(serie.titulo, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+            TextoT(serie.titulo, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
             if (serie.descripcion != null)
               Padding(
                 padding: const EdgeInsets.only(top: 2),
-                child: Text(serie.descripcion!, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
+                child: TextoT(serie.descripcion!, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
               ),
             const SizedBox(height: 14),
             if (vacia)
-              const Padding(
+              Padding(
                 padding: EdgeInsets.symmetric(vertical: 18),
-                child: Center(child: Text('Sin datos todavía', style: TextStyle(color: AppColors.textSecondary))),
+                child: Center(child: Text(tr('Sin datos todavía'), style: TextStyle(color: AppColors.textSecondary))),
               )
             else if (serie.tipo == 'columnas')
               _GraficoColumnas(serie: serie)
@@ -229,12 +230,12 @@ class _GraficoBarras extends StatelessWidget {
           child: Row(children: [
             SizedBox(
               width: 130,
-              child: Text(d.etiqueta, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12)),
+              child: TextoT(d.etiqueta, maxLines: 2, overflow: TextOverflow.ellipsis, style: const TextStyle(fontSize: 12)),
             ),
             const SizedBox(width: 8),
             Expanded(
               child: Tooltip(
-                message: '${d.etiqueta}: ${_numero(d.valor)} ${serie.unidad}',
+                message: '${context.tc(d.etiqueta)}: ${_numero(d.valor)} ${context.tc(serie.unidad)}',
                 child: Stack(children: [
                   Container(
                     height: 18,
@@ -283,7 +284,7 @@ class _GraficoColumnas extends StatelessWidget {
           final alto = max <= 0 ? 0.0 : (d.valor / max) * altoMax;
           return Expanded(
             child: Tooltip(
-              message: '${d.etiqueta}: ${_numero(d.valor)} ${serie.unidad}',
+              message: '${context.tc(d.etiqueta)}: ${_numero(d.valor)} ${context.tc(serie.unidad)}',
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.end,
                 children: [
@@ -302,7 +303,7 @@ class _GraficoColumnas extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 6),
-                  Text(d.etiqueta, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
+                  TextoT(d.etiqueta, style: const TextStyle(fontSize: 11, color: AppColors.textSecondary)),
                 ],
               ),
             ),
