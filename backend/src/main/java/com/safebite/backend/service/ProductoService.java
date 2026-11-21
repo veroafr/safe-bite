@@ -118,8 +118,10 @@ public class ProductoService {
                 .seguro(seguro)
                 .alergenosEncontrados(detectados)
                 .mensaje(seguro
-                        ? "No detectamos alergenos que coincidan con tus intolerancias en este texto. De todas formas, revisa el empaque si tenes dudas."
-                        : "Atencion: detectamos en los ingredientes alergenos que coinciden con tus intolerancias.")
+                        ? Idiomas.t("No detectamos alérgenos que coincidan con tus restricciones en este texto. De todas formas, revisá el empaque si tenés dudas.",
+                                "Não detectamos alergênicos que coincidam com as suas restrições neste texto. Mesmo assim, confira a embalagem se tiver dúvidas.")
+                        : Idiomas.t("Atención: detectamos en los ingredientes alérgenos que coinciden con tus restricciones.",
+                                "Atenção: detectamos nos ingredientes alergênicos que coincidem com as suas restrições."))
                 .textoAnalizado(texto)
                 .build();
     }
@@ -221,13 +223,13 @@ public class ProductoService {
 
         String mensaje;
         if (!producto.isVerificado()) {
-            mensaje = "Este producto fue cargado por otro usuario y todavia no fue revisado por un administrador. Usalo con precaucion.";
+            mensaje = Idiomas.t("Este producto fue cargado por otro usuario y todavía no fue revisado por un administrador. Usalo con precaución.", "Este produto foi cadastrado por outro usuário e ainda não foi revisado por um administrador. Use com cautela.");
         } else if (!datosSuficientes) {
-            mensaje = "No tenemos información suficiente sobre los ingredientes de este producto. Revisá el empaque antes de consumirlo.";
+            mensaje = Idiomas.t("No tenemos información suficiente sobre los ingredientes de este producto. Revisá el empaque antes de consumirlo.", "Não temos informação suficiente sobre os ingredientes deste produto. Confira a embalagem antes de consumir.");
         } else if (seguro) {
-            mensaje = "Este producto es seguro segun tus intolerancias registradas.";
+            mensaje = Idiomas.t("Este producto es seguro según tus restricciones registradas.", "Este produto é seguro de acordo com as suas restrições cadastradas.");
         } else {
-            mensaje = "Atencion: este producto contiene alergenos que coinciden con tus intolerancias.";
+            mensaje = Idiomas.t("Atención: este producto contiene alérgenos que coinciden con tus restricciones.", "Atenção: este produto contém alergênicos que coincidem com as suas restrições.");
         }
 
         List<ProductoResponse> alternativas = List.of();

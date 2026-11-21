@@ -9,6 +9,8 @@ class AnalisisFotos {
   final String? nombreSugerido;
   final String? marcaSugerida;
   final String? categoriaSugerida;
+  /// Qué alimento es, genérico y sin marca (ej: "panetón"), en el idioma de la app.
+  final String? tipoProducto;
   final String? terminoBusquedaEs;
   final String? terminoBusquedaPt;
   final String? proveedor;
@@ -23,6 +25,7 @@ class AnalisisFotos {
     this.nombreSugerido,
     this.marcaSugerida,
     this.categoriaSugerida,
+    this.tipoProducto,
     this.terminoBusquedaEs,
     this.terminoBusquedaPt,
     this.proveedor,
@@ -37,6 +40,7 @@ class AnalisisFotos {
         nombreSugerido: json['nombreSugerido'],
         marcaSugerida: json['marcaSugerida'],
         categoriaSugerida: json['categoriaSugerida'],
+        tipoProducto: json['tipoProducto'],
         terminoBusquedaEs: json['terminoBusquedaEs'],
         terminoBusquedaPt: json['terminoBusquedaPt'],
         proveedor: json['proveedor'],
@@ -84,13 +88,16 @@ class RecomendacionesIa {
   final bool conIa;
   final String? advertencia;
   final List<RecomendacionIa> items;
+  /// No se sabe qué producto es: hay que pedirle al usuario que lo escriba.
+  final bool necesitaTipo;
 
-  RecomendacionesIa({required this.mensaje, required this.conIa, this.advertencia, required this.items});
+  RecomendacionesIa({required this.mensaje, required this.conIa, this.advertencia, required this.items, this.necesitaTipo = false});
 
   factory RecomendacionesIa.fromJson(Map<String, dynamic> json) => RecomendacionesIa(
         mensaje: json['mensaje'] ?? '',
         conIa: json['conIa'] ?? false,
         advertencia: json['advertencia'],
+        necesitaTipo: json['necesitaTipo'] ?? false,
         items: ((json['recomendaciones'] as List?) ?? [])
             .map((e) => RecomendacionIa.fromJson(e as Map<String, dynamic>))
             .toList(),
@@ -172,11 +179,13 @@ class ProductoService {
     return url is String && url.isNotEmpty ? url : null;
   }
 
-  Future<RecomendacionesIa> recomendar(AnalisisFotos a, {Set<String>? intolerancias}) async {
+  /// [tipoProducto]: lo que escribió el usuario cuando la IA no supo qué producto era.
+  Future<RecomendacionesIa> recomendar(AnalisisFotos a, {Set<String>? intolerancias, String? tipoProducto}) async {
     final data = await _client.post('/productos/recomendar', body: {
       'nombre': a.nombreSugerido,
       'marca': a.marcaSugerida,
       'categoria': a.categoriaSugerida,
+      'tipoProducto': (tipoProducto != null && tipoProducto.trim().isNotEmpty) ? tipoProducto.trim() : a.tipoProducto,
       'terminoBusquedaEs': a.terminoBusquedaEs,
       'terminoBusquedaPt': a.terminoBusquedaPt,
       'ingredientes': a.ingredientes,

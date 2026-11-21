@@ -95,6 +95,7 @@ public class ProductoController {
                 .nombreSugerido(resultado.nombreSugerido())
                 .marcaSugerida(resultado.marcaSugerida())
                 .categoriaSugerida(resultado.categoriaSugerida())
+                .tipoProducto(resultado.tipoProducto())
                 .terminoBusquedaEs(resultado.terminoBusquedaEs())
                 .terminoBusquedaPt(resultado.terminoBusquedaPt())
                 .ingredientes(resultado.ingredientes())

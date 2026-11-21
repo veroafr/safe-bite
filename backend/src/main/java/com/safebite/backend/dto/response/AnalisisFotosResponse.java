@@ -17,6 +17,7 @@ public class AnalisisFotosResponse {
     private String nombreSugerido;
     private String marcaSugerida;
     private String categoriaSugerida;
+    private String tipoProducto;
     private String terminoBusquedaEs;
     private String terminoBusquedaPt;
     private List<String> ingredientes;

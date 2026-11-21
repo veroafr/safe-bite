@@ -783,4 +783,11 @@ const Map<String, String> textosPt = {
   'Último uso correcto: {0}': 'Último uso correto: {0}',
   '⚠ Dice "sin {0}" pero los ingredientes lo mencionan': '⚠ Diz "sem {0}", mas os ingredientes mencionam',
   '⚠ No hay ninguna cuenta con ese email': '⚠ Não há nenhuma conta com esse e-mail',
+  '¿Qué producto estás escaneando?': 'Qual produto você está escaneando?',
+  'Contanos qué es y te mostramos alternativas parecidas que sí podés consumir.': 'Conte o que é e mostramos alternativas parecidas que você pode consumir.',
+  'Ej: panetón, galletitas rellenas, harina de trigo': 'Ex.: panetone, biscoito recheado, farinha de trigo',
+  'Buscar alternativas': 'Buscar alternativas',
+  '¿No es este producto? Decinos qué es': 'Não é esse produto? Diga o que é',
+  'Datos de la comunidad SafeBite, de Open Food Facts y sugerencias de la IA. Imágenes ilustrativas.': 'Dados da comunidade SafeBite, do Open Food Facts e sugestões da IA. Imagens ilustrativas.',
+  'Imagen ilustrativa del tipo de producto (Wikipedia)': 'Imagem ilustrativa do tipo de produto (Wikipédia)',
 };

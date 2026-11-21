@@ -406,7 +406,7 @@ class _AnalisisPaqueteCard extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  analisis.nombreSugerido ?? tr('Producto sin identificar'),
+                  analisis.nombreSugerido ?? _conMayuscula(analisis.tipoProducto) ?? tr('Producto sin identificar'),
                   style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                 ),
               ),
@@ -417,6 +417,8 @@ class _AnalisisPaqueteCard extends StatelessWidget {
             ],
           ),
           if (analisis.marcaSugerida != null) Text(analisis.marcaSugerida!, style: const TextStyle(color: AppColors.textSecondary)),
+          if (analisis.nombreSugerido != null && analisis.tipoProducto != null)
+            Text(_conMayuscula(analisis.tipoProducto)!, style: const TextStyle(color: AppColors.textSecondary)),
           if (analisis.categoriaSugerida != null)
             TextoT(analisis.categoriaSugerida!, style: const TextStyle(color: AppColors.textSecondary, fontSize: 12)),
           const SizedBox(height: 10),
@@ -502,17 +504,38 @@ class _RecomendacionesIa extends StatefulWidget {
 }
 
 class _RecomendacionesIaState extends State<_RecomendacionesIa> {
-  late Future<RecomendacionesIa> _futuro;
+  Future<RecomendacionesIa>? _futuro;
+
+  /// Lo que escribió el usuario cuando no se supo qué producto era.
+  String? _tipo;
+  bool _preguntando = false;
+  final _tipoCtrl = TextEditingController();
+
+  bool get _sabeQueEs {
+    final a = widget.analisis;
+    bool lleno(String? v) => v != null && v.trim().isNotEmpty;
+    return lleno(a.tipoProducto) || lleno(a.terminoBusquedaEs) || lleno(a.terminoBusquedaPt);
+  }
 
   @override
   void initState() {
     super.initState();
-    _futuro = _pedir();
+    // Sin saber qué producto es, las alternativas serían al azar: primero se le pregunta al usuario.
+    if (_sabeQueEs) {
+      _futuro = _pedir();
+    } else {
+      _preguntando = true;
+    }
   }
 
-  Future<RecomendacionesIa> _pedir() => context
-      .read<ProductoService>()
-      .recomendar(widget.analisis, intolerancias: context.read<FiltroEscanerProvider>().filtro);
+  @override
+  void dispose() {
+    _tipoCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<RecomendacionesIa> _pedir() => context.read<ProductoService>().recomendar(widget.analisis,
+      intolerancias: context.read<FiltroEscanerProvider>().filtro, tipoProducto: _tipo);
 
   void _reintentar() {
     setState(() {
@@ -520,8 +543,81 @@ class _RecomendacionesIaState extends State<_RecomendacionesIa> {
     });
   }
 
+  void _buscarConTipo() {
+    final t = _tipoCtrl.text.trim();
+    if (t.length < 3) return;
+    FocusScope.of(context).unfocus();
+    setState(() {
+      _tipo = t;
+      _preguntando = false;
+      _futuro = _pedir();
+    });
+  }
+
+  void _corregirTipo() {
+    setState(() {
+      _tipoCtrl.text = _tipo ?? widget.analisis.tipoProducto ?? '';
+      _preguntando = true;
+    });
+  }
+
+  /// "¿Qué producto estás escaneando?": con eso se buscan alternativas del mismo tipo.
+  Widget _preguntaTipo(String? mensaje) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: AppColors.primary.withOpacity(0.06),
+        border: Border.all(color: AppColors.primary.withOpacity(0.35)),
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.help_outline, color: AppColors.primary, size: 20),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(tr('¿Qué producto estás escaneando?'), style: const TextStyle(fontWeight: FontWeight.bold)),
+              ),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Text(
+            mensaje ?? tr('Contanos qué es y te mostramos alternativas parecidas que sí podés consumir.'),
+            style: const TextStyle(fontSize: 12, color: AppColors.textSecondary),
+          ),
+          const SizedBox(height: 10),
+          TextField(
+            controller: _tipoCtrl,
+            textInputAction: TextInputAction.search,
+            onSubmitted: (_) => _buscarConTipo(),
+            decoration: InputDecoration(
+              isDense: true,
+              hintText: tr('Ej: panetón, galletitas rellenas, harina de trigo'),
+              border: const OutlineInputBorder(),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerRight,
+            child: FilledButton.icon(
+              onPressed: _buscarConTipo,
+              icon: const Icon(Icons.search, size: 18),
+              label: Text(tr('Buscar alternativas')),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    if (_preguntando || _futuro == null) {
+      return Padding(padding: const EdgeInsets.only(top: 14), child: _preguntaTipo(null));
+    }
     return Padding(
       padding: const EdgeInsets.only(top: 14),
       child: FutureBuilder<RecomendacionesIa>(
@@ -547,8 +643,19 @@ class _RecomendacionesIaState extends State<_RecomendacionesIa> {
             );
           }
           final r = snap.data!;
+          if (r.necesitaTipo) return _preguntaTipo(r.mensaje);
           if (r.items.isEmpty) {
-            return TextoT(r.mensaje, style: const TextStyle(fontSize: 13, color: AppColors.textSecondary));
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                TextoT(r.mensaje, style: const TextStyle(fontSize: 13, color: AppColors.textSecondary)),
+                TextButton.icon(
+                  onPressed: _corregirTipo,
+                  icon: const Icon(Icons.edit_outlined, size: 16),
+                  label: Text(tr('¿No es este producto? Decinos qué es')),
+                ),
+              ],
+            );
           }
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -591,8 +698,16 @@ class _RecomendacionesIaState extends State<_RecomendacionesIa> {
                   ),
                 ),
               Text(
-                tr('Datos de la comunidad SafeBite, de Open Food Facts y sugerencias de la IA.'),
+                tr('Datos de la comunidad SafeBite, de Open Food Facts y sugerencias de la IA. Imágenes ilustrativas.'),
                 style: TextStyle(fontSize: 11, color: AppColors.textSecondary),
+              ),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: _corregirTipo,
+                  icon: const Icon(Icons.edit_outlined, size: 16),
+                  label: Text(tr('¿No es este producto? Decinos qué es')),
+                ),
               ),
             ],
           );
@@ -620,10 +735,10 @@ class _RecomendacionesIaState extends State<_RecomendacionesIa> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Foto del producto; si no tiene, se busca una imagen de referencia.
+          // Imagen ilustrativa del tipo de alimento (sin marca); si no hay, un ícono.
           ImagenProducto(
             url: it.imagenUrl,
-            busqueda: [it.nombre, if (it.marca != null && it.marca!.isNotEmpty) it.marca!].join(' '),
+            ilustrativa: true,
             lado: 64,
             icono: it.origen == 'GENERICA'
                 ? Icons.lightbulb_outline
@@ -713,7 +828,6 @@ class _AlternativasSeguras extends StatelessWidget {
                               : a.fotoFrontalBase64!.startsWith('data:')
                                   ? a.fotoFrontalBase64
                                   : 'data:image/jpeg;base64,${a.fotoFrontalBase64}'),
-                      busqueda: [a.nombre, if (a.marca != null) a.marca!].join(' '),
                       lado: 52,
                     ),
                     const SizedBox(width: 10),
@@ -1226,3 +1340,9 @@ class _FiltroEscanerBarra extends StatelessWidget {
   }
 }
 
+/// "panetón con frutas" -> "Panetón con frutas"; null si viene vacío.
+String? _conMayuscula(String? t) {
+  if (t == null || t.trim().isEmpty) return null;
+  final v = t.trim();
+  return v[0].toUpperCase() + v.substring(1);
+}

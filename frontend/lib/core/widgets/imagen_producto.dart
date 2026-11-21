@@ -8,14 +8,17 @@ import 'recortar_imagen.dart';
 
 /// Miniatura de un producto recomendado. Si no trae foto, busca una imagen
 /// de referencia en Open Food Facts con [busqueda] (ej: "Pan sin TACC Marca").
-/// Al tocarla se ve en grande.
+/// [ilustrativa]: la foto es genérica del tipo de alimento (sin marca), y así
+/// se aclara al verla en grande. Al tocarla se ve en grande.
 class ImagenProducto extends StatefulWidget {
   final String? url;
   final String? busqueda;
   final double lado;
   final IconData icono;
+  final bool ilustrativa;
 
-  const ImagenProducto({super.key, this.url, this.busqueda, this.lado = 64, this.icono = Icons.fastfood_outlined});
+  const ImagenProducto(
+      {super.key, this.url, this.busqueda, this.lado = 64, this.icono = Icons.fastfood_outlined, this.ilustrativa = false});
 
   @override
   State<ImagenProducto> createState() => _ImagenProductoState();
@@ -53,10 +56,14 @@ class _ImagenProductoState extends State<ImagenProducto> {
             constraints: const BoxConstraints(maxHeight: 420),
             child: InteractiveViewer(child: ImagenFlexible(fuente: url, fit: BoxFit.contain, sinImagen: _sinImagen())),
           ),
-          if (referencia)
+          if (referencia || widget.ilustrativa)
             Padding(
               padding: const EdgeInsets.all(10),
-              child: Text(tr('Imagen de referencia'),
+              child: Text(
+                  widget.ilustrativa
+                      ? tr('Imagen ilustrativa del tipo de producto (Wikipedia)')
+                      : tr('Imagen de referencia'),
+                  textAlign: TextAlign.center,
                   style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
             ),
         ]),

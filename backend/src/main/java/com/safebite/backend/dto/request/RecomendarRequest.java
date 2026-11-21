@@ -12,6 +12,8 @@ public class RecomendarRequest {
     private String nombre;
     private String marca;
     private String categoria;
+    /** Tipo de alimento generico (lo detecta la IA o lo escribe el usuario). */
+    private String tipoProducto;
     private String terminoBusquedaEs;
     private String terminoBusquedaPt;
     private List<String> ingredientes;

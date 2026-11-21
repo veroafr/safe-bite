@@ -16,6 +16,8 @@ import java.util.Set;
 public class RecomendacionesResponse {
     private boolean seguro;
     private boolean hayDatos;
+    /** true cuando no se sabe que producto es: la app le pide al usuario que lo escriba. */
+    private boolean necesitaTipo;
     private Set<String> alergenosEnConflicto;
     private String mensaje;
     /** true si las explicaciones las redacto la IA; false si es una lista simple por reglas. */
@@ -39,5 +41,8 @@ public class RecomendacionesResponse {
         private String motivo;
         /** true si el alergeno depende de la marca o del lote: hay que revisar el envase. */
         private boolean verificarMarca;
+        /** Alimento generico en ingles para buscar la imagen ilustrativa (uso interno). */
+        @com.fasterxml.jackson.annotation.JsonIgnore
+        private String imagenEn;
     }
 }
