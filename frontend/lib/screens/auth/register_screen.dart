@@ -129,7 +129,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const SizedBox(height: 14),
                 CampoPassword(
                   controller: _password2Ctrl,
-                  label: tr('Repetí la contraseña'),
+                  label: tr('Repetir la contraseña'),
                   validator: (v) => v != _passwordCtrl.text ? tr('Las contraseñas no coinciden') : null,
                 ),
                 const SizedBox(height: 14),
